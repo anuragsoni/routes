@@ -5,7 +5,7 @@
     of any particular web framework or runtime. It uses
     continuations in an approach outlined by the following
     talk by Daniel Patterson:
-    https://dbp.io/talks/2016/fn-continuations-haskell-meetup.pdf
+    {{: https://dbp.io/talks/2016/fn-continuations-haskell-meetup.pdf} Typed routing with continuations}
 *)
 
 (** [state] is the state that is threaded through the router during parsing. *)
