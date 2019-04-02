@@ -37,8 +37,8 @@ let search_user (name: string) (city : string) =
 let routes =
   let open Routes in
   [ non_empty ==> idx (* matches the index route "/" *)
-  ; method' `GET </> path "user" </> int </> non_empty ==> get_user (* matches "/user/<int>" *)
-  ; method' `GET </> path "user" </> str </> str ==> search_user (* missing non_empty so it matches "/user/<str>/<str>/*" *)
+  ; method' `GET </> s "user" </> int </> non_empty ==> get_user (* matches "/user/<int>" *)
+  ; method' `GET </> s "user" </> str </> str ==> search_user (* missing non_empty so it matches "/user/<str>/<str>/*" *)
   ]
 
 match Routes.route routes (req: Request.t) =
