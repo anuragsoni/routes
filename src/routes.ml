@@ -3,6 +3,7 @@ module Fn = struct
   let compose f g x = f (g x)
 end
 
+(* TODO (anuragsoni): Try using bigstringaf or some other means of frozen substring view to a string *)
 type ('req, 'meth) state =
   { req : 'req
   ; unvisited : string list
@@ -16,9 +17,9 @@ let init req target meth =
 
 type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
-let path s state =
+let s word state =
   match state with
-  | { req; unvisited = y :: ys; meth } when y = s ->
+  | { req; unvisited = y :: ys; meth } when y = word ->
     Some ({ req; unvisited = ys; meth }, Fn.id)
   | _ -> None
 ;;
@@ -68,7 +69,7 @@ let ( ==> ) mat handle state =
   | Some ({ req; _ }, k) -> Some (k (handle req))
 ;;
 
-let route paths =
+let match' paths =
   let rec route' req = function
     | [] -> None
     | x :: xs ->
