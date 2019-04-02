@@ -9,8 +9,8 @@ let () =
   let r = Httpaf.Request.create `GET "/hello/11/name" in
   let routes =
     let open Routes in
-    [ non_empty ==> idx
-    ; method' `GET </> s "hello" </> int </> str </> non_empty ==> h1
+    [ empty ==> idx
+    ; method' `GET </> s "hello" </> int </> str </> empty ==> h1
     ; method' `POST </> str ==> h2
     ]
   in

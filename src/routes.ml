@@ -24,7 +24,7 @@ let s word state =
   | _ -> None
 ;;
 
-let non_empty state =
+let empty state =
   match state with
   | { unvisited = []; _ } -> Some (state, Fn.id)
   | _ -> None

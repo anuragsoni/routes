@@ -23,8 +23,8 @@ type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
     route matching fails. *)
 val s : string -> ('req, 'meth) state -> (('req, 'meth) state * ('a -> 'a)) option
 
-(** [non_empty] confirms that there is nothing left to consume in the URL's paths. *)
-val non_empty : ('req, 'meth) state -> (('req, 'meth) state * ('a -> 'a)) option
+(** [empty] confirms that there is nothing left to consume in the URL's paths. *)
+val empty : ('req, 'meth) state -> (('req, 'meth) state * ('a -> 'a)) option
 
 (** [anything] will consume and drop any pathvalue, irrespective of its type. *)
 val anything : ('req, 'meth) state -> (('req, 'meth) state * ('a -> 'a)) option
