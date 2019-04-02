@@ -14,17 +14,18 @@ let init req target meth =
   { req; unvisited; meth }
 ;;
 
-type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option option
+type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
 let path s state =
   match state with
-  | r, y :: ys, m when y = s -> Some ((r, ys, m), Fn.id)
+  | { req; unvisited = y :: ys; meth } when y = s ->
+    Some ({ req; unvisited = ys; meth }, Fn.id)
   | _ -> None
 ;;
 
 let non_empty state =
   match state with
-  | _, [], _ -> Some (state, Fn.id)
+  | { unvisited = []; _ } -> Some (state, Fn.id)
   | _ -> None
 ;;
 
@@ -32,22 +33,23 @@ let anything state = Some (state, Fn.id)
 
 let method' (m : 'meth) state =
   match state with
-  | _, _, m' when m = m' -> Some (state, Fn.id)
+  | { meth; _ } when m = meth -> Some (state, Fn.id)
   | _ -> None
 ;;
 
 let str state =
   match state with
-  | r, x' :: xs, m -> Some ((r, xs, m), fun k -> k x')
+  | { req; unvisited = x' :: xs; meth } ->
+    Some ({ req; unvisited = xs; meth }, fun k -> k x')
   | _ -> None
 ;;
 
-let int (r, params, m) =
+let int { req; unvisited = params; meth } =
   match params with
   | [] -> None
   | x :: xs ->
     (match int_of_string_opt x with
-    | Some n -> Some ((r, xs, m), fun k -> k n)
+    | Some n -> Some ({ req; unvisited = xs; meth }, fun k -> k n)
     | None -> None)
 ;;
 
@@ -63,7 +65,7 @@ let ( </> ) m1 m2 state =
 let ( ==> ) mat handle state =
   match mat state with
   | None -> None
-  | Some ((r, path', m), k) -> Some (Some (k (handle (r, path', m))))
+  | Some ({ req; _ }, k) -> Some (k (handle req))
 ;;
 
 let route paths =
@@ -72,10 +74,7 @@ let route paths =
     | x :: xs ->
       (match x req with
       | None -> route' req xs
-      | Some action ->
-        (match action with
-        | None -> route' req xs
-        | Some resp -> Some resp))
+      | Some resp -> Some resp)
   in
   fun req -> route' req paths
 ;;
