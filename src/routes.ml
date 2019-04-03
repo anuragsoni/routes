@@ -1,17 +1,37 @@
+open Astring
+
 module Fn = struct
   let id x = x
   let compose f g x = f (g x)
 end
 
-(* TODO (anuragsoni): Try using bigstringaf or some other means of frozen substring view to a string *)
 type ('req, 'meth) state =
   { req : 'req
-  ; unvisited : string list
+  ; unvisited : String.Sub.t list
   ; meth : 'meth
   }
 
+let split_paths target =
+  let is_slash x = x = '/' in
+  let rec loop rest acc =
+    let head, tail = String.Sub.span ~sat:(fun x -> not (is_slash x)) rest in
+    if String.Sub.is_empty tail
+    then
+      if String.Sub.is_empty head
+      then List.rev acc, tail
+      else List.rev (head :: acc), tail
+    else loop (String.Sub.drop ~sat:is_slash tail) (head :: acc)
+  in
+  match target with
+  | "" -> [], String.Sub.empty
+  | _ ->
+    (match target.[0] with
+    | '/' -> loop (String.Sub.v ~start:1 target) []
+    | _ -> loop (String.sub target) [])
+;;
+
 let init req target meth =
-  let unvisited = List.filter (fun x -> x <> "") (String.split_on_char '/' target) in
+  let unvisited, _rest = split_paths target in
   { req; unvisited; meth }
 ;;
 
@@ -19,7 +39,7 @@ type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
 let s word state =
   match state with
-  | { req; unvisited = y :: ys; meth } when y = word ->
+  | { req; unvisited = y :: ys; meth } when String.Sub.to_string y = word ->
     Some ({ req; unvisited = ys; meth }, Fn.id)
   | _ -> None
 ;;
@@ -41,7 +61,7 @@ let method' (m : 'meth) state =
 let str state =
   match state with
   | { req; unvisited = x' :: xs; meth } ->
-    Some ({ req; unvisited = xs; meth }, fun k -> k x')
+    Some ({ req; unvisited = xs; meth }, fun k -> k (String.Sub.to_string x'))
   | _ -> None
 ;;
 
@@ -49,7 +69,7 @@ let int { req; unvisited = params; meth } =
   match params with
   | [] -> None
   | x :: xs ->
-    (match int_of_string_opt x with
+    (match String.Sub.to_int x with
     | Some n -> Some ({ req; unvisited = xs; meth }, fun k -> k n)
     | None -> None)
 ;;
@@ -68,7 +88,6 @@ let ( ==> ) mat handle state =
   | None -> None
   | Some ({ req; _ }, k) -> Some (k (handle req))
 ;;
-
 
 let match' ~req ~target ~meth paths =
   let req' = init req target meth in
