@@ -69,13 +69,15 @@ let ( ==> ) mat handle state =
   | Some ({ req; _ }, k) -> Some (k (handle req))
 ;;
 
-let match' paths =
-  let rec route' req = function
+
+let match' ~req ~target ~meth paths =
+  let req' = init req target meth in
+  let rec route' r = function
     | [] -> None
     | x :: xs ->
-      (match x req with
-      | None -> route' req xs
+      (match x r with
+      | None -> route' r xs
       | Some resp -> Some resp)
   in
-  fun req -> route' req paths
+  route' req' paths
 ;;

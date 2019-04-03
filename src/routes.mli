@@ -11,9 +11,6 @@
 (** [state] is the state that is threaded through the router during parsing. *)
 type ('req, 'meth) state
 
-(** [init] creates the initial state that will be passed to the router. *)
-val init : 'req -> string -> 'meth -> ('req, 'meth) state
-
 type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
 (** [s str] does an exact match on the input string.
@@ -58,6 +55,11 @@ val ( ==> )
   -> ('req, 'meth) state
   -> 'res option
 
-(** [match'] runs takes in the initial routing state, and runs it through
-    the list of route match patterns. It will stop at the first match. *)
-val match' : ('req, 'res, 'meth) route list -> ('req, 'meth) state -> 'res option
+(** [match'] takes a request, target, method and runs it through a
+    list of route matching patterns. It will stop at the first match. *)
+val match'
+  :  req:'req
+  -> target:string
+  -> meth:'meth
+  -> ('req, 'res, 'meth) route list
+  -> 'res option

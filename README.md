@@ -41,7 +41,7 @@ let routes =
   ; method' `GET </> s "user" </> str </> str ==> search_user (* missing empty so it matches "/user/<str>/<str>/*" *)
   ]
 
-match Routes.match' routes (req: Request.t) =
+match Routes.match' routes ~req ~target:"/some/url" ~meth:`GET =
 | None -> (* No route matched. Alternative could be to provide default routes *)
 | Some r -> (* Match found. Do something further with handler response *)
 ```
