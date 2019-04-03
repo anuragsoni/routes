@@ -1,5 +1,6 @@
 # TODO
 
+* How to handle query params?
 * Provide sibling libraries providing closer integration with frameworks like:
     * incr_dom
     * httpaf
