@@ -16,22 +16,23 @@ let split_paths target =
   let rec loop rest acc =
     let head, tail = String.Sub.span ~sat:(fun x -> not (is_slash x)) rest in
     if String.Sub.is_empty tail
-    then
-      if String.Sub.is_empty head
-      then List.rev acc, tail
-      else List.rev (head :: acc), tail
+    then if String.Sub.is_empty head then List.rev acc else List.rev (head :: acc)
     else loop (String.Sub.drop ~sat:is_slash tail) (head :: acc)
   in
   match target with
   | "" -> [], String.Sub.empty
   | _ ->
-    (match target.[0] with
-    | '/' -> loop (String.Sub.v ~start:1 target) []
-    | _ -> loop (String.sub target) [])
+    let target', query = String.Sub.span ~sat:(fun x -> x <> '?') (String.sub target) in
+    if String.Sub.is_empty target'
+    then [], query
+    else (
+      match String.Sub.get target' 0 with
+      | '/' -> loop (String.Sub.with_range ~first:1 target') [], query
+      | _ -> loop target' [], query)
 ;;
 
 let init req target meth =
-  let unvisited, _rest = split_paths target in
+  let unvisited, _query = split_paths target in
   { req; unvisited; meth }
 ;;
 
