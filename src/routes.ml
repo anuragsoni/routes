@@ -17,7 +17,7 @@ let split_paths target =
     let head, tail = String.Sub.span ~sat:(fun x -> not (is_slash x)) rest in
     if String.Sub.is_empty tail
     then if String.Sub.is_empty head then List.rev acc else List.rev (head :: acc)
-    else loop (String.Sub.drop ~sat:is_slash tail) (head :: acc)
+    else loop (String.Sub.with_range ~first:1 tail) (head :: acc)
   in
   match target with
   | "" -> [], String.Sub.empty
