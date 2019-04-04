@@ -8,7 +8,7 @@ end
 module RouterState = struct
   type ('req, 'meth) state =
     { req : 'req
-    ; unvisited : String.Sub.t list
+    ; unvisited : String.t list
     ; meth : 'meth
     }
 
@@ -20,20 +20,20 @@ open RouterState
 let split_paths target =
   let is_slash x = x = '/' in
   let rec loop rest acc =
-    let head, tail = String.Sub.span ~sat:(fun x -> not (is_slash x)) rest in
-    if String.Sub.is_empty tail
-    then if String.Sub.is_empty head then List.rev acc else List.rev (head :: acc)
-    else loop (String.Sub.with_range ~first:1 tail) (head :: acc)
+    let head, tail = String.span ~sat:(fun x -> not (is_slash x)) rest in
+    if String.is_empty tail
+    then if String.is_empty head then List.rev acc else List.rev (head :: acc)
+    else loop (String.with_range ~first:1 tail) (head :: acc)
   in
   match target with
-  | "" -> [], String.Sub.empty
+  | "" -> [], String.empty
   | _ ->
-    let target', query = String.Sub.span ~sat:(fun x -> x <> '?') (String.sub target) in
-    if String.Sub.is_empty target'
+    let target', query = String.span ~sat:(fun x -> x <> '?') target in
+    if String.is_empty target'
     then [], query
     else (
-      match String.Sub.get target' 0 with
-      | '/' -> loop (String.Sub.with_range ~first:1 target') [], query
+      match String.get target' 0 with
+      | '/' -> loop (String.with_range ~first:1 target') [], query
       | _ -> loop target' [], query)
 ;;
 
@@ -47,7 +47,7 @@ type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
 let s word state =
   match state with
-  | { req; unvisited = y :: ys; meth } when String.Sub.to_string y = word ->
+  | { req; unvisited = y :: ys; meth } when y = word ->
     Some ({ req; unvisited = ys; meth }, Fn.id)
   | _ -> None
 ;;
@@ -71,7 +71,7 @@ let method' (m : 'meth) state =
 let str state =
   match state with
   | { req; unvisited = x' :: xs; meth } ->
-    Some ({ req; unvisited = xs; meth }, fun k -> k (String.Sub.to_string x'))
+    Some ({ req; unvisited = xs; meth }, fun k -> k ( x'))
   | _ -> None
 ;;
 
@@ -79,7 +79,7 @@ let int { req; unvisited = params; meth } =
   match params with
   | [] -> None
   | x :: xs ->
-    (match String.Sub.to_int x with
+    (match String.to_int x with
     | Some n -> Some ({ req; unvisited = xs; meth }, fun k -> k n)
     | None -> None)
 ;;
@@ -88,7 +88,7 @@ let boolean { req; unvisited = params; meth } =
   match params with
   | [] -> None
   | x :: xs ->
-    (match String.Sub.to_bool x with
+    (match String.to_bool x with
     | None -> None
     | Some b -> Some ({ req; unvisited = xs; meth }, fun k -> k b))
 ;;
@@ -97,7 +97,7 @@ let int32 { req; unvisited = params; meth } =
   match params with
   | [] -> None
   | x :: xs ->
-    (match String.Sub.to_int32 x with
+    (match String.to_int32 x with
     | None -> None
     | Some i -> Some ({ req; unvisited = xs; meth }, fun k -> k i))
 ;;
@@ -106,7 +106,7 @@ let int64 { req; unvisited = params; meth } =
   match params with
   | [] -> None
   | x :: xs ->
-    (match String.Sub.to_int64 x with
+    (match String.to_int64 x with
     | None -> None
     | Some i -> Some ({ req; unvisited = xs; meth }, fun k -> k i))
 ;;
