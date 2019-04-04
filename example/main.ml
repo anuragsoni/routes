@@ -19,9 +19,9 @@ let respond_with_text reqd status text =
 
 module Handlers = struct
   (* The first parameter  *)
-  let greeter router_state name city =
+  let greeter router_state id name city b =
     let (req : Request.t) = Routes.RouterState.get_request router_state in
-    Log.Global.printf "Woohoo! I have access to the Httpaf request here: %s\n" req.target;
+    Log.Global.printf "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B" id req.target b;
     `String ("Hello, " ^ name ^ ". How was your trip to " ^ city ^ "?")
   ;;
 
@@ -33,13 +33,13 @@ module Handlers = struct
 
   let retrieve_user state name id =
     let req : Request.t = Routes.RouterState.get_request state in
-    Log.Global.printf "Fetching user with name %s and id %d." name id;
+    Log.Global.printf "Fetching user with name %s and id %ld." name id;
     `String req.target
   ;;
 
   let user_routes state =
     let open Routes in
-    let routes = [ str </> int </> empty ==> retrieve_user ] in
+    let routes = [ str </> int32 </> empty ==> retrieve_user ] in
     match match_with_state ~state routes with
     | None -> `String "user not found"
     | Some s -> s
@@ -50,7 +50,7 @@ let routes =
   let open Routes in
   let open Handlers in
   [ empty ==> return_bigstring
-  ; method' `GET </> s "greet" </> str </> str </> empty ==> greeter
+  ; method' `GET </> s "greet" </> int64 </> str </> str </> boolean </> empty ==> greeter
   ; method' `GET </> s "sum" </> int </> int </> empty ==> sum
   ; method' `GET </> s "user" ==> user_routes
   ]

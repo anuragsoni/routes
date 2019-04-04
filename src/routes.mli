@@ -43,6 +43,15 @@ val str : ('req, 'meth) state -> (('req, 'meth) state * ((string -> 'a) -> 'a)) 
     the request handler. *)
 val int : ('req, 'meth) state -> (('req, 'meth) state * ((int -> 'a) -> 'a)) option
 
+(** [int32] will match and extract a 32 bit integer. *)
+val int32 : ('req, 'meth) state -> (('req, 'meth) state * ((int32 -> 'a) -> 'a)) option
+
+(** [int64] will match and extract a 64 bit integer. *)
+val int64 : ('req, 'meth) state -> (('req, 'meth) state * ((int64 -> 'a) -> 'a)) option
+
+(** [boolean] will match and extract a boolean value. *)
+val boolean : ('req, 'meth) state -> (('req, 'meth) state * ((bool -> 'a) -> 'a)) option
+
 (** [</>] is used to connect two path parsers. Ex: str </> int
     will first try and parse a string, followed by an integer.
     If any of the parsers fail, the whole route matching fails.*)
@@ -70,6 +79,9 @@ val match'
   -> ('req, 'res, 'meth) route list
   -> 'res option
 
+(** [match_with_state] takes a router state and runs it through a list of
+    routes. This is useful when using handlers that in-turn define
+    their own routes. *)
 val match_with_state
   :  state:('req, 'meth) state
   -> ('req, 'res, 'meth) route list

@@ -81,6 +81,33 @@ let int { req; unvisited = params; meth } =
     | None -> None)
 ;;
 
+let boolean { req; unvisited = params; meth } =
+  match params with
+  | [] -> None
+  | x :: xs ->
+    (match String.Sub.to_bool x with
+    | None -> None
+    | Some b -> Some ({ req; unvisited = xs; meth }, fun k -> k b))
+;;
+
+let int32 { req; unvisited = params; meth } =
+  match params with
+  | [] -> None
+  | x :: xs ->
+    (match String.Sub.to_int32 x with
+    | None -> None
+    | Some i -> Some ({ req; unvisited = xs; meth }, fun k -> k i))
+;;
+
+let int64 { req; unvisited = params; meth } =
+  match params with
+  | [] -> None
+  | x :: xs ->
+    (match String.Sub.to_int64 x with
+    | None -> None
+    | Some i -> Some ({ req; unvisited = xs; meth }, fun k -> k i))
+;;
+
 let ( </> ) m1 m2 state =
   match m1 state with
   | None -> None

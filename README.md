@@ -3,15 +3,13 @@
 This library will help with adding typed routes to OCaml applications.
 
 Users can create a list of routes, and handler function to work
-on the extracted entities. using the combinators provided by
-the library. This list of routes will then in-turn be provided the
-string value of the URL path for a request under consideration.
-Every handler will be provided an instance of the request that is
-being processed.
+on the extracted entities using the combinators provided by
+the library. To perform URL matching one would just need to forward
+the URL's path and query to the matcher.
 
-The core library in the current state has no depndencies and isn't tied
-to any particular library or framework. It should be usable in the current state too
-but, the idea would be to provide sub-libraries with tighter integration with the remaining
+The core library in the current state has just one dependency ([Astring](https://github.com/dbuenzli/astring)) and isn't tied
+to any particular library or framework. It should be usable in the current state,
+but the idea would be to provide sub-libraries with tighter integration with the remaining
 ecosystem. Future work would also include working on client side routing for use
 with `js_of_ocaml` libraries like [incr_dom](https://github.com/janestreet/incr_dom) or [ocaml-vdom](https://github.com/LexiFi/ocaml-vdom).
 
@@ -28,10 +26,15 @@ module Response = struct
   ...
 end
 
-let get_user (id: int) =
-  ...
+let get_user state (id: int) =
+  (* Request handlers can define their own routes too *)
+  let open Routes in
+  let routes = [ int64 </> boolean </> ==> (fun _ i b -> ... ) ] in
+  match_with_state ~state routes with
+  | None -> ...
+  | Some response -> ...
 
-let search_user (name: string) (city : string) =
+let search_user _ (name: string) (city : string) =
   ...
 
 let routes =
