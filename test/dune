@@ -1,0 +1,3 @@
+(tests
+ (names routing_test)
+ (libraries alcotest routes))
