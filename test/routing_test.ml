@@ -82,12 +82,29 @@ let test_route_order () =
     (match' ~req:Request ~target:"/12/11" ~meth:`GET routes')
 ;;
 
+let test_nested_routes () =
+  let open Routes in
+  let user_handler _ name age = Printf.sprintf "%s %d" name age in
+  let users state =
+    let routes = [ str </> int </> empty ==> user_handler ] in
+    match match_with_state ~state routes with
+    | None -> "Match not found"
+    | Some s -> s
+  in
+  let user_path = [ s "user" ==> users ] in
+  Alcotest.(check (option string))
+    "Can match nested route"
+    (Some "Mark 11")
+    (match' ~req:Request ~target:"/user/Mark/11" ~meth:`GET user_path)
+;;
+
 let tests =
   [ "Empty routes will have no matches", `Quick, test_no_match
   ; "Test method matches", `Quick, test_method_match
   ; "Test route extractors", `Quick, test_extractors
   ; "Test strict match", `Quick, test_strict_match
   ; "Test route orders", `Quick, test_route_order
+  ; "Test nested match", `Quick, test_nested_routes
   ]
 ;;
 

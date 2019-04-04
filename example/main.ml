@@ -19,7 +19,8 @@ let respond_with_text reqd status text =
 
 module Handlers = struct
   (* The first parameter  *)
-  let greeter (req : Request.t) name city =
+  let greeter router_state name city =
+    let (req : Request.t) = Routes.RouterState.get_request router_state in
     Log.Global.printf "Woohoo! I have access to the Httpaf request here: %s\n" req.target;
     `String ("Hello, " ^ name ^ ". How was your trip to " ^ city ^ "?")
   ;;
@@ -29,6 +30,20 @@ module Handlers = struct
   let return_bigstring _ =
     `Bigstring (Bigstringaf.of_string "Hello world" ~off:0 ~len:11)
   ;;
+
+  let retrieve_user state name id =
+    let req : Request.t = Routes.RouterState.get_request state in
+    Log.Global.printf "Fetching user with name %s and id %d." name id;
+    `String req.target
+  ;;
+
+  let user_routes state =
+    let open Routes in
+    let routes = [ str </> int </> empty ==> retrieve_user ] in
+    match match_with_state ~state routes with
+    | None -> `String "user not found"
+    | Some s -> s
+  ;;
 end
 
 let routes =
@@ -37,6 +52,7 @@ let routes =
   [ empty ==> return_bigstring
   ; method' `GET </> s "greet" </> str </> str </> empty ==> greeter
   ; method' `GET </> s "sum" </> int </> int </> empty ==> sum
+  ; method' `GET </> s "user" ==> user_routes
   ]
 ;;
 
