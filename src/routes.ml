@@ -38,6 +38,7 @@ let split_paths target =
 ;;
 
 let init req target meth =
+  (* TODO (anuragsoni): parse query params and make them available to handlers via RouterState *)
   let unvisited, _query = split_paths target in
   { req; unvisited; meth }
 ;;
@@ -51,6 +52,8 @@ let s word state =
   | _ -> None
 ;;
 
+(* TODO (anuragsoni): This should probably be the default matcher before a handler is called.
+   We should perform exact match by default and make the user opt-in to "starts-with" matches. *)
 let empty state =
   match state with
   | { unvisited = []; _ } -> Some (state, Fn.id)
