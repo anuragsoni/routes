@@ -9,7 +9,13 @@
 *)
 
 (** [state] is the state that is threaded through the router during parsing. *)
-type ('req, 'meth) state
+module RouterState : sig
+  type ('req, 'meth) state
+
+  val get_request : ('req, 'meth) state -> 'req
+end
+
+open RouterState
 
 type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
@@ -51,7 +57,7 @@ val ( </> )
     were extracted while parsing the route. *)
 val ( ==> )
   :  (('req, 'meth) state -> (('req, 'meth) state * ('k -> 'res)) option)
-  -> ('req -> 'k)
+  -> (('req, 'meth) state -> 'k)
   -> ('req, 'meth) state
   -> 'res option
 
@@ -61,5 +67,10 @@ val match'
   :  req:'req
   -> target:string
   -> meth:'meth
+  -> ('req, 'res, 'meth) route list
+  -> 'res option
+
+val match_with_state
+  :  state:('req, 'meth) state
   -> ('req, 'res, 'meth) route list
   -> 'res option

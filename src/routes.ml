@@ -5,11 +5,17 @@ module Fn = struct
   let compose f g x = f (g x)
 end
 
-type ('req, 'meth) state =
-  { req : 'req
-  ; unvisited : String.Sub.t list
-  ; meth : 'meth
-  }
+module RouterState = struct
+  type ('req, 'meth) state =
+    { req : 'req
+    ; unvisited : String.Sub.t list
+    ; meth : 'meth
+    }
+
+  let get_request t = t.req
+end
+
+open RouterState
 
 let split_paths target =
   let is_slash x = x = '/' in
@@ -87,11 +93,10 @@ let ( </> ) m1 m2 state =
 let ( ==> ) mat handle state =
   match mat state with
   | None -> None
-  | Some ({ req; _ }, k) -> Some (k (handle req))
+  | Some (state', k) -> Some (k (handle state'))
 ;;
 
-let match' ~req ~target ~meth paths =
-  let req' = init req target meth in
+let match_with_state ~state paths =
   let rec route' r = function
     | [] -> None
     | x :: xs ->
@@ -99,5 +104,10 @@ let match' ~req ~target ~meth paths =
       | None -> route' r xs
       | Some resp -> Some resp)
   in
-  route' req' paths
+  route' state paths
+;;
+
+let match' ~req ~target ~meth paths =
+  let req' = init req target meth in
+  match_with_state ~state:req' paths
 ;;
