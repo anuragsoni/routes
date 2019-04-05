@@ -32,7 +32,7 @@ let split_paths target =
     if String.is_empty target'
     then [], query
     else (
-      match String.get target' 0 with
+      match target'.[0] with
       | '/' -> loop (String.with_range ~first:1 target') [], query
       | _ -> loop target' [], query)
 ;;
@@ -47,8 +47,8 @@ type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
 let s word state =
   match state with
-  | { req; unvisited = y :: ys; meth } when y = word ->
-    Some ({ req; unvisited = ys; meth }, Fn.id)
+  | { unvisited = y :: ys; _ } when String.equal y word ->
+    Some ({ state with unvisited = ys }, Fn.id)
   | _ -> None
 ;;
 
@@ -68,48 +68,25 @@ let method' (m : 'meth) state =
   | _ -> None
 ;;
 
+let extract_param ~f ({ unvisited = params; _ } as state) =
+  match params with
+  | [] -> None
+  | x :: xs ->
+    (match f x with
+    | None -> None
+    | Some n -> Some ({ state with unvisited = xs }, fun k -> k n))
+;;
+
 let str state =
   match state with
-  | { req; unvisited = x' :: xs; meth } ->
-    Some ({ req; unvisited = xs; meth }, fun k -> k ( x'))
+  | { unvisited = x' :: xs; _ } -> Some ({ state with unvisited = xs }, fun k -> k x')
   | _ -> None
 ;;
 
-let int { req; unvisited = params; meth } =
-  match params with
-  | [] -> None
-  | x :: xs ->
-    (match String.to_int x with
-    | Some n -> Some ({ req; unvisited = xs; meth }, fun k -> k n)
-    | None -> None)
-;;
-
-let boolean { req; unvisited = params; meth } =
-  match params with
-  | [] -> None
-  | x :: xs ->
-    (match String.to_bool x with
-    | None -> None
-    | Some b -> Some ({ req; unvisited = xs; meth }, fun k -> k b))
-;;
-
-let int32 { req; unvisited = params; meth } =
-  match params with
-  | [] -> None
-  | x :: xs ->
-    (match String.to_int32 x with
-    | None -> None
-    | Some i -> Some ({ req; unvisited = xs; meth }, fun k -> k i))
-;;
-
-let int64 { req; unvisited = params; meth } =
-  match params with
-  | [] -> None
-  | x :: xs ->
-    (match String.to_int64 x with
-    | None -> None
-    | Some i -> Some ({ req; unvisited = xs; meth }, fun k -> k i))
-;;
+let int state = extract_param ~f:String.to_int state
+let boolean state = extract_param ~f:String.to_bool state
+let int32 state = extract_param ~f:String.to_int32 state
+let int64 state = extract_param ~f:String.to_int64 state
 
 let ( </> ) m1 m2 state =
   match m1 state with

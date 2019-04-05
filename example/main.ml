@@ -21,7 +21,11 @@ module Handlers = struct
   (* The first parameter  *)
   let greeter router_state id name city b =
     let (req : Request.t) = Routes.RouterState.get_request router_state in
-    Log.Global.printf "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B" id req.target b;
+    Log.Global.printf
+      "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B"
+      id
+      req.target
+      b;
     `String ("Hello, " ^ name ^ ". How was your trip to " ^ city ^ "?")
   ;;
 
@@ -50,7 +54,14 @@ let routes =
   let open Routes in
   let open Handlers in
   [ empty ==> return_bigstring
-  ; method' `GET </> s "greet" </> int64 </> str </> str </> boolean </> empty ==> greeter
+  ; method' `GET
+    </> s "greet"
+    </> int64
+    </> str
+    </> str
+    </> boolean
+    </> empty
+    ==> greeter
   ; method' `GET </> s "sum" </> int </> int </> empty ==> sum
   ; method' `GET </> s "user" ==> user_routes
   ]
