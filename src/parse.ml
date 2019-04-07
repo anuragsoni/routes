@@ -1,46 +1,46 @@
 open Astring
 
-type t = { unvisited : String.t list }
+module StringUtils = struct
+  let drop_while ~f t = String.Sub.drop ~sat:f t
 
-let split_paths target =
-  let is_slash x = x = '/' in
-  let rec loop rest acc =
-    let head, tail = String.span ~sat:(fun x -> not (is_slash x)) rest in
-    if String.is_empty tail
-    then if String.is_empty head then List.rev acc else List.rev (head :: acc)
-    else loop (String.with_range ~first:1 tail) (head :: acc)
-  in
-  match target with
-  | "" -> [], String.empty
-  | _ ->
-    let target', query = String.span ~sat:(fun x -> x <> '?') target in
-    if String.is_empty target'
-    then [], query
-    else (
-      match target'.[0] with
-      | '/' -> loop (String.with_range ~first:1 target') [], query
-      | _ -> loop target' [], query)
-;;
+  let drop_prefix prefix t =
+    let len = String.length prefix in
+    if String.Sub.is_prefix ~affix:(String.sub prefix) t
+    then Some (String.Sub.drop ~max:len t)
+    else None
+  ;;
 
-let init target =
-  (* TODO (anuragsoni): parse query params and make them available to handlers via RouterState *)
-  let unvisited, _query = split_paths target in
-  { unvisited }
-;;
+  let take_while ~f t =
+    let take, rest = String.Sub.span ~sat:f t in
+    Some (String.Sub.to_string take, rest)
+  ;;
+end
 
-let parse_param state =
-  match state.unvisited with
-  | [] -> None
-  | x :: xs' -> Some (x, { unvisited = xs' })
-;;
+type 'a t = String.Sub.t -> ('a * String.Sub.t) option
 
-let is_finished state = state.unvisited = []
+let drop_while ~f t = Some ((), StringUtils.drop_while ~f t)
+let take_while ~f t = StringUtils.take_while ~f t
 
-let bind ~f state =
-  match parse_param state with
+let drop_prefix prefix t =
+  match StringUtils.drop_prefix prefix t with
   | None -> None
-  | Some (p, state') ->
-    (match f p with
-    | None -> None
-    | Some w' -> Some (w', state'))
+  | Some r -> Some ((), r)
 ;;
+
+let map t ~f p =
+  match t p with
+  | None -> None
+  | Some (x, p') -> Some (f x, p')
+;;
+
+let filter_map t ~f p =
+  match t p with
+  | None -> None
+  | Some (x, p') ->
+    (match f x with
+    | None -> None
+    | Some y -> Some (y, p'))
+;;
+
+let run t s = t s
+let take_token = take_while ~f:(fun x -> x <> '/')
