@@ -80,6 +80,7 @@ let sprintf fmt = print_route (fun x -> x) fmt
 let target_consumed t = Astring.String.Sub.is_empty t
 
 let runroute fmt handler meth target =
+  let open Astring in
   let rec match_target : type a b.
       (a, b) path -> a -> Astring.String.Sub.t -> (b * Astring.String.Sub.t) option
     =
@@ -91,15 +92,15 @@ let runroute fmt handler meth target =
       | None -> None
       | Some (_, rest) -> match_target fmt f rest)
     | Int fmt ->
-      (match (Parse.filter_map ~f:int_of_string_opt Parse.take_token) s with
+      (match (Parse.filter_map ~f:String.to_int Parse.take_token) s with
       | None -> None
       | Some (i, rest') -> match_target fmt (f i) rest')
     | Int32 fmt ->
-      (match (Parse.filter_map ~f:Int32.of_string_opt Parse.take_token) s with
+      (match (Parse.filter_map ~f:String.to_int32 Parse.take_token) s with
       | None -> None
       | Some (i, rest') -> match_target fmt (f i) rest')
     | Int64 fmt ->
-      (match (Parse.filter_map ~f:Int64.of_string_opt Parse.take_token) s with
+      (match (Parse.filter_map ~f:String.to_int64 Parse.take_token) s with
       | None -> None
       | Some (i, rest') -> match_target fmt (f i) rest')
     | Str fmt ->
@@ -107,7 +108,7 @@ let runroute fmt handler meth target =
       | None -> None
       | Some (w, rest') -> match_target fmt (f w) rest')
     | Bool fmt ->
-      (match (Parse.filter_map ~f:bool_of_string_opt Parse.take_token) s with
+      (match (Parse.filter_map ~f:String.to_bool Parse.take_token) s with
       | None -> None
       | Some (b, rest') -> match_target fmt (f b) rest')
   and match_route : type a b. (a, b) route -> a -> (b * Astring.String.Sub.t) option =
