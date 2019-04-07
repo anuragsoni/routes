@@ -8,7 +8,7 @@ end
 module RouterState = struct
   type ('req, 'meth) state =
     { req : 'req
-    ; unvisited : String.t list
+    ; parser_state : Parse.t
     ; meth : 'meth
     }
 
@@ -17,47 +17,24 @@ end
 
 open RouterState
 
-let split_paths target =
-  let is_slash x = x = '/' in
-  let rec loop rest acc =
-    let head, tail = String.span ~sat:(fun x -> not (is_slash x)) rest in
-    if String.is_empty tail
-    then if String.is_empty head then List.rev acc else List.rev (head :: acc)
-    else loop (String.with_range ~first:1 tail) (head :: acc)
-  in
-  match target with
-  | "" -> [], String.empty
-  | _ ->
-    let target', query = String.span ~sat:(fun x -> x <> '?') target in
-    if String.is_empty target'
-    then [], query
-    else (
-      match target'.[0] with
-      | '/' -> loop (String.with_range ~first:1 target') [], query
-      | _ -> loop target' [], query)
-;;
-
 let init req target meth =
-  (* TODO (anuragsoni): parse query params and make them available to handlers via RouterState *)
-  let unvisited, _query = split_paths target in
-  { req; unvisited; meth }
+  let parser_state = Parse.init target in
+  { req; parser_state; meth }
 ;;
 
 type ('req, 'res, 'meth) route = ('req, 'meth) state -> 'res option
 
 let s word state =
-  match state with
-  | { unvisited = y :: ys; _ } when String.equal y word ->
-    Some ({ state with unvisited = ys }, Fn.id)
+  match Parse.parse_param state.parser_state with
+  | None -> None
+  | Some (w, p') when w = word -> Some ({ state with parser_state = p' }, Fn.id)
   | _ -> None
 ;;
 
 (* TODO (anuragsoni): This should probably be the default matcher before a handler is called.
    We should perform exact match by default and make the user opt-in to "starts-with" matches. *)
 let empty state =
-  match state with
-  | { unvisited = []; _ } -> Some (state, Fn.id)
-  | _ -> None
+  if Parse.is_finished state.parser_state then Some (state, Fn.id) else None
 ;;
 
 let anything state = Some (state, Fn.id)
@@ -68,19 +45,16 @@ let method' (m : 'meth) state =
   | _ -> None
 ;;
 
-let extract_param ~f ({ unvisited = params; _ } as state) =
-  match params with
-  | [] -> None
-  | x :: xs ->
-    (match f x with
-    | None -> None
-    | Some n -> Some ({ state with unvisited = xs }, fun k -> k n))
+let extract_param ~f state =
+  match Parse.bind ~f state.parser_state with
+  | None -> None
+  | Some (r, p) -> Some ({ state with parser_state = p }, fun k -> k r)
 ;;
 
 let str state =
-  match state with
-  | { unvisited = x' :: xs; _ } -> Some ({ state with unvisited = xs }, fun k -> k x')
-  | _ -> None
+  match Parse.parse_param state.parser_state with
+  | None -> None
+  | Some (r, p) -> Some ({ state with parser_state = p }, fun k -> k r)
 ;;
 
 let int state = extract_param ~f:String.to_int state
