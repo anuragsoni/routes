@@ -19,7 +19,7 @@ let test_no_match () =
 
 let test_method_match () =
   let open Routes in
-  let routes = [ (method' (Some `GET) (s "")) ==> idx ] in
+  let routes = [ method' (Some `GET) (s "") ==> idx ] in
   Alcotest.(check (option string))
     "Matches handler with get method"
     (Some "Matched")
@@ -57,8 +57,12 @@ let test_strict_match () =
 
 let test_route_order () =
   let open Routes in
-  let routes = [ method' None (int </> int) ==> handler2; method' None (int </> int) ==> handler3 ] in
-  let routes' = [ method' None (int </> int) ==> handler3; method' None (int </> int) ==> handler2 ] in
+  let routes =
+    [ method' None (int </> int) ==> handler2; method' None (int </> int) ==> handler3 ]
+  in
+  let routes' =
+    [ method' None (int </> int) ==> handler3; method' None (int </> int) ==> handler2 ]
+  in
   Alcotest.(check (option string))
     "Match handler 2"
     (Some "Handler 2")
@@ -67,6 +71,19 @@ let test_route_order () =
     "Match handler 3"
     (Some "Handler 3")
     (match' ~req:Request ~target:"/12/11" ~meth:`GET routes')
+;;
+
+let test_printing_routes () =
+  let open Routes in
+  let route = method' None (s "user" </> str </> int) in
+  let params = [ "John", 12; "James", 56; "Doe", 11 ] in
+  List.iter
+    (fun (u, a) ->
+      Alcotest.(check string)
+        "Can print out url"
+        (Printf.sprintf "user/%s/%d" u a)
+        ((sprintf route) u a ()))
+    params
 ;;
 
 (* Nested routes don't work for now *)
@@ -92,7 +109,8 @@ let tests =
   ; "Test route extractors", `Quick, test_extractors
   ; "Test strict match", `Quick, test_strict_match
   ; "Test route orders", `Quick, test_route_order
-  (* ; "Test nested match", `Quick, test_nested_routes *)
+  ; "Test printing routes", `Quick, test_printing_routes
+    (* ; "Test nested match", `Quick, test_nested_routes *)
   ]
 ;;
 

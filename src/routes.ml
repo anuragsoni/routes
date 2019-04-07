@@ -41,19 +41,19 @@ module Method = struct
   ;;
 end
 
-type ('a, 'b) t =
-  | End : (unit -> 'a, 'a) t
-  | S : string * ('a, 'b) t -> ('a, 'b) t
-  | Int : ('a, 'b) t -> (int -> 'a, 'b) t
-  | Int32 : ('a, 'b) t -> (int32 -> 'a, 'b) t
-  | Int64 : ('a, 'b) t -> (int64 -> 'a, 'b) t
-  | Bool : ('a, 'b) t -> (bool -> 'a, 'b) t
-  | Str : ('a, 'b) t -> (string -> 'a, 'b) t
+type ('a, 'b) path =
+  | End : (unit -> 'a, 'a) path
+  | S : string * ('a, 'b) path -> ('a, 'b) path
+  | Int : ('a, 'b) path -> (int -> 'a, 'b) path
+  | Int32 : ('a, 'b) path -> (int32 -> 'a, 'b) path
+  | Int64 : ('a, 'b) path -> (int64 -> 'a, 'b) path
+  | Bool : ('a, 'b) path -> (bool -> 'a, 'b) path
+  | Str : ('a, 'b) path -> (string -> 'a, 'b) path
 
-and ('a, 'b) route = Route : Method.t option * ('a, 'b) t -> ('a, 'b) route
+and ('a, 'b) route = Route : Method.t option * ('a, 'b) path -> ('a, 'b) route
 
 (* Based on https://drup.github.io/2016/08/02/difflists/ *)
-let rec print_params : type a b. (string -> b) -> (a, b) t -> a =
+let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
  fun k -> function
   | End -> fun () -> k ""
   | S (const, fmt) -> print_params (fun s -> k @@ String.concat "" [ const; s ]) fmt
@@ -88,26 +88,17 @@ and print_route : type a b. (string -> b) -> (a, b) route -> a =
     print_params
       (fun s ->
         match m with
-        | None -> k @@ String.concat "" [ s; s ]
+        | None -> k @@ s
         | Some m' -> k @@ String.concat " " [ Method.to_string m'; s ])
       r
 ;;
 
-
 let sprintf fmt = print_route (fun x -> x) fmt
-
-(* let print_route fmt = print_params (fun x -> x) (fmt End) *)
-
-let target_consumed t =
-  let open Astring in
-  if String.Sub.length t > 1
-  then false
-  else String.Sub.is_empty t || String.Sub.get t 0 = '/'
-;;
+let target_consumed t = Astring.String.Sub.is_empty t
 
 let runroute fmt handler meth target =
   let rec match_target : type a b.
-      (a, b) t -> a -> Astring.String.Sub.t -> (b * Astring.String.Sub.t) option
+      (a, b) path -> a -> Astring.String.Sub.t -> (b * Astring.String.Sub.t) option
     =
    fun t f s ->
     match t with
