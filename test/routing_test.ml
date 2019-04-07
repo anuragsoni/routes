@@ -19,7 +19,7 @@ let test_no_match () =
 
 let test_method_match () =
   let open Routes in
-  let routes = [ method' `GET ==> idx ] in
+  let routes = [ (method' (Some `GET) (s "")) ==> idx ] in
   Alcotest.(check (option string))
     "Matches handler with get method"
     (Some "Matched")
@@ -32,7 +32,7 @@ let test_method_match () =
 
 let test_extractors () =
   let open Routes in
-  let routes = [ s "foo" </> str </> int ==> handler1 ] in
+  let routes = [ method' None (s "foo" </> str </> int) ==> handler1 ] in
   Alcotest.(check (option string))
     "Can extract string and int GET"
     (Some "James 11")
@@ -46,7 +46,7 @@ let test_extractors () =
 
 let test_strict_match () =
   let open Routes in
-  let route = s "foo" </> str </> int in
+  let route = method' None (s "foo" </> str </> int) in
   let routes = [ route ==> handler1 ] in
   (* On specifying strict match route match fails if there is unconsumed paths left *)
   Alcotest.(check (option string))
@@ -57,8 +57,8 @@ let test_strict_match () =
 
 let test_route_order () =
   let open Routes in
-  let routes = [ int </> int ==> handler2; int </> int ==> handler3 ] in
-  let routes' = [ int </> int ==> handler3; int </> int ==> handler2 ] in
+  let routes = [ method' None (int </> int) ==> handler2; method' None (int </> int) ==> handler3 ] in
+  let routes' = [ method' None (int </> int) ==> handler3; method' None (int </> int) ==> handler2 ] in
   Alcotest.(check (option string))
     "Match handler 2"
     (Some "Handler 2")
