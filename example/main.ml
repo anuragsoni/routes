@@ -53,7 +53,7 @@ let routes =
 
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.match' ~req ~target:req.target ~meth:req.meth routes with
+  match Routes.match' ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
   | Some response -> respond_with_text reqd `OK response

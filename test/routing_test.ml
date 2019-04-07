@@ -1,5 +1,3 @@
-type request = Request
-
 let idx () = "Matched"
 let handler1 name age () = Printf.sprintf "%s %d" name age
 let handler2 (_ : int) (_ : int) () = "Handler 2"
@@ -10,11 +8,11 @@ let test_no_match () =
   Alcotest.(check (option string))
     "Empty routes have no match"
     None
-    (match' ~req:Request ~target:"/foo/bar" ~meth:`GET []);
+    (match' ~target:"/foo/bar" ~meth:`GET []);
   Alcotest.(check (option string))
     "Empty routes with empty target"
     None
-    (match' ~req:Request ~target:"" ~meth:`GET [])
+    (match' ~target:"" ~meth:`GET [])
 ;;
 
 let test_method_match () =
@@ -23,11 +21,11 @@ let test_method_match () =
   Alcotest.(check (option string))
     "Matches handler with get method"
     (Some "Matched")
-    (match' ~req:Request ~target:"/" ~meth:`GET routes);
+    (match' ~target:"/" ~meth:`GET routes);
   Alcotest.(check (option string))
     "Does not match if method isn't get"
     None
-    (match' ~req:Request ~target:"/" ~meth:`POST routes)
+    (match' ~target:"/" ~meth:`POST routes)
 ;;
 
 let test_extractors () =
@@ -36,12 +34,12 @@ let test_extractors () =
   Alcotest.(check (option string))
     "Can extract string and int GET"
     (Some "James 11")
-    (match' ~req:Request ~target:"/foo/James/11" ~meth:`GET routes);
+    (match' ~target:"/foo/James/11" ~meth:`GET routes);
   (* Since we didn't specify the method constraint it matches for `POST, `PUT etc*)
   Alcotest.(check (option string))
     "Can extract string and int"
     (Some "James 11")
-    (match' ~req:Request ~target:"/foo/James/11" ~meth:`POST routes)
+    (match' ~target:"/foo/James/11" ~meth:`POST routes)
 ;;
 
 let test_strict_match () =
@@ -52,7 +50,7 @@ let test_strict_match () =
   Alcotest.(check (option string))
     "Non strict match"
     None
-    (match' ~req:Request ~target:"foo/James/12/bar" ~meth:`GET routes)
+    (match' ~target:"foo/James/12/bar" ~meth:`GET routes)
 ;;
 
 let test_route_order () =
@@ -66,11 +64,11 @@ let test_route_order () =
   Alcotest.(check (option string))
     "Match handler 2"
     (Some "Handler 2")
-    (match' ~req:Request ~target:"/12/11" ~meth:`GET routes);
+    (match' ~target:"/12/11" ~meth:`GET routes);
   Alcotest.(check (option string))
     "Match handler 3"
     (Some "Handler 3")
-    (match' ~req:Request ~target:"/12/11" ~meth:`GET routes')
+    (match' ~target:"/12/11" ~meth:`GET routes')
 ;;
 
 let test_printing_routes () =

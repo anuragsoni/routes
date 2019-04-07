@@ -1,8 +1,3 @@
-module Fn = struct
-  let id x = x
-  let compose f g x = f (g x)
-end
-
 module Method = struct
   type t =
     [ `GET
@@ -26,18 +21,6 @@ module Method = struct
     | `OPTIONS -> "OPTIONS"
     | `TRACE -> "TRACE"
     | `Other s -> s
-  ;;
-
-  let of_string = function
-    | "GET" -> `GET
-    | "HEAD" -> `HEAD
-    | "POST" -> `POST
-    | "PUT" -> `PUT
-    | "DELETE" -> `DELETE
-    | "CONNECT" -> `CONNECT
-    | "OPTIONS" -> `OPTIONS
-    | "TRACE" -> `TRACE
-    | s -> `Other s
   ;;
 end
 
@@ -138,7 +121,7 @@ let runroute fmt handler meth target =
   match_route fmt handler
 ;;
 
-let match' paths ~req:_ ~target ~meth =
+let match' paths ~target ~meth =
   let open Astring in
   if String.is_empty target
   then None
