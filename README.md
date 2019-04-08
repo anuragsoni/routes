@@ -26,25 +26,20 @@ module Response = struct
   ...
 end
 
-let get_user state (id: int) =
-  (* Request handlers can define their own routes too *)
-  let open Routes in
-  let routes = [ method' (Some `GET) (int64 </> boolean) ==> (fun i b () -> ... ) ] in
-  match_with_state ~state routes with
-  | None -> ...
-  | Some response -> ...
+let get_user (id: int) () =
+  ...
 
 let search_user (name: string) (city : string) () =
   ...
 
 let routes =
   let open Routes in
-  [ empty ==> idx (* matches the index route "/" *)
+  [ s "" ==> fun () - ... (* matches the index route "/" *)
   ; (method' (Some `GET)) (s "user" </> int) ==> get_user (* matches "/user/<int>" *)
-  ; method' None </> (s "user" </> str </> str) ==> search_user (* missing empty so it matches "/user/<str>/<str>" *)
+  ; method' None </> (s "user" </> str </> str) ==> search_user (*  matches "/user/<str>/<str>" *)
   ]
 
-match Routes.match' routes ~req ~target:"/some/url" ~meth:`GET =
+match Routes.match' routes ~target:"/some/url" ~meth:`GET =
 | None -> (* No route matched. Alternative could be to provide default routes *)
 | Some r -> (* Match found. Do something further with handler response *)
 ```
