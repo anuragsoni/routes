@@ -78,6 +78,5 @@ opam pin add routes git+https://github.com/anuragsoni/routes.git
 The combinators are influenced by Rudi Grinberg's wonderful [blogpost](http://rgrinberg.com/posts/primitive-type-safe-routing/) about
 type safe routing done via an EDSL using GADTs + an interpreted for the DSL.
 
-The continuation based approach here is based on:
-* Functional Unparsing: https://www.brics.dk/RS/98/12/BRICS-RS-98-12.pdf
-* Daniel Patterson's talk on typed routing in haskell: https://dbp.io/talks/2016/fn-continuations-haskell-meetup.pdf
+Also thanks to Gabriel Radanne, whose feedback and [blog](https://drup.github.io/2016/08/02/difflists/) is a big help in understanding
+GADTs.

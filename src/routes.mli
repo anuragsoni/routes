@@ -5,7 +5,8 @@
 *)
 
 module Method : sig
-  (** HTTP methods. This is an optional input for route matching. *)
+  (** HTTP methods. This is an optional input for route matching.
+      The current types are chosen to be compatible with what Httpaf uses - {{:link} https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml}. *)
   type t =
     [ `CONNECT
     | `DELETE
