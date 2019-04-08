@@ -36,7 +36,7 @@ let routes =
   let open Routes in
   [ s "" ==> fun () - ... (* matches the index route "/" *)
   ; (method' (Some `GET)) (s "user" </> int) ==> get_user (* matches "/user/<int>" *)
-  ; method' None </> (s "user" </> str </> str) ==> search_user (*  matches "/user/<str>/<str>" *)
+  ; method' None (s "user" </> str </> str) ==> search_user (*  matches "/user/<str>/<str>" *)
   ]
 
 match Routes.match' routes ~target:"/some/url" ~meth:`GET =
