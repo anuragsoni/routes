@@ -29,24 +29,39 @@ end
 let get_user state (id: int) =
   (* Request handlers can define their own routes too *)
   let open Routes in
-  let routes = [ int64 </> boolean </> ==> (fun _ i b -> ... ) ] in
+  let routes = [ method' (Some `GET) (int64 </> boolean) ==> (fun i b () -> ... ) ] in
   match_with_state ~state routes with
   | None -> ...
   | Some response -> ...
 
-let search_user _ (name: string) (city : string) =
+let search_user (name: string) (city : string) () =
   ...
 
 let routes =
   let open Routes in
   [ empty ==> idx (* matches the index route "/" *)
-  ; method' `GET </> s "user" </> int </> empty ==> get_user (* matches "/user/<int>" *)
-  ; method' `GET </> s "user" </> str </> str ==> search_user (* missing empty so it matches "/user/<str>/<str>/*" *)
+  ; (method' (Some `GET)) (s "user" </> int) ==> get_user (* matches "/user/<int>" *)
+  ; method' None </> (s "user" </> str </> str) ==> search_user (* missing empty so it matches "/user/<str>/<str>" *)
   ]
 
 match Routes.match' routes ~req ~target:"/some/url" ~meth:`GET =
 | None -> (* No route matched. Alternative could be to provide default routes *)
 | Some r -> (* Match found. Do something further with handler response *)
+```
+
+`Routes` also provides a sprintf like function to generate formatted URLs. It uses
+the same format description of a route that is used for routing.
+
+```ocaml
+utop # let route = method' None (s "foo" </> int </> str </> bool);;
+- : val route : (int -> string -> bool -> unit -> '_weak1, '_weak1) route =
+  Route (None, S ("foo", S ("/", Int (S ("/", Str (S ("/", Bool End)))))))
+
+utop # sprintf route;;
+- : int -> string -> bool -> unit -> string = <fun>
+
+utop # (sprintf route) 12 "bar" false ();;
+- : string = "foo/12/bar/false"
 ```
 
 ## Installation

@@ -19,57 +19,41 @@ let respond_with_text reqd status text =
 
 module Handlers = struct
   (* The first parameter  *)
-  let greeter router_state id name city b =
-    let (req : Request.t) = Routes.RouterState.get_request router_state in
-    Log.Global.printf
-      "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B"
-      id
-      req.target
-      b;
+  let greeter id name city b () =
+    (* let (req : Request.t) = Routes.RouterState.get_request router_state in *)
+    (* Log.Global.printf *)
+    (*   "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B" *)
+    (*   id *)
+    (*   req.target *)
+    (*   b; *)
     `String ("Hello, " ^ name ^ ". How was your trip to " ^ city ^ "?")
   ;;
 
-  let sum _ a b = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
+  let sum a b () = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
 
-  let return_bigstring _ =
+  let return_bigstring () =
     `Bigstring (Bigstringaf.of_string "Hello world" ~off:0 ~len:11)
   ;;
 
-  let retrieve_user state name id =
-    let req : Request.t = Routes.RouterState.get_request state in
-    Log.Global.printf "Fetching user with name %s and id %ld." name id;
-    `String req.target
-  ;;
-
-  let user_routes state =
-    let open Routes in
-    let routes = [ str </> int32 </> empty ==> retrieve_user ] in
-    match match_with_state ~state routes with
-    | None -> `String "user not found"
-    | Some s -> s
-  ;;
+  (* let retrieve_user state name id = *)
+  (*   let req : Request.t = Routes.RouterState.get_request state in *)
+  (*   Log.Global.printf "Fetching user with name %s and id %ld." name id; *)
+  (*   `String req.target *)
+  (* ;; *)
 end
 
 let routes =
   let open Routes in
   let open Handlers in
-  [ empty ==> return_bigstring
-  ; method' `GET
-    </> s "greet"
-    </> int64
-    </> str
-    </> str
-    </> boolean
-    </> empty
-    ==> greeter
-  ; method' `GET </> s "sum" </> int </> int </> empty ==> sum
-  ; method' `GET </> s "user" ==> user_routes
+  [ method' None (s "") ==> return_bigstring
+  ; method' (Some `GET) (s "greet" </> int64 </> str </> str </> bool) ==> greeter
+  ; method' (Some `GET) (s "sum" </> int </> int) ==> sum
   ]
 ;;
 
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.match' ~req ~target:req.target ~meth:req.meth routes with
+  match Routes.match' ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
   | Some response -> respond_with_text reqd `OK response
