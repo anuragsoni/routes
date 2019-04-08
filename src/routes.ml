@@ -40,7 +40,6 @@ let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
  fun k -> function
   | End -> fun () -> k ""
   | S (const, fmt) -> print_params (fun s -> k @@ String.concat "" [ const; s ]) fmt
-  (* | Meth (_, fmt) -> print_params (fun _ -> k "") fmt *)
   | Str fmt ->
     let f s = print_params (fun str -> k @@ String.concat "" [ s; str ]) fmt in
     f
