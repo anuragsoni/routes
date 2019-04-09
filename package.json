@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@opam/astring": "0.8.3",
+    "@opam/dune": "*",
+    "ocaml": "*"
+  },
+  "devDependencies": {
+    "@opam/alcotest": "*",
+    "@opam/httpaf": "*",
+    "@opam/httpaf-async": "*"
+  },
+  "esy": { "build": "dune build" },
+  "scripts": {
+    "test": "esy dune runtest -f",
+    "buildExample": "esy dune build example/main.exe --profile=release"
+  }
+}
