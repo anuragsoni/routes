@@ -20,6 +20,14 @@ module Method : sig
     ]
 end
 
+module RouterState : sig
+  (** This will be comprised of the query params (unparsed for now)
+      that were part of the route. *)
+  type t
+
+  val query : t -> string
+end
+
 (** [path] represents the combination of all path params that are expected in a route. *)
 type ('a, 'b) path
 
@@ -34,10 +42,10 @@ val sprintf : ('a, string) route -> 'a
     http method. If there is a match it returns the output of the handler
     registered with a route. Otherwise it returns a `None`. *)
 val match'
-  :  ('a -> Astring.String.sub -> ('b * 'c) option) list
+  :  ('a -> Astring.String.sub -> (unit -> 'b) option) list
   -> target:string
   -> meth:'a
-  -> 'b option
+  -> ('b * RouterState.t) option
 
 (** [int] will match and extract an integer value that will be forwarded to
     the request handler. *)
@@ -83,4 +91,4 @@ val ( ==> )
   -> 'a
   -> Method.t
   -> Astring.String.Sub.t
-  -> ('b * Astring.String.Sub.t) option
+  -> (unit -> 'b) option
