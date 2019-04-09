@@ -41,7 +41,7 @@ let routes =
 
 match Routes.match' routes ~target:"/some/url" ~meth:`GET =
 | None -> (* No route matched. Alternative could be to provide default routes *)
-| Some r -> (* Match found. Do something further with handler response *)
+| Some (r, _router_state) -> (* Match found. Do something further with handler response *)
 ```
 
 `Routes` also provides a sprintf like function to generate formatted URLs. It uses
