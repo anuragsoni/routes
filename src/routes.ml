@@ -24,6 +24,12 @@ module Method = struct
   ;;
 end
 
+module RouterState = struct
+  type t = { query : string }
+
+  let query t = t.query
+end
+
 type ('a, 'b) path =
   | End : (unit -> 'a, 'a) path
   | S : string * ('a, 'b) path -> ('a, 'b) path
@@ -81,11 +87,11 @@ let target_consumed t = Astring.String.Sub.is_empty t
 let runroute fmt handler meth target =
   let open Astring in
   let rec match_target : type a b.
-      (a, b) path -> a -> Astring.String.Sub.t -> (b * Astring.String.Sub.t) option
+      (a, b) path -> a -> Astring.String.Sub.t -> (unit -> b) option
     =
    fun t f s ->
     match t with
-    | End -> if target_consumed s then Some (f (), s) else None
+    | End -> if target_consumed s then Some f else None
     | S (x, fmt) ->
       (match Parse.drop_prefix x s with
       | None -> None
@@ -110,7 +116,7 @@ let runroute fmt handler meth target =
       (match (Parse.filter_map ~f:String.to_bool Parse.take_token) s with
       | None -> None
       | Some (b, rest') -> match_target fmt (f b) rest')
-  and match_route : type a b. (a, b) route -> a -> (b * Astring.String.Sub.t) option =
+  and match_route : type a b. (a, b) route -> a -> (unit -> b) option =
    fun t f ->
     match t with
     | Route (m, r) ->
@@ -127,6 +133,8 @@ let match' paths ~target ~meth =
   then None
   else (
     let target' = String.sub target in
+    let target', query = String.Sub.span ~sat:(fun x -> x <> '?') target' in
+    let query = String.Sub.to_string (String.Sub.tail query) in
     let target' =
       match String.Sub.get target' 0 with
       | '/' -> String.Sub.tail target'
@@ -137,7 +145,7 @@ let match' paths ~target ~meth =
       | p :: ps ->
         (match p meth target' with
         | None -> route' ps
-        | Some (r, _) -> Some r)
+        | Some f -> Some (f (), { RouterState.query }))
     in
     route' paths)
 ;;

@@ -56,7 +56,7 @@ let request_handler _ reqd =
   match Routes.match' ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
-  | Some response -> respond_with_text reqd `OK response
+  | Some (response, _state) -> respond_with_text reqd `OK response
 ;;
 
 let error_handler _ ?request:_ error start_response =
