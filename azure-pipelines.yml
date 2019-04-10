@@ -10,10 +10,6 @@ jobs:
 - job: Linux
   pool:
     vmImage: 'Ubuntu-16.04'
-  container: 'ocaml/opam2'
   steps:
-  - script: |
-      opam install astring alcotest odoc
-      dune build
-      dune runtest -f
-      dune build @doc
+  - script: ./.ci/routes.sh
+    displayName: Build
