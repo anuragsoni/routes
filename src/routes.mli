@@ -4,6 +4,9 @@
     of any particular web framework or runtime.
 *)
 
+(** [s] is the string type used internally by the URL parser. *)
+type s
+
 module Method : sig
   (** HTTP methods. This is an optional input for route matching.
       The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
@@ -42,7 +45,7 @@ val sprintf : ('a, string) route -> 'a
     http method. If there is a match it returns the output of the handler
     registered with a route. Otherwise it returns a `None`. *)
 val match'
-  :  ('a -> Astring.String.sub -> (unit -> 'b) option) list
+  :  ('a -> s -> (unit -> 'b) option) list
   -> target:string
   -> meth:'a
   -> ('b * RouterState.t) option
@@ -90,5 +93,5 @@ val ( ==> )
   :  ('a, 'b) route
   -> 'a
   -> Method.t
-  -> Astring.String.Sub.t
+  -> s
   -> (unit -> 'b) option
