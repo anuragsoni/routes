@@ -1,3 +1,5 @@
+type s = Rstring.t
+
 module Method = struct
   type t =
     [ `GET
@@ -82,30 +84,28 @@ and print_route : type a b. (string -> b) -> (a, b) route -> a =
 ;;
 
 let sprintf fmt = print_route (fun x -> x) fmt
-let target_consumed t = Astring.String.Sub.is_empty t
 
 let runroute fmt handler meth target =
-  let open Astring in
   let rec match_target : type a b.
-      (a, b) path -> a -> Astring.String.Sub.t -> (unit -> b) option
+      (a, b) path -> a -> s -> (unit -> b) option
     =
    fun t f s ->
     match t with
-    | End -> if target_consumed s then Some f else None
+    | End -> if Rstring.is_empty s then Some f else None
     | S (x, fmt) ->
       (match Parse.drop_prefix x s with
       | None -> None
       | Some (_, rest) -> match_target fmt f rest)
     | Int fmt ->
-      (match (Parse.filter_map ~f:String.to_int Parse.take_token) s with
+      (match (Parse.filter_map ~f:Rstring.to_int Parse.take_token) s with
       | None -> None
       | Some (i, rest') -> match_target fmt (f i) rest')
     | Int32 fmt ->
-      (match (Parse.filter_map ~f:String.to_int32 Parse.take_token) s with
+      (match (Parse.filter_map ~f:Rstring.to_int32 Parse.take_token) s with
       | None -> None
       | Some (i, rest') -> match_target fmt (f i) rest')
     | Int64 fmt ->
-      (match (Parse.filter_map ~f:String.to_int64 Parse.take_token) s with
+      (match (Parse.filter_map ~f:Rstring.to_int64 Parse.take_token) s with
       | None -> None
       | Some (i, rest') -> match_target fmt (f i) rest')
     | Str fmt ->
@@ -113,7 +113,7 @@ let runroute fmt handler meth target =
       | None -> None
       | Some (w, rest') -> match_target fmt (f w) rest')
     | Bool fmt ->
-      (match (Parse.filter_map ~f:String.to_bool Parse.take_token) s with
+      (match (Parse.filter_map ~f:Rstring.to_bool Parse.take_token) s with
       | None -> None
       | Some (b, rest') -> match_target fmt (f b) rest')
   and match_route : type a b. (a, b) route -> a -> (unit -> b) option =
@@ -128,16 +128,15 @@ let runroute fmt handler meth target =
 ;;
 
 let match' paths ~target ~meth =
-  let open Astring in
-  if String.is_empty target
+  if String.length target = 0
   then None
   else (
-    let target' = String.sub target in
-    let target', query = String.Sub.span ~sat:(fun x -> x <> '?') target' in
-    let query = String.Sub.to_string (String.Sub.tail query) in
+    let target' = Rstring.of_string target in
+    let target', query = Rstring.take_while ~f:(fun x -> x <> '?') target' in
+    let query = Rstring.to_string (Rstring.tail query) in
     let target' =
-      match String.Sub.get target' 0 with
-      | '/' -> String.Sub.tail target'
+      match Rstring.get target' 0 with
+      | '/' -> Rstring.tail target'
       | _ -> target'
     in
     let rec route' = function

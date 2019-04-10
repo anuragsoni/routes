@@ -1,28 +1,10 @@
-open Astring
+type 'a t = Rstring.t -> ('a * Rstring.t) option
 
-module StringUtils = struct
-  let drop_while ~f t = String.Sub.drop ~sat:f t
-
-  let drop_prefix prefix t =
-    let len = String.length prefix in
-    if String.Sub.is_prefix ~affix:(String.sub prefix) t
-    then Some (String.Sub.drop ~max:len t)
-    else None
-  ;;
-
-  let take_while ~f t =
-    let take, rest = String.Sub.span ~sat:f t in
-    Some (String.Sub.to_string take, rest)
-  ;;
-end
-
-type 'a t = String.Sub.t -> ('a * String.Sub.t) option
-
-let drop_while ~f t = Some ((), StringUtils.drop_while ~f t)
-let take_while ~f t = StringUtils.take_while ~f t
+let drop_while ~f t = Some ((), Rstring.drop_while ~f t)
+let take_while ~f t = Rstring.take_while_opt ~f t
 
 let drop_prefix prefix t =
-  match StringUtils.drop_prefix prefix t with
+  match Rstring.drop_prefix prefix t with
   | None -> None
   | Some r -> Some ((), r)
 ;;
