@@ -12,9 +12,8 @@ build: [
   ["dune" "runtest" "-p" name] {with-test}
 ]
 depends: [
-  "ocaml" {>= "4.04.2"}
+  "ocaml" {>= "4.05.0"}
   "dune" {build}
-  "astring"
   "alcotest" {with-test}
 ]
 synopsis: "Typed routing for OCaml applications"

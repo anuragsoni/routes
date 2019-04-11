@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@opam/astring": "0.8.3",
     "@opam/dune": "*",
     "ocaml": "*"
   },
