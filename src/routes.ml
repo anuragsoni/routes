@@ -86,9 +86,7 @@ and print_route : type a b. (string -> b) -> (a, b) route -> a =
 let sprintf fmt = print_route (fun x -> x) fmt
 
 let runroute fmt handler meth target =
-  let rec match_target : type a b.
-      (a, b) path -> a -> s -> (unit -> b) option
-    =
+  let rec match_target : type a b. (a, b) path -> a -> s -> (unit -> b) option =
    fun t f s ->
     match t with
     | End -> if Rstring.is_empty s then Some f else None

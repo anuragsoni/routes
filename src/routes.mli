@@ -89,9 +89,4 @@ val method'
 (** [==>] connects a route matcher to a user provided handler.
     The handler will receive any params that
     were extracted while parsing the route. *)
-val ( ==> )
-  :  ('a, 'b) route
-  -> 'a
-  -> Method.t
-  -> s
-  -> (unit -> 'b) option
+val ( ==> ) : ('a, 'b) route -> 'a -> Method.t -> s -> (unit -> 'b) option
