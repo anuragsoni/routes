@@ -41,7 +41,12 @@ type ('a, 'b) path =
   | Bool : ('a, 'b) path -> (bool -> 'a, 'b) path
   | Str : ('a, 'b) path -> (string -> 'a, 'b) path
 
-and ('a, 'b) route = Route : Method.t option * ('a, 'b) path -> ('a, 'b) route
+and ('a, 'b) req = Req : Method.t option * ('a, 'b) path -> ('a, 'b) req
+
+type 'b route = Route : ('a, 'b) req * 'a -> 'b route
+
+let route u handler = Route (u, handler)
+let ( ==> ) = route
 
 (* Based on https://drup.github.io/2016/08/02/difflists/ *)
 let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
@@ -72,9 +77,9 @@ let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
     in
     f
 
-and print_route : type a b. (string -> b) -> (a, b) route -> a =
+and print_request : type a b. (string -> b) -> (a, b) req -> a =
  fun k -> function
-  | Route (m, r) ->
+  | Req (m, r) ->
     print_params
       (fun s ->
         match m with
@@ -83,9 +88,9 @@ and print_route : type a b. (string -> b) -> (a, b) route -> a =
       r
 ;;
 
-let sprintf fmt = print_route (fun x -> x) fmt
+let sprintf fmt = print_request (fun x -> x) fmt
 
-let runroute fmt handler meth target =
+let parse_route fmt handler meth target =
   let rec match_target : type a b. (a, b) path -> a -> s -> (unit -> b) option =
    fun t f s ->
     match t with
@@ -114,10 +119,10 @@ let runroute fmt handler meth target =
       (match (Parse.filter_map ~f:Rstring.to_bool Parse.take_token) s with
       | None -> None
       | Some (b, rest') -> match_target fmt (f b) rest')
-  and match_route : type a b. (a, b) route -> a -> (unit -> b) option =
+  and match_route : type a b. (a, b) req -> a -> (unit -> b) option =
    fun t f ->
     match t with
-    | Route (m, r) ->
+    | Req (m, r) ->
       (match m with
       | None -> match_target r f target
       | Some m' -> if m' = meth then match_target r f target else None)
@@ -137,10 +142,13 @@ let match' paths ~target ~meth =
       | '/' -> Rstring.tail target'
       | _ -> target'
     in
+    (* eventually we should pre-preprocess the list of routes to get more optimized matching.
+       We really should have something better than matching one route at a time.
+    *)
     let rec route' = function
       | [] -> None
-      | p :: ps ->
-        (match p meth target' with
+      | Route (r, h) :: ps ->
+        (match parse_route r h meth target' with
         | None -> route' ps
         | Some f -> Some (f (), { RouterState.query }))
     in
@@ -154,8 +162,8 @@ let int64 r = Int64 r
 let str r = Str r
 let bool r = Bool r
 let s w r = S (w, r)
-let ( </> ) m1 m2 r = m1 @@ s "/" @@ m2 r
+let slash m1 m2 r = m1 @@ s "/" @@ m2 r
+let ( </> ) = slash
 
 (* Public api to construct Routes *)
-let method' meth r = Route (meth, r End)
-let ( ==> ) route handler = runroute route handler
+let method' meth r = Req (meth, r End)

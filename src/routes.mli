@@ -35,20 +35,22 @@ end
 type ('a, 'b) path
 
 (** [route] represents a combination of an optional HTTP method and path parameters. *)
-type ('a, 'b) route
+type ('a, 'b) req
+
+type 'b route
 
 (** [sprintf] acceps a [route] that acts like a "format string". It will
     return a function that the user can use to output formatted URLs. *)
-val sprintf : ('a, string) route -> 'a
+val sprintf : ('a, string) req -> 'a
 
 (** [match'] acceps a list of route descriptions, target url and a
     http method. If there is a match it returns the output of the handler
     registered with a route. Otherwise it returns a `None`. *)
 val match'
-  :  ('a -> s -> (unit -> 'b) option) list
+  :  'a route list
   -> target:string
-  -> meth:'a
-  -> ('b * RouterState.t) option
+  -> meth:Method.t
+  -> ('a * RouterState.t) option
 
 (** [int] will match and extract an integer value that will be forwarded to
     the request handler. *)
@@ -79,14 +81,17 @@ val s : string -> ('a, 'b) path -> ('a, 'b) path
     If any of the parsers fail, the whole route matching fails. *)
 val ( </> ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
+(** [slash] is an alternate name for [</>] *)
+val slash : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
+
 (** [method'] connects an HTTP method to a path parameters, and forms
     a complete route. *)
-val method'
-  :  Method.t option
-  -> ((unit -> 'a, 'a) path -> ('b, 'c) path)
-  -> ('b, 'c) route
+val method' : Method.t option -> ((unit -> 'a, 'a) path -> ('b, 'c) path) -> ('b, 'c) req
 
 (** [==>] connects a route matcher to a user provided handler.
     The handler will receive any params that
     were extracted while parsing the route. *)
-val ( ==> ) : ('a, 'b) route -> 'a -> Method.t -> s -> (unit -> 'b) option
+val ( ==> ) : ('a, 'b) req -> 'a -> 'b route
+
+(** [route] is an alternate name for [==>] *)
+val route : ('a, 'b) req -> 'a -> 'b route
