@@ -43,6 +43,8 @@ type 'b route
     return a function that the user can use to output formatted URLs. *)
 val sprintf : ('a, string) req -> 'a
 
+val pp_hum : Format.formatter -> ('a, 'b) req -> unit [@@ocaml.toplevel_printer]
+
 (** [match'] acceps a list of route descriptions, target url and a
     http method. If there is a match it returns the output of the handler
     registered with a route. Otherwise it returns a `None`. *)

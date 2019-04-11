@@ -88,6 +88,39 @@ and print_request : type a b. (string -> b) -> (a, b) req -> a =
       r
 ;;
 
+let rec pp_path : type a b. Format.formatter -> (a, b) path -> unit =
+ fun fmt -> function
+  | End -> Format.fprintf fmt ""
+  | S (x, rest) ->
+    Format.fprintf fmt "%s" x;
+    pp_path fmt rest
+  | Int rest ->
+    Format.fprintf fmt "<int>";
+    pp_path fmt rest
+  | Int32 rest ->
+    Format.fprintf fmt "<int32>";
+    pp_path fmt rest
+  | Int64 rest ->
+    Format.fprintf fmt "<int64>";
+    pp_path fmt rest
+  | Bool rest ->
+    Format.fprintf fmt "<bool>";
+    pp_path fmt rest
+  | Str rest ->
+    Format.fprintf fmt "<string>";
+    pp_path fmt rest
+;;
+
+let pp_hum : type a b. Format.formatter -> (a, b) req -> unit =
+ fun fmt -> function
+  | Req (m, r) ->
+    (match m with
+    | None -> pp_path fmt r
+    | Some m' ->
+      Format.fprintf fmt "Method: %s " (Method.to_string m');
+      pp_path fmt r)
+;;
+
 let sprintf fmt = print_request (fun x -> x) fmt
 
 let parse_route fmt handler meth target =
