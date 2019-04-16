@@ -35,15 +35,14 @@ end
 type ('a, 'b) path
 
 (** [route] represents a combination of an optional HTTP method and path parameters. *)
-type ('a, 'b) req
-
 type 'b route
 
 (** [sprintf] acceps a [route] that acts like a "format string". It will
     return a function that the user can use to output formatted URLs. *)
-val sprintf : ('a, string) req -> 'a
+val sprintf : ('a, string) path -> 'a
 
-val pp_hum : Format.formatter -> ('a, 'b) req -> unit [@@ocaml.toplevel_printer]
+val pp_hum : Format.formatter -> Method.t option * ('a, 'b) path -> unit
+  [@@ocaml.toplevel_printer]
 
 (** [match'] acceps a list of route descriptions, target url and a
     http method. If there is a match it returns the output of the handler
@@ -88,12 +87,15 @@ val slash : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
 (** [method'] connects an HTTP method to a path parameters, and forms
     a complete route. *)
-val method' : Method.t option -> ((unit -> 'a, 'a) path -> ('b, 'c) path) -> ('b, 'c) req
+val method'
+  :  Method.t option
+  -> ((unit -> 'a, 'a) path -> ('b, 'c) path)
+  -> Method.t option * ('b, 'c) path
 
 (** [==>] connects a route matcher to a user provided handler.
     The handler will receive any params that
     were extracted while parsing the route. *)
-val ( ==> ) : ('a, 'b) req -> 'a -> 'b route
+val ( ==> ) : Method.t option * ('a, 'b) path -> 'a -> 'b route
 
 (** [route] is an alternate name for [==>] *)
-val route : ('a, 'b) req -> 'a -> 'b route
+val route : Method.t option * ('a, 'b) path -> 'a -> 'b route
