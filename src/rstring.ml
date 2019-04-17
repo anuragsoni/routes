@@ -1,27 +1,19 @@
-type t =
-  { str : String.t
-  ; off : int
-  ; len : int
-  }
+type t = String.t
 
-let of_string x = { str = x; off = 0; len = String.length x }
-let get t i = t.str.[t.off + i]
-let length t = t.len - t.off
-let empty = { str = ""; off = 0; len = 0 }
-
-let to_string t =
-  let len = length t in
-  StringLabels.sub t.str ~pos:t.off ~len
-;;
+let of_string x = x
+let get t i = t.[i]
+let length t = String.length t
+let empty = ""
+let to_string t = t
 
 let drop_i t i =
   let len = length t in
-  if i > len then empty else { t with off = t.off + i }
+  if i > len then empty else String.sub t i (len - i)
 ;;
 
 let take_i t i =
   let len = length t in
-  if i > len then t else { t with len = t.off + i }
+  if i > len then t else String.sub t 0 i
 ;;
 
 let take_while_i t ~f =
