@@ -23,19 +23,11 @@ module Method : sig
     ]
 end
 
-module RouterState : sig
-  (** This will be comprised of the query params (unparsed for now)
-      that were part of the route. *)
-  type t
-
-  val query : t -> string
-end
-
 (** [path] represents the combination of all path params that are expected in a route. *)
 type ('a, 'b) path
 
 (** [route] represents a combination of an optional HTTP method and path parameters. *)
-type 'b route
+type ('req, 'b) route
 
 (** [sprintf] acceps a [route] that acts like a "format string". It will
     return a function that the user can use to output formatted URLs. *)
@@ -48,10 +40,11 @@ val pp_hum : Format.formatter -> Method.t option * ('a, 'b) path -> unit
     http method. If there is a match it returns the output of the handler
     registered with a route. Otherwise it returns a `None`. *)
 val match'
-  :  'a route list
+  :  ('req, 'a) route list
   -> target:string
   -> meth:Method.t
-  -> ('a * RouterState.t) option
+  -> req:'req
+  -> 'a option
 
 (** [int] will match and extract an integer value that will be forwarded to
     the request handler. *)
@@ -95,7 +88,7 @@ val method'
 (** [==>] connects a route matcher to a user provided handler.
     The handler will receive any params that
     were extracted while parsing the route. *)
-val ( ==> ) : Method.t option * ('a, 'b) path -> 'a -> 'b route
+val ( ==> ) : Method.t option * ('a, 'b) path -> ('req -> 'a) -> ('req, 'b) route
 
 (** [route] is an alternate name for [==>] *)
-val route : Method.t option * ('a, 'b) path -> 'a -> 'b route
+val route : Method.t option * ('a, 'b) path -> ('req -> 'a) -> ('req, 'b) route
