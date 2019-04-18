@@ -26,12 +26,6 @@ module Method = struct
   ;;
 end
 
-module RouterState = struct
-  type t = { query : string }
-
-  let query t = t.query
-end
-
 type ('a, 'b) path =
   | End : (unit -> 'a, 'a) path
   | S : string * ('a, 'b) path -> ('a, 'b) path
@@ -41,7 +35,8 @@ type ('a, 'b) path =
   | Bool : ('a, 'b) path -> (bool -> 'a, 'b) path
   | Str : ('a, 'b) path -> (string -> 'a, 'b) path
 
-type 'b route = Route : Method.t option * ('a, 'b) path * 'a -> 'b route
+type ('req, 'b) route =
+  | Route : Method.t option * ('a, 'b) path * ('req -> 'a) -> ('req, 'b) route
 
 let route (m, r) handler = Route (m, r, handler)
 let ( ==> ) = route
@@ -144,13 +139,12 @@ let parse_route fmt handler target =
   match_target fmt handler target
 ;;
 
-let match' paths ~target ~meth =
+let match' paths ~target ~meth ~req =
   if String.length target = 0
   then None
   else (
     let target' = Rstring.of_string target in
-    let target', query = Rstring.take_while ~f:(fun x -> x <> '?') target' in
-    let query = Rstring.to_string (Rstring.tail query) in
+    let target', _ = Rstring.take_while ~f:(fun x -> x <> '?') target' in
     let target' =
       match Rstring.get target' 0 with
       | '/' -> Rstring.tail target'
@@ -168,9 +162,9 @@ let match' paths ~target ~meth =
       | Route (m, r, h) :: ps ->
         if method_matched meth m
         then (
-          match parse_route r h target' with
+          match parse_route r (h req) target' with
           | None -> route' ps
-          | Some f -> Some (f (), { RouterState.query }))
+          | Some f -> Some (f ()))
         else route' ps
     in
     route' paths)

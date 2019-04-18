@@ -1,10 +1,14 @@
-let idx () = "Matched"
-let handler1 name age () = Printf.sprintf "%s %d" name age
-let handler2 (_ : int) (_ : int) () = "Handler 2"
-let handler3 (_ : int) (_ : int) () = "Handler 3"
+let idx _ () = "Matched"
+let handler1 _ name age () = Printf.sprintf "%s %d" name age
+let handler2 _ (_ : int) (_ : int) () = "Handler 2"
+let handler3 _ (_ : int) (_ : int) () = "Handler 3"
+
+type req = Req
+
+let req = Req
 
 let extract_response = function
-  | Some (r, _) -> Some r
+  | Some r -> Some r
   | None -> failwith "Invalid response"
 ;;
 
@@ -18,11 +22,11 @@ let test_no_match () =
   Alcotest.(check (option string))
     "Empty routes have no match"
     None
-    (extract_none_response (match' ~target:"/foo/bar" ~meth:`GET []));
+    (extract_none_response (match' ~req ~target:"/foo/bar" ~meth:`GET []));
   Alcotest.(check (option string))
     "Empty routes with empty target"
     None
-    (extract_none_response (match' ~target:"" ~meth:`GET []))
+    (extract_none_response (match' ~req ~target:"" ~meth:`GET []))
 ;;
 
 let test_method_match () =
@@ -31,11 +35,11 @@ let test_method_match () =
   Alcotest.(check (option string))
     "Matches handler with get method"
     (Some "Matched")
-    (extract_response (match' ~target:"/" ~meth:`GET routes));
+    (extract_response (match' ~req ~target:"/" ~meth:`GET routes));
   Alcotest.(check (option string))
     "Does not match if method isn't get"
     None
-    (extract_none_response (match' ~target:"/" ~meth:`POST routes))
+    (extract_none_response (match' ~req ~target:"/" ~meth:`POST routes))
 ;;
 
 let test_extractors () =
@@ -44,12 +48,12 @@ let test_extractors () =
   Alcotest.(check (option string))
     "Can extract string and int GET"
     (Some "James 11")
-    (extract_response (match' ~target:"/foo/James/11" ~meth:`GET routes));
+    (extract_response (match' ~req ~target:"/foo/James/11" ~meth:`GET routes));
   (* Since we didn't specify the method constraint it matches for `POST, `PUT etc*)
   Alcotest.(check (option string))
     "Can extract string and int"
     (Some "James 11")
-    (extract_response (match' ~target:"/foo/James/11" ~meth:`POST routes))
+    (extract_response (match' ~req ~target:"/foo/James/11" ~meth:`POST routes))
 ;;
 
 let test_strict_match () =
@@ -60,7 +64,7 @@ let test_strict_match () =
   Alcotest.(check (option string))
     "Non strict match"
     None
-    (extract_none_response (match' ~target:"foo/James/12/bar" ~meth:`GET routes))
+    (extract_none_response (match' ~req ~target:"foo/James/12/bar" ~meth:`GET routes))
 ;;
 
 let test_route_order () =
@@ -74,11 +78,11 @@ let test_route_order () =
   Alcotest.(check (option string))
     "Match handler 2"
     (Some "Handler 2")
-    (extract_response (match' ~target:"/12/11" ~meth:`GET routes));
+    (extract_response (match' ~req ~target:"/12/11" ~meth:`GET routes));
   Alcotest.(check (option string))
     "Match handler 3"
     (Some "Handler 3")
-    (extract_response (match' ~target:"/12/11" ~meth:`GET routes'))
+    (extract_response (match' ~req ~target:"/12/11" ~meth:`GET routes'))
 ;;
 
 let test_printing_routes () =

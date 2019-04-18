@@ -19,19 +19,18 @@ let respond_with_text reqd status text =
 
 module Handlers = struct
   (* The first parameter  *)
-  let greeter id name city b () =
-    (* let (req : Request.t) = Routes.RouterState.get_request router_state in *)
-    (* Log.Global.printf *)
-    (*   "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B" *)
-    (*   id *)
-    (*   req.target *)
-    (*   b; *)
+  let greeter (req : Request.t) id name city b () =
+    Log.Global.printf
+      "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B"
+      id
+      req.target
+      b;
     `String ("Hello, " ^ name ^ ". How was your trip to " ^ city ^ "?")
   ;;
 
-  let sum a b () = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
+  let sum _ a b () = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
 
-  let return_bigstring () =
+  let return_bigstring _ () =
     `Bigstring (Bigstringaf.of_string "Hello world" ~off:0 ~len:11)
   ;;
 
@@ -53,10 +52,10 @@ let routes =
 
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.match' ~target:req.target ~meth:req.meth routes with
+  match Routes.match' ~req ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
-  | Some (response, _state) -> respond_with_text reqd `OK response
+  | Some response -> respond_with_text reqd `OK response
 ;;
 
 let error_handler _ ?request:_ error start_response =
