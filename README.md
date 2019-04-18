@@ -16,47 +16,42 @@ like [incr_dom](https://github.com/janestreet/incr_dom) or [ocaml-vdom](https://
 #### Example
 
 ```ocaml
-module Request = struct
-  type t
-  ...
-end
+# #require "routes";;
+# type req = Req;;
+type req = Req
 
-module Response = struct
-  type t
-  ...
-end
+# let idx (_ : req) () = "root";;
+val idx : req -> unit -> string = <fun>
 
-let get_user (id: int) () =
-  ...
+# let get_user (_req : req) (id: int) () = "Fetch user with id: " ^ (string_of_int id);;
+val get_user : req -> int -> unit -> string = <fun>
 
-let search_user (name: string) (city : string) () =
-  ...
+# let search_user (_req : req) (name: string) (city : string) () = "search for user";;
+val search_user : req -> string -> string -> unit -> string = <fun>
 
-let routes =
+# let routes =
   let open Routes in
-  [ s "" ==> fun () - ... (* matches the index route "/" *)
-  ; (method' (Some `GET)) (s "user" </> int) ==> get_user (* matches "/user/<int>" *)
+  [ method' None (s "") ==> idx (* matches the index route "/" *)
+  ; method' (Some `GET) (s "user" </> int) ==> get_user (* matches "/user/<int>" *)
   ; method' None (s "user" </> str </> str) ==> search_user (*  matches "/user/<str>/<str>" *)
   ]
+val routes : (req, string) Routes.route list = [<abstr>; <abstr>; <abstr>]
 
-match Routes.match' routes ~target:"/some/url" ~meth:`GET =
-| None -> (* No route matched. Alternative could be to provide default routes *)
-| Some (r, _router_state) -> (* Match found. Do something further with handler response *)
+# match Routes.match' ~req:Req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
+- : string = "No match"
+
+# match Routes.match' ~req:Req routes ~target:"/user/12" ~meth:`GET with None -> "No match" | Some r -> r;;
+- : string = "Fetch user with id: 12"
 ```
 
 `Routes` also provides a sprintf like function to generate formatted URLs. It uses
 the same format description of a route that is used for routing.
 
 ```ocaml
-utop # let route = method' None (s "foo" </> int </> str </> bool);;
-- : val route : (int -> string -> bool -> unit -> '_weak1, '_weak1) route =
-  Route (None, S ("foo", S ("/", Int (S ("/", Str (S ("/", Bool End)))))))
+# open Routes;;
 
-utop # sprintf route;;
-- : int -> string -> bool -> unit -> string = <fun>
-
-utop # (sprintf route) 12 "bar" false ();;
-- : string = "foo/12/bar/false"
+# (sprintf (method' None (s "user" </> int </> bool))) 12 false ();;
+- : string = "user/12/false"
 ```
 
 ## Installation

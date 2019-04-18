@@ -26,12 +26,15 @@ end
 (** [path] represents the combination of all path params that are expected in a route. *)
 type ('a, 'b) path
 
+(** [resource] is a combination of an optional HTTP verb with path combinators. *)
+type ('a, 'b) resource
+
 (** [route] represents a combination of an optional HTTP method and path parameters. *)
 type ('req, 'b) route
 
 (** [sprintf] acceps a [route] that acts like a "format string". It will
     return a function that the user can use to output formatted URLs. *)
-val sprintf : ('a, string) path -> 'a
+val sprintf : ('a, string) resource -> 'a
 
 val pp_hum : Format.formatter -> Method.t option * ('a, 'b) path -> unit
   [@@ocaml.toplevel_printer]
@@ -83,12 +86,12 @@ val slash : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 val method'
   :  Method.t option
   -> ((unit -> 'a, 'a) path -> ('b, 'c) path)
-  -> Method.t option * ('b, 'c) path
+  -> ('b, 'c) resource
 
 (** [==>] connects a route matcher to a user provided handler.
     The handler will receive any params that
     were extracted while parsing the route. *)
-val ( ==> ) : Method.t option * ('a, 'b) path -> ('req -> 'a) -> ('req, 'b) route
+val ( ==> ) : ('a, 'b) resource -> ('req -> 'a) -> ('req, 'b) route
 
 (** [route] is an alternate name for [==>] *)
-val route : Method.t option * ('a, 'b) path -> ('req -> 'a) -> ('req, 'b) route
+val route : ('a, 'b) resource -> ('req -> 'a) -> ('req, 'b) route

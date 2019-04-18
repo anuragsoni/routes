@@ -38,6 +38,8 @@ type ('a, 'b) path =
 type ('req, 'b) route =
   | Route : Method.t option * ('a, 'b) path * ('req -> 'a) -> ('req, 'b) route
 
+type ('a, 'b) resource = Method.t option * ('a, 'b) path
+
 let route (m, r) handler = Route (m, r, handler)
 let ( ==> ) = route
 
@@ -104,7 +106,7 @@ let pp_hum : type a b. Format.formatter -> Method.t option * (a, b) path -> unit
       pp_path fmt r)
 ;;
 
-let sprintf fmt = print_params (fun x -> x) fmt
+let sprintf (_, fmt) = print_params (fun x -> x) fmt
 
 let parse_route fmt handler target =
   let rec match_target : type a b. (a, b) path -> a -> s -> (unit -> b) option =

@@ -87,7 +87,7 @@ let test_route_order () =
 
 let test_printing_routes () =
   let open Routes in
-  let _, route = method' None (s "user" </> str </> int) in
+  let route = method' None (s "user" </> str </> int) in
   let params = [ "John", 12; "James", 56; "Doe", 11 ] in
   List.iter
     (fun (u, a) ->
