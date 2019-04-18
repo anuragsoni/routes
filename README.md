@@ -23,7 +23,7 @@ type req = Req
 # let idx (_ : req) () = "root";;
 val idx : req -> unit -> string = <fun>
 
-# let get_user (_req : req) (id: int) () = "Fetch user";;
+# let get_user (_req : req) (id: int) () = "Fetch user with id: " ^ (string_of_int id);;
 val get_user : req -> int -> unit -> string = <fun>
 
 # let search_user (_req : req) (name: string) (city : string) () = "search for user";;
@@ -37,9 +37,11 @@ val search_user : req -> string -> string -> unit -> string = <fun>
   ]
 val routes : (req, string) Routes.route list = [<abstr>; <abstr>; <abstr>]
 
-# match Routes.match' ~req:Req routes ~target:"/some/url" ~meth:`GET with
-Characters 72-74:
-Error: Syntax error
+# match Routes.match' ~req:Req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
+- : string = "No match"
+
+# match Routes.match' ~req:Req routes ~target:"/user/12" ~meth:`GET with None -> "No match" | Some r -> r;;
+- : string = "Fetch user with id: 12"
 ```
 
 `Routes` also provides a sprintf like function to generate formatted URLs. It uses
@@ -47,24 +49,9 @@ the same format description of a route that is used for routing.
 
 ```ocaml
 # open Routes;;
-# let route = method' None (s "foo" </> int </> str </> bool);;
-val route :
-  Method.t option * (int -> string -> bool -> unit -> '_weak1, '_weak1) path =
-  (None, <abstr>)
 
-# sprintf route;;
-Characters 8-13:
-Error: This expression has type
-         Method.t option *
-         (int -> string -> bool -> unit -> 'weak1, 'weak1) path
-       but an expression was expected of type ('a, string) path
-
-# (sprintf route) 12 "bar" false ();;
-Characters 9-14:
-Error: This expression has type
-         Method.t option *
-         (int -> string -> bool -> unit -> 'weak1, 'weak1) path
-       but an expression was expected of type ('a, string) path
+# (sprintf (method' None (s "user" </> int </> bool))) 12 false ();;
+- : string = "user/12/false"
 ```
 
 ## Installation
