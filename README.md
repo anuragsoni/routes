@@ -17,13 +17,13 @@ like [incr_dom](https://github.com/janestreet/incr_dom) or [ocaml-vdom](https://
 
 ```ocaml
 # #require "routes";;
-# type req = Req;;
-type req = Req
+# type req = {target: string};;
+type req = { target : string; }
 
 # let idx (_ : req) () = "root";;
 val idx : req -> unit -> string = <fun>
 
-# let get_user (_req : req) (id: int) () = "Fetch user with id: " ^ (string_of_int id);;
+# let get_user (req : req) (id: int) () = Printf.sprintf "Received request from %s to fetch id: %d" req.target id
 val get_user : req -> int -> unit -> string = <fun>
 
 # let search_user (_req : req) (name: string) (city : string) () = "search for user";;
@@ -37,11 +37,14 @@ val search_user : req -> string -> string -> unit -> string = <fun>
   ]
 val routes : (req, string) Routes.route list = [<abstr>; <abstr>; <abstr>]
 
-# match Routes.match' ~req:Req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
+# let req = { target = "/user/12" };;
+val req : req = {target = "/user/12"}
+
+# match Routes.match' ~req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
 - : string = "No match"
 
-# match Routes.match' ~req:Req routes ~target:"/user/12" ~meth:`GET with None -> "No match" | Some r -> r;;
-- : string = "Fetch user with id: 12"
+# match Routes.match' ~req routes ~target:req.target ~meth:`GET with None -> "No match" | Some r -> r;;
+- : string = "Received request from /user/12 to fetch id: 12"
 ```
 
 `Routes` also provides a sprintf like function to generate formatted URLs. It uses
