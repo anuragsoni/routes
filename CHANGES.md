@@ -1,3 +1,11 @@
+# 0.3.0
+
+* Extract string operations to its own module (#14)
+* Drop dependency on astring (#16)
+* Add pretty printers for utop (#18)
+* Accept a request that is in-turn forwarded to handlers (#22)
+* Use `mdx` to test examples in the readme file (#23)
+
 # 0.2.0
 
 * Switched to a GADT representation of routes
