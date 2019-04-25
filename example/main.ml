@@ -18,19 +18,17 @@ let respond_with_text reqd status text =
 ;;
 
 module Handlers = struct
-  (* The first parameter  *)
-  let greeter (req : Request.t) id name city b () =
+  let greeter id name city (req : Request.t) =
     Log.Global.printf
-      "Woohoo! I have access to the Httpaf request here: Id: %Ld %s - %B"
+      "Woohoo! I have access to the Httpaf request here: Id: %d %s"
       id
-      req.target
-      b;
+      req.target;
     `String ("Hello, " ^ name ^ ". How was your trip to " ^ city ^ "?")
   ;;
 
-  let sum _ a b () = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
+  let sum a b _ = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
 
-  let return_bigstring _ () =
+  let return_bigstring _ =
     `Bigstring (Bigstringaf.of_string "Hello world" ~off:0 ~len:11)
   ;;
 
@@ -43,16 +41,18 @@ end
 
 let routes =
   let open Routes in
+  let open Infix in
   let open Handlers in
-  [ method' None (s "") ==> return_bigstring
-  ; method' (Some `GET) (s "greet" </> int64 </> str </> str </> bool) ==> greeter
-  ; method' (Some `GET) (s "sum" </> int </> int) ==> sum
-  ]
+  choose'
+    [ [`GET], return_bigstring <$ s ""
+    ; [], greeter <$> s "greet" *> int </> str </> str
+    ; [], sum <$> s "sum" *> int </> int
+    ]
 ;;
 
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.match' ~req ~target:req.target ~meth:req.meth routes with
+  match Routes.run' ~req ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
   | Some response -> respond_with_text reqd `OK response
