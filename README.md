@@ -32,7 +32,7 @@ val get_user : int -> req -> string = <fun>
 val search_user : string -> string -> req -> string = <fun>
 
 # let routes =
-  choose' [ [], idx <$ s "" (* matches the index route "/" *)
+  choose [ [], idx <$ s "" (* matches the index route "/" *)
   ; [`GET], get_user <$> s "user" *> int (* matches "/user/<int>" *)
   ; [], search_user <$> s "user" *> str </> str (*  matches "/user/<str>/<str>" *)
   ]
@@ -41,10 +41,10 @@ val routes : (req -> string) router = <abstr>
 # let req = { target = "/user/12" };;
 val req : req = {target = "/user/12"}
 
-# match Routes.run' ~req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
+# match Routes.run ~req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
 - : string = "No match"
 
-# match Routes.run' ~req routes ~target:req.target ~meth:`GET with None -> "No match" | Some r -> r;;
+# match Routes.run ~req routes ~target:req.target ~meth:`GET with None -> "No match" | Some r -> r;;
 - : string = "Received request from /user/12 to fetch id: 12"
 ```
 

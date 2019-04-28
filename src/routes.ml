@@ -46,7 +46,6 @@ module RKey = struct
 end
 
 module MethodSet = Set.Make (Method)
-module MethodMap = Map.Make (Method)
 module RMap = Map.Make (RKey)
 
 type 'a t =
@@ -130,16 +129,6 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
 ;;
 
 let choose routes =
-  List.map
-    (fun (methods, route) ->
-      let methods =
-        List.fold_left (fun acc m -> MethodSet.add m acc) MethodSet.empty methods
-      in
-      methods, dependencies route, route)
-    routes
-;;
-
-let choose' routes =
   List.fold_left
     (fun acc (methods, route) ->
       let f = first route in
@@ -160,33 +149,7 @@ let choose' routes =
 
 let method_matches t m = if MethodSet.is_empty t then true else MethodSet.mem m t
 
-let match' routes ~target ~meth ~req =
-  if String.length target = 0
-  then None
-  else (
-    let target, _ = StringUtils.take_while target ~f:(fun x -> x <> '?') in
-    let target' =
-      match target.[0] with
-      | '/' -> StringUtils.tail target
-      | _ -> target
-    in
-    let params = String.split_on_char '/' target' in
-    let param_len = List.length params in
-    let rec route' = function
-      | [] -> None
-      | (methods, c, r) :: rs when method_matches methods meth ->
-        if param_len <> c
-        then route' rs
-        else (
-          match parse r params with
-          | Some (r, []) -> Some (r req)
-          | _ -> route' rs)
-      | _ -> None
-    in
-    route' routes)
-;;
-
-let run' routes ~target ~meth ~req =
+let run routes ~target ~meth ~req =
   if String.length target = 0
   then None
   else (
@@ -210,11 +173,10 @@ let run' routes ~target ~meth ~req =
     | [] -> None
     | p :: _ ->
       (match RMap.find_opt (p, param_len) routes with
-       | None -> begin
-           match RMap.find_opt ("", param_len) routes with
-           | None -> None
-           | Some rs -> route' rs
-           end
+      | None ->
+        (match RMap.find_opt ("", param_len) routes with
+        | None -> None
+        | Some rs -> route' rs)
       | Some rs -> route' rs))
 ;;
 

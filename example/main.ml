@@ -43,8 +43,8 @@ let routes =
   let open Routes in
   let open Infix in
   let open Handlers in
-  choose'
-    [ [`GET], return_bigstring <$ s ""
+  choose
+    [ [ `GET ], return_bigstring <$ s ""
     ; [], greeter <$> s "greet" *> int </> str </> str
     ; [], sum <$> s "sum" *> int </> int
     ]
@@ -52,7 +52,7 @@ let routes =
 
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.run' ~req ~target:req.target ~meth:req.meth routes with
+  match Routes.run ~req ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
   | Some response -> respond_with_text reqd `OK response

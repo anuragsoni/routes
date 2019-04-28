@@ -24,9 +24,7 @@ end
 type 'a t
 
 type 'a route
-
 type 'a route'
-
 type 'a router
 
 val return : 'a -> 'a t
@@ -51,29 +49,14 @@ val int : int t
 val str : string t
 (** [str] parses a path param and returns it as a string. *)
 
-(** [empty] matches an empty target. This can be used to match against "/". *)
 val empty : unit t
+(** [empty] matches an empty target. This can be used to match against "/". *)
 
-val choose : (Method.t list * 'a t) list -> 'a route list
-(** [choose] accepts a list of path param parsers and converts them to a list of route matchers. *)
+val choose : (Method.t list * 'a t) list -> 'a router
+(** [choose] accepts a list of path param parsers and converts them to a router. *)
 
-val choose' : (Method.t list * 'a t) list -> 'a router
-
-val match'
-  :  ('a -> 'b) route list
-  -> target:string
-  -> meth:Method.t
-  -> req:'a
-  -> 'b option
-
-val run'
-  :  ('a -> 'b) router
-  -> target:string
-  -> meth:Method.t
-  -> req:'a
-  -> 'b option
-
-(** [match'] is used to run the router. It accepts a target url string, HTTP method verb
+val run : ('a -> 'b) router -> target:string -> meth:Method.t -> req:'a -> 'b option
+(** [run] is used to run the router. It accepts a target url string, HTTP method verb
     a request of any type (which is forwarded as the last parameter to the handler functions).
     If a route matches it runs the attached handler and returns the result.
 *)
