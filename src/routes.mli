@@ -24,7 +24,6 @@ end
 type 'a t
 
 type 'a route
-type 'a route'
 type 'a router
 
 val return : 'a -> 'a t
@@ -34,10 +33,6 @@ val apply : ('a -> 'b) t -> 'a t -> 'b t
 (** [apply f t]  applies a function f that is wrapped inside
     a ['a t] context to a path param parser.
     f <*> p is the same as f >>= fun f -> map ~f p *)
-
-val fmap : f:('a -> 'b) -> 'a t -> 'b t
-(** [fmap ~f p] parses a path param and forwards the result
-    to the function f if the parsing succeeds. *)
 
 val s : string -> unit t
 (** [s word] returns a path parser that matches [word] exactly
@@ -64,7 +59,6 @@ val run : ('a -> 'b) router -> target:string -> meth:Method.t -> req:'a -> 'b op
 module Infix : sig
   val ( <*> ) : ('a -> 'b) t -> 'a t -> 'b t
   val ( </> ) : ('a -> 'b) t -> 'a t -> 'b t
-  val ( >>| ) : 'a t -> ('a -> 'b) -> 'b t
   val ( <$> ) : ('a -> 'b) -> 'a t -> 'b t
   val ( *> ) : 'a t -> 'b t -> 'b t
   val ( <* ) : 'a t -> 'b t -> 'a t

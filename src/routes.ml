@@ -39,105 +39,23 @@ module Method = struct
   let compare = compare
 end
 
-module RKey = struct
-  type t = string * int
-
-  let compare (t1 : string * int) t2 = compare t2 t1
-end
-
 module MethodSet = Set.Make (Method)
-module RMap = Map.Make (RKey)
+module RMap = Map.Make (String)
 
-type 'a t =
-  | Return : 'a -> 'a t
-  | Empty : unit t
-  | Match : string -> unit t
-  | Apply : ('a -> 'b) t * 'a t -> 'b t
-  | Int : int t
-  | Str : string t
-
-type 'a route = MethodSet.t * int * 'a t
-type 'a route' = MethodSet.t * 'a t
-type 'a router = 'a route' list RMap.t
-
-let return x = Return x
-let apply f t = Apply (f, t)
-let fmap ~f t = apply (return f) t
-let s x = Match x
-let int = Int
-let str = Str
-let empty = Empty
-
-let rec dependencies : type a. a t -> int =
- fun t ->
-  match t with
-  | Return _ -> 0
-  | Match _ -> 1
-  | Empty -> 0
-  | Int -> 1
-  | Str -> 1
-  | Apply (f, t) ->
-    let a = dependencies f in
-    let b = dependencies t in
-    a + b
-;;
-
-let rec first : type a. a t -> string =
- fun t ->
-  match t with
-  | Return _ -> ""
-  | Empty -> ""
-  | Match w -> w
-  | Int -> ""
-  | Str -> ""
-  | Apply (f, t) ->
-    let a = first f in
-    if a <> "" then a else first t
-;;
-
-let rec parse : type a. a t -> string list -> (a * string list) option =
- fun t params ->
-  match t with
-  | Return x -> Some (x, params)
-  | Empty ->
-    (match params with
-    | [] -> Some ((), params)
-    | _ -> None)
-  | Match s ->
-    (match params with
-    | [] -> None
-    | p :: ps when p = s -> Some ((), ps)
-    | _ -> None)
-  | Int ->
-    (match params with
-    | [] -> None
-    | p :: ps ->
-      (match int_of_string_opt p with
-      | None -> None
-      | Some r -> Some (r, ps)))
-  | Str ->
-    (match params with
-    | [] -> None
-    | p :: ps -> Some (p, ps))
-  | Apply (f, t) ->
-    (match parse f params with
-    | None -> None
-    | Some (f, params) ->
-      (match parse t params with
-      | None -> None
-      | Some (t, params) -> Some (f t, params)))
-;;
+type 'a t = 'a Parser.t
+type 'a route = MethodSet.t * 'a Parser.t
+type 'a router = 'a route list RMap.t
 
 let choose routes =
   List.fold_left
     (fun acc (methods, route) ->
-      let f = first route in
+      let f = Parser.first route in
       let methods =
         List.fold_left (fun acc m -> MethodSet.add m acc) MethodSet.empty methods
       in
       let new_route = methods, route in
       RMap.update
-        (f, dependencies route)
+        f
         (fun t ->
           match t with
           | None -> Some [ new_route ]
@@ -160,11 +78,10 @@ let run routes ~target ~meth ~req =
       | _ -> target
     in
     let params = String.split_on_char '/' target' in
-    let param_len = List.length params in
     let rec route' = function
       | [] -> None
       | (methods, r) :: rs when method_matches methods meth ->
-        (match parse r params with
+        (match Parser.parse r params with
         | Some (r, []) -> Some (r req)
         | _ -> route' rs)
       | _ -> None
@@ -172,20 +89,21 @@ let run routes ~target ~meth ~req =
     match params with
     | [] -> None
     | p :: _ ->
-      (match RMap.find_opt (p, param_len) routes with
+      (match RMap.find_opt p routes with
       | None ->
-        (match RMap.find_opt ("", param_len) routes with
+        (match RMap.find_opt "" routes with
         | None -> None
         | Some rs -> route' rs)
       | Some rs -> route' rs))
 ;;
 
+let empty = Parser.empty
+let str = Parser.str
+let int = Parser.int
+let s = Parser.s
+let apply = Parser.apply
+let return = Parser.return
+
 module Infix = struct
-  let ( <*> ) = apply
-  let ( </> ) = apply
-  let ( >>| ) t f = fmap t ~f
-  let ( <$> ) f = fmap ~f
-  let ( *> ) x y = (fun _ y -> y) <$> x <*> y
-  let ( <* ) x y = (fun x _ -> x) <$> x <*> y
-  let ( <$ ) f t = return f <* t
+  include Parser.Infix
 end
