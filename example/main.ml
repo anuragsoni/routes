@@ -18,7 +18,7 @@ let respond_with_text reqd status text =
 ;;
 
 module Handlers = struct
-  let greeter id name city (req : Request.t) =
+  let greeter id name city (req : Httpaf.Request.t) =
     Log.Global.printf
       "Woohoo! I have access to the Httpaf request here: Id: %d %s"
       id
@@ -43,19 +43,19 @@ let routes =
   let open Routes in
   let open Infix in
   let open Handlers in
-  choose
-    [ [ `GET ], return_bigstring <$ s ""
-    ; [], greeter <$> s "greet" *> int </> str </> str
-    ; [], sum <$> s "sum" *> int </> int
+  with_method
+    [ `GET, return_bigstring <$ empty
+    ; `GET, greeter <$> s "greet" *> int </> str </> str
+    ; `GET, sum <$> s "sum" *> int </> int
     ]
 ;;
 
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.run ~req ~target:req.target ~meth:req.meth routes with
+  match Routes.match_with_method ~target:req.target ~meth:req.meth routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
-  | Some response -> respond_with_text reqd `OK response
+  | Some response -> respond_with_text reqd `OK (response req)
 ;;
 
 let error_handler _ ?request:_ error start_response =
