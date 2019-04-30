@@ -17,44 +17,35 @@ like [incr_dom](https://github.com/janestreet/incr_dom) or [ocaml-vdom](https://
 
 ```ocaml
 # #require "routes";;
+# open Routes;;
+# open Infix;;
 # type req = {target: string};;
 type req = { target : string; }
 
-# let idx (_ : req) () = "root";;
-val idx : req -> unit -> string = <fun>
+# let idx (_ : req) = "root";;
+val idx : req -> string = <fun>
 
-# let get_user (req : req) (id: int) () = Printf.sprintf "Received request from %s to fetch id: %d" req.target id
-val get_user : req -> int -> unit -> string = <fun>
+# let get_user (id: int) (req : req) = Printf.sprintf "Received request from %s to fetch id: %d" req.target id
+val get_user : int -> req -> string = <fun>
 
-# let search_user (_req : req) (name: string) (city : string) () = "search for user";;
-val search_user : req -> string -> string -> unit -> string = <fun>
+# let search_user (name: string) (city : string) (_req : req) = "search for user";;
+val search_user : string -> string -> req -> string = <fun>
 
 # let routes =
-  let open Routes in
-  [ method' None (s "") ==> idx (* matches the index route "/" *)
-  ; method' (Some `GET) (s "user" </> int) ==> get_user (* matches "/user/<int>" *)
-  ; method' None (s "user" </> str </> str) ==> search_user (*  matches "/user/<str>/<str>" *)
+  with_method [ `GET, idx <$ s "" (* matches the index route "/" *)
+  ; `GET, get_user <$> s "user" *> int (* matches "/user/<int>" *)
+  ; `POST, search_user <$> s "user" *> str </> str (*  matches "/user/<str>/<str>" *)
   ]
-val routes : (req, string) Routes.route list = [<abstr>; <abstr>; <abstr>]
+val routes : (req -> string) router = <abstr>
 
 # let req = { target = "/user/12" };;
 val req : req = {target = "/user/12"}
 
-# match Routes.match' ~req routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r;;
+# match Routes.match_with_method routes ~target:"/some/url" ~meth:`GET with None -> "No match" | Some r -> r req;;
 - : string = "No match"
 
-# match Routes.match' ~req routes ~target:req.target ~meth:`GET with None -> "No match" | Some r -> r;;
+# match Routes.match_with_method routes ~target:req.target ~meth:`GET with None -> "No match" | Some r -> r req;;
 - : string = "Received request from /user/12 to fetch id: 12"
-```
-
-`Routes` also provides a sprintf like function to generate formatted URLs. It uses
-the same format description of a route that is used for routing.
-
-```ocaml
-# open Routes;;
-
-# (sprintf (method' None (s "user" </> int </> bool))) 12 false ();;
-- : string = "user/12/false"
 ```
 
 ## Installation

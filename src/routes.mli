@@ -4,9 +4,6 @@
     of any particular web framework or runtime.
 *)
 
-(** [s] is the string type used internally by the URL parser. *)
-type s
-
 module Method : sig
   (** HTTP methods. This is an optional input for route matching.
       The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
@@ -23,75 +20,65 @@ module Method : sig
     ]
 end
 
-(** [path] represents the combination of all path params that are expected in a route. *)
-type ('a, 'b) path
+(** ['a t] represents a path parameter of type 'a. *)
+type 'a t
 
-(** [resource] is a combination of an optional HTTP verb with path combinators. *)
-type ('a, 'b) resource
+type 'a router
 
-(** [route] represents a combination of an optional HTTP method and path parameters. *)
-type ('req, 'b) route
+val return : 'a -> 'a t
+(** [return v] is a path param parser that always returns v. *)
 
-(** [sprintf] acceps a [route] that acts like a "format string". It will
-    return a function that the user can use to output formatted URLs. *)
-val sprintf : ('a, string) resource -> 'a
+val apply : ('a -> 'b) t -> 'a t -> 'b t
+(** [apply f t]  applies a function f that is wrapped inside
+    a ['a t] context to a path param parser.
+    f <*> p is the same as f >>= fun f -> map ~f p *)
 
-val pp_hum : Format.formatter -> Method.t option * ('a, 'b) path -> unit
-  [@@ocaml.toplevel_printer]
+val s : string -> unit t
+(** [s word] returns a path parser that matches [word] exactly
+    and discards the result. *)
 
-(** [match'] acceps a list of route descriptions, target url and a
-    http method. If there is a match it returns the output of the handler
-    registered with a route. Otherwise it returns a `None`. *)
-val match'
-  :  ('req, 'a) route list
-  -> target:string
-  -> meth:Method.t
-  -> req:'req
-  -> 'a option
+val int : int t
+(** [int] parses a path parmeter and succeeds if its an integer. *)
 
-(** [int] will match and extract an integer value that will be forwarded to
-    the request handler. *)
-val int : ('a, 'b) path -> (int -> 'a, 'b) path
+val int32 : int32 t
+(** [int32] parses a path parameter and succeeds if its a valid 32 bit integer. *)
 
-(** [int32] will match and extract a 32 bit integer. *)
-val int32 : ('a, 'b) path -> (int32 -> 'a, 'b) path
+val int64 : int64 t
+(** [int64] parses a path parameter and succeeds if its a valid 64 bit integer. *)
 
-(** [int64] will match and extract a 64 bit integer. *)
-val int64 : ('a, 'b) path -> (int64 -> 'a, 'b) path
+val bool : bool t
+(** [bool] parses a path parameter and succeeds if its either "true" or "false". *)
 
-(** [str] will match and extract a string value that will be forwarded to
-		the request handler. *)
-val str : ('a, 'b) path -> (string -> 'a, 'b) path
+val str : string t
+(** [str] parses a path param and returns it as a string. *)
 
-(** [bool] will match and extract a boolean value. *)
-val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
+val empty : unit t
+(** [empty] matches an empty target. This can be used to match against "/". *)
 
-(** [s str] does an exact match on the input string.
-    It consumes and discards the string and as a result the handler doesn't
-    need to work on the parsed string. If there are no paths left to
-    match on given URL, or the match failes, the whole
-    route matching fails. *)
-val s : string -> ('a, 'b) path -> ('a, 'b) path
+val choice : 'a t list -> 'a t
+(** [choice] accepts a list of route parsers and returns the first one that matches. *)
 
-(** [</>] is used to connect two path parsers. Ex: str </> int
-    will first try and parse a string, followed by an integer.
-    If any of the parsers fail, the whole route matching fails. *)
-val ( </> ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
+val with_method : (Method.t * 'a t) list -> 'a router
+(** [choose] accepts a list of path param parsers and converts them to a router. *)
 
-(** [slash] is an alternate name for [</>] *)
-val slash : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
+val match' : 'a t -> string -> 'a option
+(** [match'] takes a route parser and runs it against the provided target url. *)
 
-(** [method'] connects an HTTP method to a path parameters, and forms
-    a complete route. *)
-val method'
-  :  Method.t option
-  -> ((unit -> 'a, 'a) path -> ('b, 'c) path)
-  -> ('b, 'c) resource
+val match_with_method : 'a router -> target:string -> meth:Method.t -> 'a option
+(** [match_with_method] is used to run the router. It accepts a target url string, HTTP method verb
+    a request of any type (which is forwarded as the last parameter to the handler functions).
+    If a route matches it runs the attached handler and returns the result.
+*)
 
-(** [==>] connects a route matcher to a user provided handler.
-    The handler will receive any params that
-    were extracted while parsing the route. *)
-val ( ==> ) : ('a, 'b) resource -> ('req -> 'a) -> ('req, 'b) route
+module Infix : sig
+  val ( <*> ) : ('a -> 'b) t -> 'a t -> 'b t
+  val ( </> ) : ('a -> 'b) t -> 'a t -> 'b t
+  val ( <$> ) : ('a -> 'b) -> 'a t -> 'b t
+  val ( *> ) : 'a t -> 'b t -> 'b t
+  val ( <* ) : 'a t -> 'b t -> 'a t
+  val ( <$ ) : 'a -> 'b t -> 'a t
+end
 
-(** [route] is an alternate name for [==>] *)
-val route : ('a, 'b) resource -> ('req -> 'a) -> ('req, 'b) route
+module Util : sig
+  val split_path : string -> string list
+end
