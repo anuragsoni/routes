@@ -1,3 +1,9 @@
 (executable
  (name main)
+ (modules main)
  (libraries routes core async httpaf httpaf-async))
+
+(executable
+  (name no_method)
+  (modules no_method)
+  (libraries routes))
