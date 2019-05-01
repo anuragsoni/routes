@@ -1,4 +1,7 @@
-module Util = Util
+module Routes_private = struct
+  module Util = Util
+end
+
 module Map = Stdcompat.Map
 
 module Method = struct

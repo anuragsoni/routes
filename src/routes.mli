@@ -78,6 +78,8 @@ module Infix : sig
   val ( <$ ) : 'a -> 'b t -> 'a t
 end
 
-module Util : sig
-  val split_path : string -> string list
+module Routes_private : sig
+  module Util : sig
+    val split_path : string -> string list
+  end
 end
