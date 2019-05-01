@@ -17,14 +17,12 @@ depends: [
   "dune" {build}
   "alcotest" {with-test}
   "mdx" { with-test }
-  "qcheck" { with-test }
-  "qcheck-alcotest" { with-test }
 ]
 synopsis: "Typed routing for OCaml applications"
 description: """
 routes provides combinators for adding typed routing
 to OCaml applications. The core library will be independent
-of any particular web framework or runtime. It also provides
-a `sprintf` like function (it uses the same representation of
-a route as a 'format string') to reconstruct URLs.
+of any particular web framework or runtime. It does
+path based dispatch from a target url to a user
+provided handler.
 """
