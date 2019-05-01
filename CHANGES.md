@@ -1,3 +1,10 @@
+# 0.4.0
+
+* Switch to using an applicative functor as parser. (#27)
+* Have a version of matching without HTTP methods. (#27)
+* Tokenize the path parameters into list of strings. (#27)
+* Add more tests for matchers. (#28)
+
 # 0.3.0
 
 * Extract string operations to its own module (#14)
