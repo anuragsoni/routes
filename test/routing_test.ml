@@ -93,7 +93,10 @@ let test_nested_routes () =
     choice
       [ s "user"
         *> choice
-             [ (fun name age id -> Printf.sprintf "%s%d - %ld" name age id) <$> str </> int </> int32
+             [ (fun name age id -> Printf.sprintf "%s%d - %ld" name age id)
+               <$> str
+               </> int
+               </> int32
              ; (fun id -> Printf.sprintf "%ld" id) <$> int32
              ; s "bar" *> choice [ (fun message -> message) <$> str ]
              ; (fun admin id -> Printf.sprintf "%B -- %Ld" admin id) <$> bool </> int64
@@ -102,7 +105,10 @@ let test_nested_routes () =
   in
   Alcotest.(check (option string)) "No Match" None (match' routes "/foo/bar");
   Alcotest.(check (option string)) "bar" (Some "hello") (match' routes "/user/bar/hello");
-  Alcotest.(check (option string)) "admin" (Some "true -- 141") (match' routes "/user/true/141");
+  Alcotest.(check (option string))
+    "admin"
+    (Some "true -- 141")
+    (match' routes "/user/true/141");
   Alcotest.(check (option string)) "No match" None (match' routes "/user/bar")
 ;;
 

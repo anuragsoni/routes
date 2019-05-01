@@ -1,7 +1,7 @@
 type 'a t =
   | Return : 'a -> 'a t
   | Empty : unit t
-  | Match : string -> unit t
+  | Match : string -> string t
   | Apply : ('a -> 'b) t * 'a t -> 'b t
   | SkipLeft : 'a t * 'b t -> 'b t
   | SkipRight : 'a t * 'b t -> 'a t
@@ -45,7 +45,7 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
     (match params with
     | [] -> Some ((), params)
     | _ -> None)
-  | Match s -> verify (fun w -> if String.compare w s = 0 then Some () else None) params
+  | Match s -> verify (fun w -> if String.compare w s = 0 then Some w else None) params
   | Int -> verify int_of_string_opt params
   | Int32 -> verify Int32.of_string_opt params
   | Int64 -> verify Int64.of_string_opt params
