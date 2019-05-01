@@ -33,9 +33,8 @@ val apply : ('a -> 'b) t -> 'a t -> 'b t
     a ['a t] context to a path param parser.
     f <*> p is the same as f >>= fun f -> map ~f p *)
 
-val s : string -> unit t
-(** [s word] returns a path parser that matches [word] exactly
-    and discards the result. *)
+val s : string -> string t
+(** [s word] returns a path parser that matches [word] exactly. *)
 
 val int : int t
 (** [int] parses a path parmeter and succeeds if its an integer. *)

@@ -4,6 +4,7 @@
 * Have a version of matching without HTTP methods. (#27)
 * Tokenize the path parameters into list of strings. (#27)
 * Add more tests for matchers. (#28)
+* `s` now returns the string it matches, instead of discarding it. (#29)
 
 # 0.3.0
 
