@@ -1,5 +1,5 @@
 let test_path_split () =
-  let open Routes.Util in
+  let open Routes.Routes_private.Util in
   Alcotest.(check (list string)) "Empty string" [] (split_path "");
   Alcotest.(check (list string)) "Root path" [] (split_path "/");
   Alcotest.(check (list string)) "Leading slash" [ "a"; "b"; "c" ] (split_path "/a/b/c");
