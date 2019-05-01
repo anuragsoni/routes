@@ -67,31 +67,52 @@ let test_strict_match () =
        (match_with_method ~target:"foo/James/12/bar" ~meth:`GET routes))
 ;;
 
-(* let test_route_order () = *)
-(*   let open Routes in *)
-(*   let open Infix in *)
-(*   let routes = *)
-(*     with_method [ [], handler2 <$> int </> int; [], handler3 <$> int </> int ] *)
-(*   in *)
-(*   let routes' = *)
-(*     with_method [ [], handler3 <$> int </> int; [], handler2 <$> int </> int ] *)
-(*   in *)
-(*   Alcotest.(check (option string)) *)
-(*     "Match handler 2" *)
-(*     (Some "Handler 2") *)
-(*     (extract_response (match_with_method ~req ~target:"/12/11" ~meth:`GET routes)); *)
-(*   Alcotest.(check (option string)) *)
-(*     "Match handler 3" *)
-(*     (Some "Handler 3") *)
-(*     (extract_response (match_with_method ~req ~target:"/12/11" ~meth:`GET routes')) *)
-(* ;; *)
+let test_route_order () =
+  let open Routes in
+  let open Infix in
+  let routes =
+    with_method [ `GET, handler2 <$> int </> int; `GET, handler3 <$> int </> int ]
+  in
+  let routes' =
+    with_method [ `GET, handler3 <$> int </> int; `GET, handler2 <$> int </> int ]
+  in
+  Alcotest.(check (option string))
+    "Match handler 3"
+    (Some "Handler 3")
+    (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes));
+  Alcotest.(check (option string))
+    "Match handler 2"
+    (Some "Handler 2")
+    (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes'))
+;;
+
+let test_nested_routes () =
+  let open Routes in
+  let open Infix in
+  let routes =
+    choice
+      [ s "user"
+        *> choice
+             [ (fun name age id -> Printf.sprintf "%s%d - %ld" name age id) <$> str </> int </> int32
+             ; (fun id -> Printf.sprintf "%ld" id) <$> int32
+             ; s "bar" *> choice [ (fun message -> message) <$> str ]
+             ; (fun admin id -> Printf.sprintf "%B -- %Ld" admin id) <$> bool </> int64
+             ]
+      ]
+  in
+  Alcotest.(check (option string)) "No Match" None (match' routes "/foo/bar");
+  Alcotest.(check (option string)) "bar" (Some "hello") (match' routes "/user/bar/hello");
+  Alcotest.(check (option string)) "admin" (Some "true -- 141") (match' routes "/user/true/141");
+  Alcotest.(check (option string)) "No match" None (match' routes "/user/bar")
+;;
 
 let tests =
   [ "Empty routes will have no matches", `Quick, test_no_match
   ; "Test method matches", `Quick, test_method_match
   ; "Test route extractors", `Quick, test_extractors
   ; "Test strict match", `Quick, test_strict_match
-    (* ; "Test route orders", `Quick, test_route_order *)
+  ; "Test route orders", `Quick, test_route_order
+  ; "Test nested routes", `Quick, test_nested_routes
   ]
 ;;
 
