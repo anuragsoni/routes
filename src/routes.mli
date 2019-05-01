@@ -71,11 +71,28 @@ val match_with_method : 'a router -> target:string -> meth:Method.t -> 'a option
 
 module Infix : sig
   val ( <*> ) : ('a -> 'b) t -> 'a t -> 'b t
+  (** [<*>] takes a function wrapped inside our parser
+      context (created via [return <some function>] ), and a parser.
+      It then forwards the value of the parsed result (if parser succeeds) and feeds
+      it to the wrapped function. This is the [apply] operator of our
+      parser applicative functor. *)
+
   val ( </> ) : ('a -> 'b) t -> 'a t -> 'b t
+  (** [</>] is an alias for [<*>] *)
+
   val ( <$> ) : ('a -> 'b) -> 'a t -> 'b t
+  (** [f <$> p] is sugar for [return f <*> p] *)
+
   val ( *> ) : 'a t -> 'b t -> 'b t
+  (** [p1 *> p2] takes two parsers p1 and p2, runs p1, discards its results
+      and then returns the result of parser p2. *)
+
   val ( <* ) : 'a t -> 'b t -> 'a t
+  (** [p1 <* p2] runs p1 followed by p2. It discards the result of p2 and returns
+      the result of p1. *)
+
   val ( <$ ) : 'a -> 'b t -> 'a t
+  (** [f <$ p] is sugar for [return f <* p] *)
 end
 
 module Routes_private : sig
