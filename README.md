@@ -50,9 +50,12 @@ val req : req = {target = "/user/12"}
 
 ## Installation
 
-`routes` has not been published on OPAM yet. It can be pinned via opam
-to use locally:
+###### To use the version published on opam:
+```
+opam install routes
+```
 
+###### For development version:
 ```
 opam pin add routes git+https://github.com/anuragsoni/routes.git
 ```
