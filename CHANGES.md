@@ -1,3 +1,7 @@
+# next
+
+* Remove `stdcompat`
+
 # 0.4.0
 
 * Switch to using an applicative functor as parser. (#27)

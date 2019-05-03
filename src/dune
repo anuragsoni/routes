@@ -1,3 +1,2 @@
 (library
- (public_name routes)
- (libraries stdcompat))
+ (public_name routes))
