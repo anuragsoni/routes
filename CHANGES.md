@@ -1,6 +1,7 @@
 # next
 
-* Remove `stdcompat`
+* Remove `stdcompat` (#33)
+* Add example using [opium](https://github.com/rgrinberg/opium) (#34)
 
 # 0.4.0
 

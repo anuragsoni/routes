@@ -60,6 +60,11 @@ opam install routes
 opam pin add routes git+https://github.com/anuragsoni/routes.git
 ```
 
+## Example use inside other libraries:
+
+* Httpaf -> [example/main.ml](https://github.com/anuragsoni/routes/blob/3d7d25e11be0f13d855cad4c659944c0ebb6ec52/example/main.ml)
+* Opium -> [example/opium_example.ml](https://github.com/anuragsoni/routes/blob/3d7d25e11be0f13d855cad4c659944c0ebb6ec52/example/opium_example.ml)
+
 ## Related Work
 
 The combinators are influenced by Rudi Grinberg's wonderful [blogpost](http://rgrinberg.com/posts/primitive-type-safe-routing/) about
