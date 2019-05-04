@@ -79,7 +79,7 @@ let main port max_accepts_per_batch () =
       ~max_accepts_per_batch
       where_to_listen)
     (Server.create_connection_handler ~request_handler ~error_handler)
-  >>= fun server -> Deferred.never ()
+  >>= fun _server -> Deferred.never ()
 ;;
 
 let () =

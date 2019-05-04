@@ -7,3 +7,8 @@
  (name no_method)
  (modules no_method)
  (libraries routes))
+
+(executable
+ (name opium_example)
+ (modules opium_example)
+ (libraries opium routes))
