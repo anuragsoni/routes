@@ -15,10 +15,13 @@ type 'a t =
 let return x = Return x
 
 let apply : type a b. (a -> b) t -> a t -> b t =
-  fun f t -> match t with
-    | SkipLeft (p1, p2) -> SkipLeft (p1, Apply (f, p2))
-    | SkipRight (p1, p2) -> SkipRight (Apply (f, p1), p2)
-    | _ -> Apply (f, t)
+ fun f t ->
+  match f, t with
+  | _, SkipLeft (p1, p2) -> SkipLeft (p1, Apply (f, p2))
+  | _, SkipRight (p1, p2) -> SkipRight (Apply (f, p1), p2)
+  | SkipLeft (p1, f), _ -> SkipLeft (p1, Apply (f, t))
+  | _ -> Apply (f, t)
+;;
 
 let s x = Match x
 let int = Int
