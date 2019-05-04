@@ -13,7 +13,13 @@ type 'a t =
   | Str : string t
 
 let return x = Return x
-let apply f t = Apply (f, t)
+
+let apply : type a b. (a -> b) t -> a t -> b t =
+  fun f t -> match t with
+    | SkipLeft (p1, p2) -> SkipLeft (p1, Apply (f, p2))
+    | SkipRight (p1, p2) -> SkipRight (Apply (f, p1), p2)
+    | _ -> Apply (f, t)
+
 let s x = Match x
 let int = Int
 let int32 = Int32
@@ -26,10 +32,10 @@ let choice ps = Choice ps
 module Infix = struct
   let ( <*> ) = apply
   let ( </> ) = apply
-  let ( <$> ) f p = Apply (Return f, p)
+  let ( <$> ) f p = apply (return f) p
   let ( *> ) x y = SkipLeft (x, y)
   let ( <* ) x y = SkipRight (x, y)
-  let ( <$ ) f t = SkipRight (Return f, t)
+  let ( <$ ) f t = SkipLeft (t, return f)
   let ( <|> ) p1 p2 = choice [ p1; p2 ]
 end
 
