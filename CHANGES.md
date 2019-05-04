@@ -1,3 +1,7 @@
+# 0.4.2
+
+* Specialize apply for `SkipLeft` parsers.
+
 # 0.4.1
 
 * Remove `stdcompat` (#33)
