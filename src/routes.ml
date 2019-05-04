@@ -2,8 +2,6 @@ module Routes_private = struct
   module Util = Util
 end
 
-module Map = Stdcompat.Map
-
 module Method = struct
   type t =
     [ `GET
@@ -16,30 +14,13 @@ module Method = struct
     | `TRACE
     | `Other of string
     ]
-
-  let compare = compare
 end
 
-module MethodMap = Map.Make (Method)
-
 type 'a t = 'a Parser.t
-type 'a router = 'a t list MethodMap.t
+type 'a router = (Method.t * 'a t) list
 
 let choice = Parser.choice
-
-let with_method routes =
-  List.fold_left
-    (fun acc (meth, route) ->
-      MethodMap.update
-        meth
-        (fun t ->
-          match t with
-          | None -> Some [ route ]
-          | Some rs -> Some (route :: rs))
-        acc)
-    MethodMap.empty
-    routes
-;;
+let with_method routes = routes
 
 let match' routes target =
   if String.length target = 0
@@ -58,14 +39,15 @@ let match_with_method routes ~target ~meth =
     let params = Util.split_path target in
     let rec route' = function
       | [] -> None
-      | r :: rs ->
-        (match Parser.parse r params with
-        | Some (r, []) -> Some r
-        | _ -> route' rs)
+      | (m, r) :: rs ->
+        if meth = m
+        then (
+          match Parser.parse r params with
+          | Some (r, []) -> Some r
+          | _ -> route' rs)
+        else route' rs
     in
-    match MethodMap.find_opt meth routes with
-    | None -> None
-    | Some rs -> route' rs)
+    route' routes)
 ;;
 
 let empty = Parser.empty

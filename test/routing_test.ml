@@ -77,12 +77,12 @@ let test_route_order () =
     with_method [ `GET, handler3 <$> int </> int; `GET, handler2 <$> int </> int ]
   in
   Alcotest.(check (option string))
-    "Match handler 3"
-    (Some "Handler 3")
-    (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes));
-  Alcotest.(check (option string))
     "Match handler 2"
     (Some "Handler 2")
+    (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes));
+  Alcotest.(check (option string))
+    "Match handler 3"
+    (Some "Handler 3")
     (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes'))
 ;;
 
