@@ -1,3 +1,5 @@
+open Containers
+
 type 'a t =
   | Return : 'a -> 'a t
   | Empty : unit t
@@ -40,17 +42,38 @@ let rec apply : type a b. (a -> b) t -> a t -> b t =
 let rec combine_routes : type a. a t -> a t -> a t =
  fun t1 t2 ->
   match t1, t2 with
-  | SkipLeft (Match w1, f1), SkipLeft (Match w2, f2) when w1 = w2 ->
+  | SkipLeft (Match w1, f1), SkipLeft (Match w2, f2) when String.equal w1 w2 ->
     (match f1, f2 with
-    | Choice c1, Choice c2 -> SkipLeft (Match w1, Choice (List.concat [ c1; c2 ]))
-    | _ -> SkipLeft (Match w1, combine_routes f1 f2))
+    | Choice c1, Choice c2 -> skip_left (Match w1) (Choice (List.concat [ c1; c2 ]))
+    | Choice c1, r -> skip_left (Match w1) (Choice (c1 @ [ r ]))
+    | r, Choice c2 -> skip_left (Match w1) (Choice (r :: c2))
+    | _ -> skip_left (Match w1) (combine_routes f1 f2))
   | _, _ -> Choice [ t1; t2 ]
 ;;
 
 let choice ps =
+  let first : type a. a t -> string =
+   fun t ->
+    match t with
+    | Match w -> w
+    | SkipLeft (Match w, _) -> w
+    | _ -> ""
+  in
   match ps with
   | [] -> Choice []
-  | p :: ps -> List.fold_left (fun acc r -> combine_routes acc r) p ps
+  | _ ->
+    let ps = List.sort (fun a b -> String.compare (first a) (first b)) ps in
+    let grouped =
+      List.group_succ ~eq:(fun a b -> String.equal (first a) (first b)) ps
+    in
+    Choice
+      (List.map
+         (fun rs ->
+           match rs with
+           | [] -> Choice []
+           | [ p ] -> p
+           | p :: ps -> List.fold_left (fun acc r -> combine_routes acc r) p ps)
+         grouped)
 ;;
 
 module Infix = struct
@@ -87,9 +110,9 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
     | [] -> Some ((), params)
     | _ -> None)
   | Match s -> verify (fun w -> if String.compare w s = 0 then Some () else None) params
-  | Int -> verify int_of_string_opt params
-  | Int32 -> verify Int32.of_string_opt params
-  | Int64 -> verify Int64.of_string_opt params
+  | Int -> verify Int.of_string params
+  | Int32 -> verify Int32.of_string params
+  | Int64 -> verify Int64.of_string params
   | Bool -> verify bool_of_string params
   | Str -> verify (fun w -> Some w) params
   | Apply (f, t) ->
