@@ -1,6 +1,7 @@
 # 0.4.2
 
 * Specialize apply for `SkipLeft` parsers.
+* Re-write routes for better matches.
 
 # 0.4.1
 
