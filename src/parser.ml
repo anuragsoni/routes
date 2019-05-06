@@ -12,17 +12,6 @@ type 'a t =
   | Bool : bool t
   | Str : string t
 
-let return x = Return x
-
-let apply : type a b. (a -> b) t -> a t -> b t =
- fun f t ->
-  match f, t with
-  | _, SkipLeft (p1, p2) -> SkipLeft (p1, Apply (f, p2))
-  | _, SkipRight (p1, p2) -> SkipRight (Apply (f, p1), p2)
-  | SkipLeft (p1, f), _ -> SkipLeft (p1, Apply (f, t))
-  | _ -> Apply (f, t)
-;;
-
 let s x = Match x
 let int = Int
 let int32 = Int32
@@ -30,15 +19,47 @@ let int64 = Int64
 let bool = Bool
 let str = Str
 let empty = Empty
-let choice ps = Choice ps
+let return x = Return x
+
+let rec skip_left : type a b. a t -> b t -> b t =
+ fun p1 p2 ->
+  match p1 with
+  | SkipLeft (a, b) -> SkipLeft (a, skip_left b p2)
+  | _ -> SkipLeft (p1, p2)
+;;
+
+let rec apply : type a b. (a -> b) t -> a t -> b t =
+ fun f t ->
+  match f, t with
+  | (Return _ as f'), SkipLeft (p, r) -> SkipLeft (p, apply f' r)
+  | SkipLeft (p1, f), _ -> skip_left p1 (apply f t)
+  | _, SkipRight (p1, p2) -> SkipRight (apply f p1, p2)
+  | _ -> Apply (f, t)
+;;
+
+let rec combine_routes : type a. a t -> a t -> a t =
+ fun t1 t2 ->
+  match t1, t2 with
+  | SkipLeft (Match w1, f1), SkipLeft (Match w2, f2) when w1 = w2 ->
+    (match f1, f2 with
+    | Choice c1, Choice c2 -> SkipLeft (Match w1, Choice (List.concat [ c1; c2 ]))
+    | _ -> SkipLeft (Match w1, combine_routes f1 f2))
+  | _, _ -> Choice [ t1; t2 ]
+;;
+
+let choice ps =
+  match ps with
+  | [] -> Choice []
+  | p :: ps -> List.fold_left (fun acc r -> combine_routes acc r) p ps
+;;
 
 module Infix = struct
   let ( <*> ) = apply
   let ( </> ) = apply
   let ( <$> ) f p = apply (return f) p
-  let ( *> ) x y = SkipLeft (x, y)
+  let ( *> ) x y = skip_left x y
   let ( <* ) x y = SkipRight (x, y)
-  let ( <$ ) f t = SkipLeft (t, return f)
+  let ( <$ ) f t = skip_left t (return f)
   let ( <|> ) p1 p2 = choice [ p1; p2 ]
 end
 
