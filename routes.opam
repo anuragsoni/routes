@@ -12,7 +12,7 @@ build: [
   ["dune" "runtest" "-p" name] {with-test}
 ]
 depends: [
-  "ocaml" {>= "4.04.2"}
+  "ocaml" {>= "4.05"}
   "containers"
   "dune" {build}
   "alcotest" {with-test}
