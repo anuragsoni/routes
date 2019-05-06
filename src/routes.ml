@@ -1,3 +1,5 @@
+open Containers
+
 module Routes_private = struct
   module Util = Util
 end
@@ -15,12 +17,12 @@ module Method = struct
     | `Other of string
     ]
 
-  let compare = compare
+  let compare = Pervasives.compare
 end
 
 type 'a t = 'a Parser.t
 
-module MethodMap = CCMap.Make (Method)
+module MethodMap = Map.Make (Method)
 
 type 'a router = 'a t MethodMap.t
 
@@ -41,7 +43,7 @@ end
 
 let with_method routes =
   let grouped =
-    CCList.fold_left
+    List.fold_left
       (fun acc (m, r) ->
         MethodMap.update
           m
@@ -53,7 +55,7 @@ let with_method routes =
       MethodMap.empty
       routes
   in
-  MethodMap.map (fun rs -> choice (CCList.rev rs)) grouped
+  MethodMap.map (fun rs -> choice (List.rev rs)) grouped
 ;;
 
 let run_route routes params =
