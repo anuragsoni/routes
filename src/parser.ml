@@ -42,8 +42,10 @@ let rec combine_routes : type a. a t -> a t -> a t =
   match t1, t2 with
   | SkipLeft (Match w1, f1), SkipLeft (Match w2, f2) when w1 = w2 ->
     (match f1, f2 with
-    | Choice c1, Choice c2 -> SkipLeft (Match w1, Choice (List.concat [ c1; c2 ]))
-    | _ -> SkipLeft (Match w1, combine_routes f1 f2))
+    | Choice c1, Choice c2 -> skip_left (Match w1) (Choice (List.concat [ c1; c2 ]))
+    | Choice c1, r -> skip_left (Match w1) (Choice (c1 @ [ r ]))
+    | r, Choice c2 -> skip_left (Match w1) (Choice (r :: c2))
+    | _ -> skip_left (Match w1) (combine_routes f1 f2))
   | _, _ -> Choice [ t1; t2 ]
 ;;
 

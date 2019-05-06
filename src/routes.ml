@@ -14,10 +14,15 @@ module Method = struct
     | `TRACE
     | `Other of string
     ]
+
+  let compare = compare
 end
 
 type 'a t = 'a Parser.t
-type 'a router = (Method.t * 'a t) list
+
+module MethodMap = CCMap.Make (Method)
+
+type 'a router = 'a t MethodMap.t
 
 let choice = Parser.choice
 let empty = Parser.empty
@@ -34,16 +39,35 @@ module Infix = struct
   include Parser.Infix
 end
 
-let with_method routes = routes
+let with_method routes =
+  let grouped =
+    CCList.fold_left
+      (fun acc (m, r) ->
+        MethodMap.update
+          m
+          (fun t ->
+            match t with
+            | None -> Some [ r ]
+            | Some rs -> Some (r :: rs))
+          acc)
+      MethodMap.empty
+      routes
+  in
+  MethodMap.map (fun rs -> choice (CCList.rev rs)) grouped
+;;
+
+let run_route routes params =
+  match Parser.parse routes params with
+  | Some (r, []) -> Some r
+  | _ -> None
+;;
 
 let match' routes target =
   if String.length target = 0
   then None
   else (
     let params = Util.split_path target in
-    match Parser.parse routes params with
-    | Some (r, []) -> Some r
-    | _ -> None)
+    run_route routes params)
 ;;
 
 let match_with_method routes ~target ~meth =
@@ -51,15 +75,7 @@ let match_with_method routes ~target ~meth =
   then None
   else (
     let params = Util.split_path target in
-    let rec route' = function
-      | [] -> None
-      | (m, r) :: rs ->
-        if meth = m
-        then (
-          match Parser.parse r params with
-          | Some (r, []) -> Some r
-          | _ -> route' rs)
-        else route' rs
-    in
-    route' routes)
+    match MethodMap.find_opt meth routes with
+    | None -> None
+    | Some r -> run_route r params)
 ;;
