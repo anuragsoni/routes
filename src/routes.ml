@@ -24,7 +24,7 @@ type 'a t = 'a Parser.t
 
 module MethodMap = Map.Make (Method)
 
-type 'a router = 'a t MethodMap.t
+type 'a router = ('a t Router.t) MethodMap.t
 
 let choice = Parser.choice
 let empty = Parser.empty
@@ -42,26 +42,32 @@ module Infix = struct
 end
 
 let with_method routes =
-  let grouped =
-    List.fold_left
-      (fun acc (m, r) ->
-        MethodMap.update
-          m
-          (fun t ->
-            match t with
-            | None -> Some [ r ]
-            | Some rs -> Some (r :: rs))
-          acc)
-      MethodMap.empty
-      routes
-  in
-  MethodMap.map (fun rs -> choice (List.rev rs)) grouped
+  List.fold_left
+    (fun acc (m, r) ->
+      MethodMap.update
+        m
+        (fun t ->
+          match t with
+          | None ->
+            let q = Router.empty in
+            Some (Router.add (List.concat (Parser.get_actions r)) (Parser.strip_route r) q)
+          | Some q ->
+            Some (Router.add (List.concat (Parser.get_actions r)) (Parser.strip_route r) q)
+          )
+        acc)
+    MethodMap.empty
+    routes
 ;;
 
 let run_route routes params =
   match Parser.parse routes params with
   | Some (r, []) -> Some r
   | _ -> None
+;;
+
+let run_trie t params =
+  let routes, params' = Router.feed_params t params in
+  run_route (choice routes) params'
 ;;
 
 let match' routes target =
@@ -79,5 +85,5 @@ let match_with_method routes ~target ~meth =
     let params = Util.split_path target in
     match MethodMap.find_opt meth routes with
     | None -> None
-    | Some r -> run_route r params)
+    | Some r -> run_trie r params)
 ;;

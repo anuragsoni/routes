@@ -14,6 +14,41 @@ type 'a t =
   | Bool : bool t
   | Str : string t
 
+module R = Router
+module K = R.Key
+
+let get_actions route =
+  let rec aux : type a. a t -> R.Key.t list list -> R.Key.t list list =
+   fun t acc ->
+    match t with
+    | Return _ -> acc
+    | Empty -> acc
+    | Int -> List.map (fun r -> K.PCapture :: r) acc
+    | Int32 -> List.map (fun r -> K.PCapture :: r) acc
+    | Int64 -> List.map (fun r -> K.PCapture :: r) acc
+    | Bool -> List.map (fun r -> K.PCapture :: r) acc
+    | Str -> List.map (fun r -> K.PCapture :: r) acc
+    | Match w -> List.map (fun r -> K.PMatch w :: r) acc
+    | SkipLeft (l, r) ->
+      let l = aux l acc in
+      let r' = aux r [ [] ] in
+      List.concat (List.map (fun r -> List.map (fun r' -> List.concat [ r'; r ]) l) r')
+    | SkipRight (l, r) ->
+      let l = aux l acc in
+      let r' = aux r [ [] ] in
+      List.concat (List.map (fun r -> List.map (fun r' -> List.concat [ r'; r ]) l) r')
+    | Apply (l, r) ->
+      let l = aux l acc in
+      let r' = aux r [ [] ] in
+      List.concat (List.map (fun r -> List.map (fun r' -> List.concat [ r'; r ]) l) r')
+    | Choice ps ->
+      let rs = List.concat (List.map (fun r -> aux r [ [] ]) ps) in
+      let q = List.concat (List.map (fun r -> List.map (fun r' -> r @ r') acc) rs) in
+      q
+  in
+  aux route [ [] ]
+;;
+
 let s x = Match x
 let int = Int
 let int32 = Int32
@@ -39,42 +74,7 @@ let rec apply : type a b. (a -> b) t -> a t -> b t =
   | _ -> Apply (f, t)
 ;;
 
-let rec combine_routes : type a. a t -> a t -> a t =
- fun t1 t2 ->
-  match t1, t2 with
-  | SkipLeft (Match w1, f1), SkipLeft (Match w2, f2) when String.equal w1 w2 ->
-    (match f1, f2 with
-    | Choice c1, Choice c2 -> skip_left (Match w1) (Choice (List.concat [ c1; c2 ]))
-    | Choice c1, r -> skip_left (Match w1) (Choice (c1 @ [ r ]))
-    | r, Choice c2 -> skip_left (Match w1) (Choice (r :: c2))
-    | _ -> skip_left (Match w1) (combine_routes f1 f2))
-  | _, _ -> Choice [ t1; t2 ]
-;;
-
-let choice ps =
-  let first : type a. a t -> string =
-   fun t ->
-    match t with
-    | Match w -> w
-    | SkipLeft (Match w, _) -> w
-    | _ -> ""
-  in
-  match ps with
-  | [] -> Choice []
-  | _ ->
-    let ps = List.sort (fun a b -> String.compare (first a) (first b)) ps in
-    let grouped =
-      List.group_succ ~eq:(fun a b -> String.equal (first a) (first b)) ps
-    in
-    Choice
-      (List.map
-         (fun rs ->
-           match rs with
-           | [] -> Choice []
-           | [ p ] -> p
-           | p :: ps -> List.fold_left (fun acc r -> combine_routes acc r) p ps)
-         grouped)
-;;
+let choice ps = Choice ps
 
 module Infix = struct
   let ( <*> ) = apply
@@ -99,6 +99,16 @@ let bool_of_string = function
   | "true" -> Some true
   | "false" -> Some false
   | _ -> None
+;;
+
+let rec strip_route : type a. a t -> a t =
+ fun t ->
+  match t with
+  | SkipLeft (_, r) -> strip_route r
+  | SkipRight (l, _) -> strip_route l
+  | Choice rs -> Choice (List.map strip_route rs)
+  | Apply (f, t) -> Apply (strip_route f, strip_route t)
+  | _ -> t
 ;;
 
 let rec parse : type a. a t -> string list -> (a * string list) option =
