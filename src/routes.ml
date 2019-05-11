@@ -49,7 +49,7 @@ let with_method routes =
     (fun (m, r) ->
       let idx = Method.to_int m in
       let current_routes = a.(idx) in
-      let patterns = List.concat (Parser.get_actions r) in
+      let patterns = Parser.get_actions r in
       a.(idx) <- Router.add patterns (Parser.strip_route r) current_routes)
     routes;
   a
@@ -59,7 +59,7 @@ let one_of routes =
   let r =
     List.fold_left
       (fun acc r ->
-        let patterns = List.concat (Parser.get_actions r) in
+        let patterns = Parser.get_actions r in
         Router.add patterns (Parser.strip_route r) acc)
       Router.empty
       routes
@@ -68,9 +68,15 @@ let one_of routes =
 ;;
 
 let run_route routes params =
-  match Parser.parse routes params with
-  | Some (r, []) -> Some r
-  | _ -> None
+  let rec aux routes =
+    match routes with
+    | [] -> None
+    | r :: rs ->
+      (match Parser.parse r params with
+      | Some (res, []) -> Some res
+      | _ -> aux rs)
+  in
+  aux routes
 ;;
 
 let run_trie t target =
@@ -79,7 +85,7 @@ let run_trie t target =
   else (
     let params = Util.split_path target in
     let routes, params' = Router.feed_params t params in
-    run_route (Parser.choice routes) params')
+    run_route routes params')
 ;;
 
 let match' routes target = run_trie routes.(0) target

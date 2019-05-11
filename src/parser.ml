@@ -5,7 +5,6 @@ type 'a t =
   | Apply : ('a -> 'b) t * 'a t -> 'b t
   | SkipLeft : 'a t * 'b t -> 'b t
   | SkipRight : 'a t * 'b t -> 'a t
-  | Choice : 'a t list -> 'a t
   | Int : int t
   | Int32 : int32 t
   | Int64 : int64 t
@@ -21,30 +20,26 @@ let get_actions route =
     match t with
     | Return _ -> acc
     | Empty -> acc
-    | Int -> List.map (fun r -> K.PCapture :: r) acc
-    | Int32 -> List.map (fun r -> K.PCapture :: r) acc
-    | Int64 -> List.map (fun r -> K.PCapture :: r) acc
-    | Bool -> List.map (fun r -> K.PCapture :: r) acc
-    | Str -> List.map (fun r -> K.PCapture :: r) acc
-    | Match w -> List.map (fun r -> K.PMatch w :: r) acc
+    | Int -> [ K.PCapture ] :: acc
+    | Int32 -> [ K.PCapture ] :: acc
+    | Int64 -> [ K.PCapture ] :: acc
+    | Bool -> [ K.PCapture ] :: acc
+    | Str -> [ K.PCapture ] :: acc
+    | Match w -> [ K.PMatch w ] :: acc
     | SkipLeft (l, r) ->
       let l = aux l acc in
-      let r' = aux r [ [] ] in
-      List.concat (List.map (fun r -> List.map (fun r' -> List.concat [ r'; r ]) l) r')
+      let r' = aux r [] in
+      List.concat [ l; r' ]
     | SkipRight (l, r) ->
       let l = aux l acc in
-      let r' = aux r [ [] ] in
-      List.concat (List.map (fun r -> List.map (fun r' -> List.concat [ r'; r ]) l) r')
+      let r' = aux r [] in
+      List.concat [ l; r' ]
     | Apply (l, r) ->
       let l = aux l acc in
-      let r' = aux r [ [] ] in
-      List.concat (List.map (fun r -> List.map (fun r' -> List.concat [ r'; r ]) l) r')
-    | Choice ps ->
-      let rs = List.concat (List.map (fun r -> aux r [ [] ]) ps) in
-      let q = List.concat (List.map (fun r -> List.map (fun r' -> r @ r') acc) rs) in
-      q
+      let r' = aux r [] in
+      List.concat [ l; r' ]
   in
-  aux route [ [] ]
+  List.concat (aux route [])
 ;;
 
 let s x = Match x
@@ -72,8 +67,6 @@ let rec apply : type a b. (a -> b) t -> a t -> b t =
   | _ -> Apply (f, t)
 ;;
 
-let choice ps = Choice ps
-
 module Infix = struct
   let ( <*> ) = apply
   let ( </> ) = apply
@@ -81,7 +74,6 @@ module Infix = struct
   let ( *> ) x y = skip_left x y
   let ( <* ) x y = SkipRight (x, y)
   let ( <$ ) f t = skip_left t (return f)
-  let ( <|> ) p1 p2 = choice [ p1; p2 ]
 end
 
 let verify f params =
@@ -98,7 +90,6 @@ let rec strip_route : type a. a t -> a t =
   match t with
   | SkipLeft (_, r) -> strip_route r
   | SkipRight (l, _) -> strip_route l
-  | Choice rs -> Choice (List.map strip_route rs)
   | Apply (f, t) -> Apply (strip_route f, strip_route t)
   | _ -> t
 ;;
@@ -135,11 +126,4 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
       (match parse b rest with
       | None -> None
       | Some (_, rest) -> Some (a', rest)))
-  | Choice ps ->
-    (match ps with
-    | [] -> None
-    | p :: ps ->
-      (match parse p params with
-      | None -> parse (Choice ps) params
-      | res -> res))
 ;;
