@@ -1,5 +1,3 @@
-open Containers
-
 type 'a t =
   | Return : 'a -> 'a t
   | Empty : unit t
@@ -95,12 +93,6 @@ let verify f params =
     | Some r -> Some (r, ps))
 ;;
 
-let bool_of_string = function
-  | "true" -> Some true
-  | "false" -> Some false
-  | _ -> None
-;;
-
 let rec strip_route : type a. a t -> a t =
  fun t ->
   match t with
@@ -120,10 +112,10 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
     | [] -> Some ((), params)
     | _ -> None)
   | Match s -> verify (fun w -> if String.compare w s = 0 then Some () else None) params
-  | Int -> verify Int.of_string params
-  | Int32 -> verify Int32.of_string params
-  | Int64 -> verify Int64.of_string params
-  | Bool -> verify bool_of_string params
+  | Int -> verify int_of_string_opt params
+  | Int32 -> verify Int32.of_string_opt params
+  | Int64 -> verify Int64.of_string_opt params
+  | Bool -> verify bool_of_string_opt params
   | Str -> verify (fun w -> Some w) params
   | Apply (f, t) ->
     (match parse f params with

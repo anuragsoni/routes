@@ -86,39 +86,12 @@ let test_route_order () =
     (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes'))
 ;;
 
-let test_nested_routes () =
-  let open Routes in
-  let open Infix in
-  let routes =
-    choice
-      [ s "user"
-        *> choice
-             [ (fun name age id -> Printf.sprintf "%s%d - %ld" name age id)
-               <$> str
-               </> int
-               </> int32
-             ; (fun id -> Printf.sprintf "%ld" id) <$> int32
-             ; s "bar" *> choice [ (fun message -> message) <$> str ]
-             ; (fun admin id -> Printf.sprintf "%B -- %Ld" admin id) <$> bool </> int64
-             ]
-      ]
-  in
-  Alcotest.(check (option string)) "No Match" None (match' routes "/foo/bar");
-  Alcotest.(check (option string)) "bar" (Some "hello") (match' routes "/user/bar/hello");
-  Alcotest.(check (option string))
-    "admin"
-    (Some "true -- 141")
-    (match' routes "/user/true/141");
-  Alcotest.(check (option string)) "No match" None (match' routes "/user/bar")
-;;
-
 let tests =
   [ "Empty routes will have no matches", `Quick, test_no_match
   ; "Test method matches", `Quick, test_method_match
   ; "Test route extractors", `Quick, test_extractors
   ; "Test strict match", `Quick, test_strict_match
   ; "Test route orders", `Quick, test_route_order
-  ; "Test nested routes", `Quick, test_nested_routes
   ]
 ;;
 

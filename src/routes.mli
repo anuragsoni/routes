@@ -54,14 +54,14 @@ val str : string t
 val empty : unit t
 (** [empty] matches an empty target. This can be used to match against "/". *)
 
-val choice : 'a t list -> 'a t
+val one_of : 'a t list -> 'a router
 (** [choice] accepts a list of route parsers and returns the first one that matches. *)
 
 val with_method : (Method.t * 'a t) list -> 'a router
 (** [choose] accepts a list of path param parsers and converts them to a router. *)
 
-val match' : 'a t -> string -> 'a option
-(** [match'] takes a route parser and runs it against the provided target url. *)
+val match' : 'a router -> string -> 'a option
+(** [match'] runs the router against the provided target url. *)
 
 val match_with_method : 'a router -> target:string -> meth:Method.t -> 'a option
 (** [match_with_method] is used to run the router. It accepts a target url string, HTTP method verb
