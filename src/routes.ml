@@ -14,7 +14,6 @@ module Method = struct
     | `CONNECT
     | `OPTIONS
     | `TRACE
-    | `Other of string
     ]
 
   let compare = Pervasives.compare

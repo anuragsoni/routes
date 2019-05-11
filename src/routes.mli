@@ -13,7 +13,6 @@ module Method : sig
     | `GET
     | `HEAD
     | `OPTIONS
-    | `Other of string
     | `POST
     | `PUT
     | `TRACE
