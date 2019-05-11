@@ -73,24 +73,18 @@ let run_route routes params =
   | _ -> None
 ;;
 
-let run_trie t params =
-  let routes, params' = Router.feed_params t params in
-  run_route (Parser.choice routes) params'
-;;
-
-let match' routes target =
+let run_trie t target =
   if String.length target = 0
   then None
   else (
     let params = Util.split_path target in
-    run_trie routes.(0) params)
+    let routes, params' = Router.feed_params t params in
+    run_route (Parser.choice routes) params')
 ;;
+
+let match' routes target = run_trie routes.(0) target
 
 let match_with_method routes ~target ~meth =
-  if String.length target = 0
-  then None
-  else (
-    let params = Util.split_path target in
-    let idx = Method.to_int meth in
-    run_trie routes.(idx) params)
+  let idx = Method.to_int meth in
+  run_trie routes.(idx) target
 ;;

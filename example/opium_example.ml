@@ -15,7 +15,7 @@ let to_meth = function
   | `OPTIONS -> `OPTIONS
   | `TRACE -> `TRACE
   | `CONNECT -> `CONNECT
-  | `Other w -> failwith ( w ^ " is not supported." )
+  | `Other w -> failwith (w ^ " is not supported.")
 ;;
 
 let router routes =

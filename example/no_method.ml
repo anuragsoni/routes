@@ -22,7 +22,7 @@ let q = "Foobar" <$ s "confusing" <* str
 let r = (fun _ -> "Bad") <$ s "confusing" </> int
 
 let routes =
-  choice
+  one_of
     [ "Hello, World!" <$ s "hi"
     ; "Hello, Routes" <$ s "hello" <* s "from" <* s "routes"
     ; sum <$> s "sum" *> int </> int
