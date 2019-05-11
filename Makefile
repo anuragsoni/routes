@@ -1,4 +1,4 @@
-.PHONY: default build install uninstall clean test
+.PHONY: default build install uninstall clean test examples
 
 default: build
 
@@ -16,3 +16,6 @@ clean:
 
 test:
 	dune runtest -f
+
+examples:
+	dune build @examples

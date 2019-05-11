@@ -12,3 +12,8 @@
  (name opium_example)
  (modules opium_example)
  (libraries opium routes))
+
+(alias
+ (name examples)
+ (deps
+  (glob_files *.exe)))
