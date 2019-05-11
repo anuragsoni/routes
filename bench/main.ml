@@ -1,4 +1,7 @@
 open Core
 open Core_bench
 
-let () = Command.run @@ Bench.make_command [ Static.bench ]
+let () =
+  let benches = List.concat [ [ Static.bench ]; Github.github_benches ] in
+  Command.run @@ Bench.make_command benches
+;;
