@@ -1,5 +1,3 @@
-open Containers
-
 type 'a t =
   | Return : 'a -> 'a t
   | Empty : unit t
@@ -7,12 +5,42 @@ type 'a t =
   | Apply : ('a -> 'b) t * 'a t -> 'b t
   | SkipLeft : 'a t * 'b t -> 'b t
   | SkipRight : 'a t * 'b t -> 'a t
-  | Choice : 'a t list -> 'a t
   | Int : int t
   | Int32 : int32 t
   | Int64 : int64 t
   | Bool : bool t
   | Str : string t
+
+module R = Router
+module K = R.Key
+
+let get_actions route =
+  let rec aux : type a. a t -> R.Key.t list list -> R.Key.t list list =
+   fun t acc ->
+    match t with
+    | Return _ -> acc
+    | Empty -> acc
+    | Int -> [ K.PCapture ] :: acc
+    | Int32 -> [ K.PCapture ] :: acc
+    | Int64 -> [ K.PCapture ] :: acc
+    | Bool -> [ K.PCapture ] :: acc
+    | Str -> [ K.PCapture ] :: acc
+    | Match w -> [ K.PMatch w ] :: acc
+    | SkipLeft (l, r) ->
+      let l = aux l acc in
+      let r' = aux r [] in
+      List.concat [ l; r' ]
+    | SkipRight (l, r) ->
+      let l = aux l acc in
+      let r' = aux r [] in
+      List.concat [ l; r' ]
+    | Apply (l, r) ->
+      let l = aux l acc in
+      let r' = aux r [] in
+      List.concat [ l; r' ]
+  in
+  List.concat (aux route [])
+;;
 
 let s x = Match x
 let int = Int
@@ -39,43 +67,6 @@ let rec apply : type a b. (a -> b) t -> a t -> b t =
   | _ -> Apply (f, t)
 ;;
 
-let rec combine_routes : type a. a t -> a t -> a t =
- fun t1 t2 ->
-  match t1, t2 with
-  | SkipLeft (Match w1, f1), SkipLeft (Match w2, f2) when String.equal w1 w2 ->
-    (match f1, f2 with
-    | Choice c1, Choice c2 -> skip_left (Match w1) (Choice (List.concat [ c1; c2 ]))
-    | Choice c1, r -> skip_left (Match w1) (Choice (c1 @ [ r ]))
-    | r, Choice c2 -> skip_left (Match w1) (Choice (r :: c2))
-    | _ -> skip_left (Match w1) (combine_routes f1 f2))
-  | _, _ -> Choice [ t1; t2 ]
-;;
-
-let choice ps =
-  let first : type a. a t -> string =
-   fun t ->
-    match t with
-    | Match w -> w
-    | SkipLeft (Match w, _) -> w
-    | _ -> ""
-  in
-  match ps with
-  | [] -> Choice []
-  | _ ->
-    let ps = List.sort (fun a b -> String.compare (first a) (first b)) ps in
-    let grouped =
-      List.group_succ ~eq:(fun a b -> String.equal (first a) (first b)) ps
-    in
-    Choice
-      (List.map
-         (fun rs ->
-           match rs with
-           | [] -> Choice []
-           | [ p ] -> p
-           | p :: ps -> List.fold_left (fun acc r -> combine_routes acc r) p ps)
-         grouped)
-;;
-
 module Infix = struct
   let ( <*> ) = apply
   let ( </> ) = apply
@@ -83,7 +74,6 @@ module Infix = struct
   let ( *> ) x y = skip_left x y
   let ( <* ) x y = SkipRight (x, y)
   let ( <$ ) f t = skip_left t (return f)
-  let ( <|> ) p1 p2 = choice [ p1; p2 ]
 end
 
 let verify f params =
@@ -95,10 +85,13 @@ let verify f params =
     | Some r -> Some (r, ps))
 ;;
 
-let bool_of_string = function
-  | "true" -> Some true
-  | "false" -> Some false
-  | _ -> None
+let rec strip_route : type a. a t -> a t =
+ fun t ->
+  match t with
+  | SkipLeft (_, r) -> strip_route r
+  | SkipRight (l, _) -> strip_route l
+  | Apply (f, t) -> Apply (strip_route f, strip_route t)
+  | _ -> t
 ;;
 
 let rec parse : type a. a t -> string list -> (a * string list) option =
@@ -110,10 +103,10 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
     | [] -> Some ((), params)
     | _ -> None)
   | Match s -> verify (fun w -> if String.compare w s = 0 then Some () else None) params
-  | Int -> verify Int.of_string params
-  | Int32 -> verify Int32.of_string params
-  | Int64 -> verify Int64.of_string params
-  | Bool -> verify bool_of_string params
+  | Int -> verify int_of_string_opt params
+  | Int32 -> verify Int32.of_string_opt params
+  | Int64 -> verify Int64.of_string_opt params
+  | Bool -> verify bool_of_string_opt params
   | Str -> verify (fun w -> Some w) params
   | Apply (f, t) ->
     (match parse f params with
@@ -133,11 +126,4 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
       (match parse b rest with
       | None -> None
       | Some (_, rest) -> Some (a', rest)))
-  | Choice ps ->
-    (match ps with
-    | [] -> None
-    | p :: ps ->
-      (match parse p params with
-      | None -> parse (Choice ps) params
-      | res -> res))
 ;;

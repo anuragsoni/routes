@@ -50,9 +50,22 @@ let routes =
     ]
 ;;
 
+let to_meth = function
+  | `GET -> `GET
+  | `POST -> `POST
+  | `HEAD -> `HEAD
+  | `DELETE -> `DELETE
+  | `PATCH -> failwith "PATCH not supported"
+  | `PUT -> `PUT
+  | `OPTIONS -> `OPTIONS
+  | `TRACE -> `TRACE
+  | `CONNECT -> `CONNECT
+  | `Other w -> failwith (w ^ " is not supported")
+;;
+
 let request_handler _ reqd =
   let req = Reqd.request reqd in
-  match Routes.match_with_method ~target:req.target ~meth:req.meth routes with
+  match Routes.match_with_method ~target:req.target ~meth:(to_meth req.meth) routes with
   | None ->
     respond_with_text reqd `Not_found (`String (Status.default_reason_phrase `Not_found))
   | Some response -> respond_with_text reqd `OK (response req)

@@ -1,5 +1,3 @@
-open Containers
-
 module Routes_private = struct
   module Util = Util
 end
@@ -14,19 +12,23 @@ module Method = struct
     | `CONNECT
     | `OPTIONS
     | `TRACE
-    | `Other of string
     ]
 
-  let compare = Pervasives.compare
+  let to_int = function
+    | `GET -> 1
+    | `HEAD -> 2
+    | `POST -> 3
+    | `PUT -> 4
+    | `DELETE -> 5
+    | `CONNECT -> 6
+    | `OPTIONS -> 7
+    | `TRACE -> 8
+  ;;
 end
 
 type 'a t = 'a Parser.t
+type 'a router = 'a t Router.t array
 
-module MethodMap = Map.Make (Method)
-
-type 'a router = 'a t MethodMap.t
-
-let choice = Parser.choice
 let empty = Parser.empty
 let str = Parser.str
 let int = Parser.int
@@ -42,42 +44,55 @@ module Infix = struct
 end
 
 let with_method routes =
-  let grouped =
+  let a = Array.make 9 Router.empty in
+  List.iter
+    (fun (m, r) ->
+      let idx = Method.to_int m in
+      let current_routes = a.(idx) in
+      let patterns = Parser.get_actions r in
+      a.(idx) <- Router.add patterns (Parser.strip_route r) current_routes)
+    routes;
+  a
+;;
+
+let one_of routes =
+  let a = Array.make 9 Router.empty in
+  let r =
     List.fold_left
-      (fun acc (m, r) ->
-        MethodMap.update
-          m
-          (fun t ->
-            match t with
-            | None -> Some [ r ]
-            | Some rs -> Some (r :: rs))
-          acc)
-      MethodMap.empty
+      (fun acc r ->
+        let patterns = Parser.get_actions r in
+        Router.add patterns (Parser.strip_route r) acc)
+      Router.empty
       routes
   in
-  MethodMap.map (fun rs -> choice (List.rev rs)) grouped
+  a.(0) <- r;
+  a
 ;;
 
 let run_route routes params =
-  match Parser.parse routes params with
-  | Some (r, []) -> Some r
-  | _ -> None
+  let rec aux routes =
+    match routes with
+    | [] -> None
+    | r :: rs ->
+      (match Parser.parse r params with
+      | Some (res, []) -> Some res
+      | _ -> aux rs)
+  in
+  aux routes
 ;;
 
-let match' routes target =
+let run_router t target =
   if String.length target = 0
   then None
   else (
     let params = Util.split_path target in
-    run_route routes params)
+    let routes, params' = Router.feed_params t params in
+    run_route routes params')
 ;;
+
+let match' routes target = run_router routes.(0) target
 
 let match_with_method routes ~target ~meth =
-  if String.length target = 0
-  then None
-  else (
-    let params = Util.split_path target in
-    match MethodMap.find_opt meth routes with
-    | None -> None
-    | Some r -> run_route r params)
+  let idx = Method.to_int meth in
+  run_router routes.(idx) target
 ;;
