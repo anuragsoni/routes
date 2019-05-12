@@ -83,9 +83,9 @@ let add l v t =
   let rec ins = function
     | [], Node (x, m) -> Node (v :: x, m)
     | x :: r, Node (v, m) ->
-      let t' =
-        try KeyMap.find x m with
-        | Not_found -> empty
+      let t' = match KeyMap.find_opt x m with
+        | None -> empty
+        | Some v -> v
       in
       let t'' = ins (r, t') in
       Node (v, KeyMap.add x t'' m)
