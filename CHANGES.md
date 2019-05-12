@@ -1,3 +1,8 @@
+# 0.4.3
+
+* Use a trie based path matcher.
+* Add micro-benchmark suite.
+
 # 0.4.2
 
 * Specialize apply for `SkipLeft` parsers.
