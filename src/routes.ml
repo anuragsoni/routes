@@ -56,6 +56,7 @@ let with_method routes =
 ;;
 
 let one_of routes =
+  let a = Array.make 9 Router.empty in
   let r =
     List.fold_left
       (fun acc r ->
@@ -64,7 +65,8 @@ let one_of routes =
       Router.empty
       routes
   in
-  Array.make 1 r
+  a.(0) <- r;
+  a
 ;;
 
 let run_route routes params =
@@ -79,7 +81,7 @@ let run_route routes params =
   aux routes
 ;;
 
-let run_trie t target =
+let run_router t target =
   if String.length target = 0
   then None
   else (
@@ -88,9 +90,9 @@ let run_trie t target =
     run_route routes params')
 ;;
 
-let match' routes target = run_trie routes.(0) target
+let match' routes target = run_router routes.(0) target
 
 let match_with_method routes ~target ~meth =
   let idx = Method.to_int meth in
-  run_trie routes.(idx) target
+  run_router routes.(idx) target
 ;;
