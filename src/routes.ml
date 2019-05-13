@@ -49,7 +49,7 @@ let with_method routes =
     (fun (m, r) ->
       let idx = Method.to_int m in
       let current_routes = a.(idx) in
-      let patterns = Parser.get_actions r in
+      let patterns = Parser.get_patterns r in
       a.(idx) <- Router.add patterns (Parser.strip_route r) current_routes)
     routes;
   a
@@ -60,7 +60,7 @@ let one_of routes =
   let r =
     List.fold_left
       (fun acc r ->
-        let patterns = Parser.get_actions r in
+        let patterns = Parser.get_patterns r in
         Router.add patterns (Parser.strip_route r) acc)
       Router.empty
       routes

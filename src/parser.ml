@@ -14,7 +14,7 @@ type 'a t =
 module R = Router
 module K = R.Key
 
-let get_actions route =
+let get_patterns route =
   let rec aux : type a. a t -> R.Key.t list list -> R.Key.t list list =
    fun t acc ->
     match t with
