@@ -3,13 +3,6 @@ module Key = struct
     | PMatch : string -> t
     | PCapture : t
 
-  let equal a b =
-    match a, b with
-    | PCapture, PCapture -> true
-    | PMatch w1, PMatch w2 when w1 = w2 -> true
-    | _ -> false
-  ;;
-
   let compare a b =
     match a, b with
     | PMatch w1, PMatch w2 -> String.compare w1 w2
@@ -17,39 +10,7 @@ module Key = struct
     | PCapture, PCapture -> 0
     | PCapture, PMatch _ -> 1
   ;;
-
-  let matches_string k s =
-    match k with
-    | PMatch w -> w = s
-    | PCapture -> true
-  ;;
 end
-
-let extract_key_prefix a b =
-  let rec aux left right acc =
-    match left, right with
-    | [], _ -> List.rev acc, [], right
-    | _, [] -> List.rev acc, left, []
-    | x :: xs, y :: ys ->
-      if Key.equal x y then aux xs ys (x :: acc) else List.rev acc, left, right
-  in
-  aux a b []
-;;
-
-let consume_pattern ps xs =
-  let rec aux ps xs acc =
-    match ps, xs with
-    | [], [] -> Some (List.rev acc)
-    | [], _ -> None
-    | _, [] -> None
-    | p :: ps', x :: xs' ->
-      (match p with
-      | Key.PCapture -> aux ps' xs' (x :: acc)
-      | Key.PMatch w when w = x -> aux ps' xs' acc
-      | _ -> None)
-  in
-  aux ps xs []
-;;
 
 module KeyMap = Map.Make (Key)
 
@@ -83,7 +44,8 @@ let add l v t =
   let rec ins = function
     | [], Node (x, m) -> Node (v :: x, m)
     | x :: r, Node (v, m) ->
-      let t' = match KeyMap.find_opt x m with
+      let t' =
+        match KeyMap.find_opt x m with
         | None -> empty
         | Some v -> v
       in
