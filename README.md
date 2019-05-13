@@ -1,17 +1,13 @@
 ## Routes
 
 This library will help with adding typed routes to OCaml applications.
+The goal is to have a easy to use portable library with
+reasonable performance [See benchmark folder](https://github.com/anuragsoni/routes/tree/master/bench).
 
 Users can create a list of routes, and handler function to work
 on the extracted entities using the combinators provided by
 the library. To perform URL matching one would just need to forward
 the URL's path and query to the matcher.
-
-The core library in the current state isn't tied to any particular library or framework.
-It should be usable in the current state, but the idea would be to provide sub-libraries
-with tighter integration with the remaining ecosystem. Future work would also include
-working on client side routing for use with `js_of_ocaml` libraries
-like [incr_dom](https://github.com/janestreet/incr_dom) or [ocaml-vdom](https://github.com/LexiFi/ocaml-vdom).
 
 #### Example
 
