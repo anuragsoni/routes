@@ -11,16 +11,14 @@ License for that can be found httprouter.LICENSE
 * Ubuntu 19.04 (Kernel 5.0.0-13-generic)
 
 ```
-┌───────────────┬─────────────┬───────────┬──────────┬──────────┬────────────┐
-│ Name          │    Time/Run │   mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├───────────────┼─────────────┼───────────┼──────────┼──────────┼────────────┤
-│ Static Bench  │ 44_312.84ns │ 6_464.13w │    0.34w │    0.34w │    100.00% │
-│ Github Static │    132.96ns │    40.00w │          │          │      0.30% │
-│ Github Params │    314.81ns │   101.00w │          │          │      0.71% │
-│ Parse Static  │    127.66ns │    40.00w │          │          │      0.29% │
-│ Parse 1 param │    179.67ns │    67.00w │          │          │      0.41% │
-│ Parse 2 param │    294.31ns │    99.00w │          │          │      0.66% │
-└───────────────┴─────────────┴───────────┴──────────┴──────────┴────────────┘
+   Name               Time/Run     mWd/Run   mjWd/Run   Prom/Run   Percentage  
+ --------------- ------------- ----------- ---------- ---------- ------------ 
+  Static Bench    30_263.57ns   5_842.11w      0.29w      0.29w      100.00%  
+  Github Static      104.07ns      36.00w                              0.34%  
+  Github Params      238.18ns      89.00w                              0.79%  
+  Parse Static        92.69ns      36.00w                              0.31%  
+  Parse 1 param      140.63ns      59.00w                              0.46%  
+  Parse 2 param      238.72ns      87.00w                              0.79%  
 ```
 
 * Static bench: Collection of random 157 routes. Runs 157 urls through the router in every run.
