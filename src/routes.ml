@@ -82,12 +82,9 @@ let run_route routes params =
 ;;
 
 let run_router t target =
-  if String.length target = 0
-  then None
-  else (
-    let params = Util.split_path target in
-    let routes, params' = Router.feed_params t params in
-    run_route routes params')
+  let params = Util.split_path target in
+  let routes, params' = Router.feed_params t params in
+  run_route routes params'
 ;;
 
 let match' routes target = run_router routes.(0) target

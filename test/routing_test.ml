@@ -86,12 +86,106 @@ let test_route_order () =
     (extract_response (match_with_method ~target:"/12/11" ~meth:`GET routes'))
 ;;
 
+let test_discard_param_either_side () =
+  let open Routes in
+  let open Infix in
+  let routes = one_of [ (fun a -> a) <$> s "foo" *> str <* s "bar" ] in
+  Alcotest.(check (option string))
+    "Matches empty route"
+    (Some "baz")
+    (match' routes "/foo/baz/bar")
+;;
+
+let test_matches_routes_with_common_prefix () =
+  let open Routes in
+  let open Infix in
+  let routes =
+    one_of [ "root" <$ empty; "one" <$ s "foo" *> s "bar"; "two" <$ s "foo" ]
+  in
+  Alcotest.(check (option string))
+    "Matches empty route"
+    (Some "root")
+    (match' routes "/");
+  Alcotest.(check (option string))
+    "Matches first overlapping path param"
+    (Some "two")
+    (match' routes "/foo");
+  Alcotest.(check (option string))
+    "Matches full path match as well"
+    (Some "one")
+    (match' routes "/foo/bar")
+;;
+
+let test_verify_first_parsed_route_matches () =
+  let open Routes in
+  let open Infix in
+  (* Route `string_of_int` and `capitalize_ascii` overlap.
+  But if `string_of_int` succeeds we stop there and return the result.
+  Otherwise we try the remaining parsers that overlap. *)
+  let routes =
+    one_of
+      [ "empty" <$ empty
+      ; string_of_int <$> s "foo" *> int
+      ; String.uppercase_ascii <$> s "foo" *> str
+      ; string_of_bool <$> s "foo" *> bool
+      ]
+  in
+  let routes' =
+    one_of
+      [ "empty" <$ empty
+      ; (fun s -> string_of_int (String.length s)) <$> s "foo" *> str
+      ; string_of_int <$> s "foo" *> int
+      ; string_of_bool <$> s "foo" *> bool
+      ]
+  in
+  Alcotest.(check (option string))
+    "Matches the first route that parses successfully"
+    (Some "121")
+    (match' routes "/foo/121");
+  Alcotest.(check (option string))
+    "Matches the first route that parses successfully"
+    (Some "OCAML")
+    (match' routes "/foo/ocaml");
+  Alcotest.(check (option string))
+    "Matches the first route that parses successfully"
+    (Some "3")
+    (match' routes' "/foo/121")
+;;
+
+let test_leading_slash_is_discarded () =
+  let open Routes in
+  let open Infix in
+  let routes = one_of [ "foo" <$ s "foo"; "empty" <$ empty ] in
+  Alcotest.(check (option string))
+    "foo with no leading slash"
+    (Some "foo")
+    (match' routes "foo");
+  Alcotest.(check (option string))
+    "foo with leading slash"
+    (Some "foo")
+    (match' routes "/foo");
+  Alcotest.(check (option string))
+    "root with leading slash"
+    (Some "empty")
+    (match' routes "/");
+  Alcotest.(check (option string))
+    "root with no leading slash"
+    (Some "empty")
+    (match' routes "")
+;;
+
 let tests =
   [ "Empty routes will have no matches", `Quick, test_no_match
-  ; "Test method matches", `Quick, test_method_match
-  ; "Test route extractors", `Quick, test_extractors
-  ; "Test strict match", `Quick, test_strict_match
-  ; "Test route orders", `Quick, test_route_order
+  ; "Method matches", `Quick, test_method_match
+  ; "Route extractors", `Quick, test_extractors
+  ; "Strict match", `Quick, test_strict_match
+  ; "Route orders", `Quick, test_route_order
+  ; "Param discards", `Quick, test_discard_param_either_side
+  ; "Routes with common prefix", `Quick, test_matches_routes_with_common_prefix
+  ; ( "First successful parsed route matches"
+    , `Quick
+    , test_verify_first_parsed_route_matches )
+  ; "Leading slash is discarded", `Quick, test_leading_slash_is_discarded
   ]
 ;;
 

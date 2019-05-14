@@ -149,11 +149,8 @@ let router =
         </> issues *> int
         <* s "comments" )
     ; ( `GET
-      , (fun _ _ _ -> "comments")
-        <$> repo_owner
-        </> str
-        </> issues *> int
-        <* s "events" )
+      , (fun _ _ _ -> "comments") <$> repo_owner </> str </> issues *> int <* s "events"
+      )
     ]
   in
   with_method
