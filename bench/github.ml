@@ -70,9 +70,103 @@ let router =
     ; `GET, (fun _ _ -> "owner") <$> user *> s "starred" *> str </> str
     ; `PUT, (fun _ _ -> "owner") <$> user *> s "starred" *> str </> str
     ; `DELETE, (fun _ _ -> "owner") <$> user *> s "starred" *> str </> str
+    ; `GET, (fun _ _ -> "subscribe") <$> s "repos" *> str </> str <* s "subscribers"
+    ; `GET, (fun _ -> "subscription") <$> users *> str <* s "subscriptions"
+    ; `GET, "user subscription" <$ user *> s "subscription"
+    ; ( `GET
+      , (fun _ _ -> "repo subscription") <$> s "repos" *> str </> str <* s "subscription"
+      )
+    ; ( `POST
+      , (fun _ _ -> "repo subscription") <$> s "repos" *> str </> str <* s "subscription"
+      )
+    ; ( `DELETE
+      , (fun _ _ -> "repo subscription") <$> s "repos" *> str </> str <* s "subscription"
+      )
+    ; `GET, (fun _ _ -> "owner subscription") <$> user *> s "subscription" *> str </> str
+    ; `PUT, (fun _ _ -> "owner subscription") <$> user *> s "subscription" *> str </> str
+    ; ( `DELETE
+      , (fun _ _ -> "owner subscription") <$> user *> s "subscription" *> str </> str )
     ]
   in
-  with_method @@ List.concat [ auth; applications; users_routes; activity ]
+  let gists = s "gists" in
+  let gist_routes =
+    [ `GET, (fun _ -> "user gists") <$> users *> str <* gists
+    ; `GET, "gists" <$ gists
+    ; `GET, (fun _ -> "gist") <$> gists *> int
+    ; `POST, "post gists" <$ gists
+    ; `PUT, (fun _ -> "gist") <$> gists *> int <* s "star"
+    ; `DELETE, (fun _ -> "gist") <$> gists *> int <* s "star"
+    ; `GET, (fun _ -> "gist") <$> gists *> int <* s "star"
+    ; `POST, (fun _ -> "gist") <$> gists *> int <* s "forks"
+    ; `DELETE, (fun _ -> "delete") <$> gists *> int
+    ]
+  in
+  let repo_owner = s "repos" *> str in
+  let git_blob = s "git" *> s "blobs" in
+  let git_data_routes =
+    [ `GET, (fun _ _ _ -> "") <$> repo_owner </> str </> git_blob *> str
+    ; `POST, (fun _ _ -> "") <$> repo_owner </> str <* git_blob
+    ; `GET, (fun _ _ _ -> "") <$> repo_owner </> str </> s "git" *> s "commits" *> str
+    ; `POST, (fun _ _ -> "") <$> repo_owner </> str <* s "git" <* s "commits"
+    ; `GET, (fun _ _ -> "") <$> repo_owner </> str <* s "git" <* s "refs"
+    ; `POST, (fun _ _ -> "") <$> repo_owner </> str <* s "git" <* s "refs"
+    ; `GET, (fun _ _ _ -> "") <$> repo_owner </> str </> s "git" *> s "tags" *> str
+    ; `POST, (fun _ _ -> "") <$> repo_owner </> str <* s "git" *> s "tags"
+    ; `GET, (fun _ _ _ -> "") <$> repo_owner </> str </> s "git" *> s "trees" *> str
+    ; `POST, (fun _ _ -> "") <$> repo_owner </> str <* s "git" *> s "trees"
+    ]
+  in
+  let misc_routes =
+    [ `GET, "emojis" <$ s "emojis"
+    ; `GET, "ignore" <$ s "gitignore" *> s "templates"
+    ; `GET, (fun n -> n) <$> s "gitignore" *> s "templates" *> str
+    ; `POST, "marky" <$ s "markdown"
+    ; `POST, "marky raw" <$ s "markdown" *> s "raw"
+    ; `GET, "meta" <$ s "meta"
+    ; `GET, "rate" <$ s "rate_limit"
+    ]
+  in
+  let issues = s "issues" in
+  let issue_routes =
+    [ `GET, "issue" <$ issues
+    ; `GET, "user issue" <$ user *> issues
+    ; `GET, (fun o -> o) <$> s "orgs" *> str <* issues
+    ; `GET, (fun _ _ -> "repo issue") <$> repo_owner </> str <* issues
+    ; `GET, (fun _ _ _ -> "repo issue") <$> repo_owner </> str </> issues *> int
+    ; `POST, (fun _ _ -> "repo issue") <$> repo_owner </> str <* issues
+    ; `GET, (fun _ _ -> "assigned") <$> repo_owner </> str <* s "assignees"
+    ; `GET, (fun _ _ _ -> "assigned") <$> repo_owner </> str </> s "assignees" *> str
+    ; ( `GET
+      , (fun _ _ _ -> "comments")
+        <$> repo_owner
+        </> str
+        </> issues *> int
+        <* s "comments" )
+    ; ( `POST
+      , (fun _ _ _ -> "comments")
+        <$> repo_owner
+        </> str
+        </> issues *> int
+        <* s "comments" )
+    ; ( `GET
+      , (fun _ _ _ -> "comments")
+        <$> repo_owner
+        </> str
+        </> issues *> int
+        <* s "events" )
+    ]
+  in
+  with_method
+  @@ List.concat
+       [ auth
+       ; applications
+       ; users_routes
+       ; activity
+       ; gist_routes
+       ; git_data_routes
+       ; misc_routes
+       ; issue_routes
+       ]
 ;;
 
 open Core_bench
