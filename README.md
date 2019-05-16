@@ -1,6 +1,7 @@
-## Routes
+## Routes &nbsp; [![Build Status][travis-img]][travis]
 
-[![Build Status](https://travis-ci.com/anuragsoni/routes.svg?branch=master)](https://travis-ci.com/anuragsoni/routes)
+[travis]: https://travis-ci.com/anuragsoni/routes/branches
+[travis-img]: https://travis-ci.com/anuragsoni/routes.svg?branch=master
 
 This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
