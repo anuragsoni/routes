@@ -6,6 +6,7 @@ homepage: "https://github.com/anuragsoni/routes"
 bug-reports: "https://github.com/anuragsoni/routes/issues"
 dev-repo: "git+https://github.com/anuragsoni/routes.git"
 doc: "https://anuragsoni.github.io/routes/"
+tags: [ "router" "http" ]
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
