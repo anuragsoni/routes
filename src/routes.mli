@@ -22,6 +22,8 @@ end
 (** ['a t] represents a path parameter of type 'a. *)
 type 'a t
 
+(** ['a router] represents the internal router data type, where each route
+    can potentially return a value of type 'a .*)
 type 'a router
 
 val return : 'a -> 'a t
@@ -55,10 +57,12 @@ val empty : unit t
 (** [empty] matches an empty target. This can be used to match against "/". *)
 
 val one_of : 'a t list -> 'a router
-(** [choice] accepts a list of route parsers and returns the first one that matches. *)
+(** [one_of] accepts a list of route parsers and converts into a router. *)
 
 val with_method : (Method.t * 'a t) list -> 'a router
-(** [choose] accepts a list of path param parsers and converts them to a router. *)
+(** [with_method] accepts a list of routes + http methods and converts it into a router.
+    This will also group methods based on the Http verb. If there are multiple route
+    definitions that overlap and are potential matches, the one defined first will be returned. *)
 
 val match' : 'a router -> string -> 'a option
 (** [match'] runs the router against the provided target url. *)
