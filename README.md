@@ -1,5 +1,7 @@
 ## Routes
 
+[![Build Status](https://travis-ci.com/anuragsoni/routes.svg?branch=master)](https://travis-ci.com/anuragsoni/routes)
+
 This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
 reasonable performance [See benchmark folder](https://github.com/anuragsoni/routes/tree/master/bench).
