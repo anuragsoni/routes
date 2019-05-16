@@ -29,7 +29,7 @@ let feed_params t params =
     match t, params with
     | { max_path_len; _ }, _ when List.length params > max_path_len -> [], []
     | { parsers = []; _ }, [] -> [], []
-    | { parsers = rs; _ }, [] -> List.rev rs, List.rev captures
+    | { parsers = rs; _ }, [] -> rs, List.rev captures
     | { children; capture; _ }, x :: xs ->
       (match KeyMap.find_opt x children with
       | None ->

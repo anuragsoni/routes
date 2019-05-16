@@ -44,6 +44,7 @@ module Infix = struct
 end
 
 let with_method routes =
+  let routes = List.rev routes in
   let a = Array.make 9 Router.empty in
   List.iter
     (fun (m, r) ->
@@ -56,6 +57,7 @@ let with_method routes =
 ;;
 
 let one_of routes =
+  let routes = List.rev routes in
   let a = Array.make 9 Router.empty in
   let r =
     List.fold_left

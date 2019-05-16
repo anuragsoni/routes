@@ -186,7 +186,7 @@ let urls =
   ]
 ;;
 
-let handler = "response"
+let handler = ()
 
 open Routes
 open Infix
@@ -207,7 +207,6 @@ let router =
 ;;
 
 let bench =
-  let open Core in
   let open Core_bench in
   Bench.Test.create ~name:"Static Bench" (fun () -> Util.bench_routes router urls)
 ;;

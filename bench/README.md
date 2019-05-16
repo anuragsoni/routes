@@ -11,14 +11,14 @@ License for that can be found httprouter.LICENSE
 * Ubuntu 19.04 (Kernel 5.0.0-13-generic)
 
 ```
-   Name               Time/Run     mWd/Run   mjWd/Run   Prom/Run   Percentage
+ Name               Time/Run     mWd/Run   mjWd/Run   Prom/Run   Percentage
  --------------- ------------- ----------- ---------- ---------- ------------
-  Static Bench    30_263.57ns   5_842.11w      0.29w      0.29w      100.00%
-  Github Static      104.07ns      36.00w                              0.34%
-  Github Params      238.18ns      89.00w                              0.79%
-  Parse Static        92.69ns      36.00w                              0.31%
-  Parse 1 param      140.63ns      59.00w                              0.46%
-  Parse 2 param      238.72ns      87.00w                              0.79%
+  Static Bench    27_767.11ns   5_834.12w      4.20w      4.20w      100.00%
+  Github Static      109.61ns      33.00w                              0.39%
+  Github Params      203.99ns      86.00w                              0.73%
+  Parse Static        86.91ns      33.00w                              0.31%
+  Parse 1 param      120.73ns      56.00w                              0.43%
+  Parse 2 param      208.58ns      84.00w                              0.75%
 ```
 
 * Static bench: Collection of random 157 routes. Runs 157 urls through the router in every run.
