@@ -170,16 +170,12 @@ open Core_bench
 
 let bench_static =
   Bench.Test.create ~name:"Github Static" (fun () ->
-      ignore (match_with_method ~meth:`GET ~target:"/user/repos" router))
+      match_with_method ~meth:`GET ~target:"/user/repos" router)
 ;;
 
 let bench_github_param =
   Bench.Test.create ~name:"Github Params" (fun () ->
-      ignore
-        (match_with_method
-           ~meth:`GET
-           ~target:"/repos/anuragsoni/routes/stargazers"
-           router))
+      match_with_method ~meth:`GET ~target:"/repos/anuragsoni/routes/stargazers" router)
 ;;
 
 let github_benches = [ bench_static; bench_github_param ]

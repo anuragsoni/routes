@@ -60,17 +60,17 @@ open Core_bench
 
 let bench_static =
   Bench.Test.create ~name:"Parse Static" (fun () ->
-      ignore (match_with_method ~meth:`GET ~target:"/1/users" routes))
+      match_with_method ~meth:`GET ~target:"/1/users" routes)
 ;;
 
 let bench_one_param =
   Bench.Test.create ~name:"Parse 1 param" (fun () ->
-      ignore (match_with_method ~meth:`GET ~target:"/1/classes/ocaml" routes))
+      match_with_method ~meth:`GET ~target:"/1/classes/ocaml" routes)
 ;;
 
 let bench_two_param =
   Bench.Test.create ~name:"Parse 2 param" (fun () ->
-      ignore (match_with_method ~meth:`PUT ~target:"/1/classes/ocaml/121" routes))
+      match_with_method ~meth:`PUT ~target:"/1/classes/ocaml/121" routes)
 ;;
 
 let parse_benches = [ bench_static; bench_one_param; bench_two_param ]
