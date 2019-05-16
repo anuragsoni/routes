@@ -1,5 +1,7 @@
-# 0.4.3
+# 0.5.0
 
+* Flatten nested skip-left actions.
+* Group routes based on the HTTP verb.
 * Use a trie based path matcher.
 * Add micro-benchmark suite.
 
