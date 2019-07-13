@@ -5,8 +5,6 @@
 *)
 
 module Method : sig
-  (** HTTP methods. This is an optional input for route matching.
-      The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
   type t =
     [ `CONNECT
     | `DELETE
@@ -17,14 +15,16 @@ module Method : sig
     | `PUT
     | `TRACE
     ]
+  (** HTTP methods. This is an optional input for route matching.
+      The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
 end
 
-(** ['a t] represents a path parameter of type 'a. *)
 type 'a t
+(** ['a t] represents a path parameter of type 'a. *)
 
+type 'a router
 (** ['a router] represents the internal router data type, where each route
     can potentially return a value of type 'a .*)
-type 'a router
 
 val return : 'a -> 'a t
 (** [return v] is a path param parser that always returns v. *)
@@ -56,13 +56,20 @@ val str : string t
 val empty : unit t
 (** [empty] matches an empty target. This can be used to match against "/". *)
 
-val one_of : 'a t list -> 'a router
-(** [one_of] accepts a list of route parsers and converts into a router. *)
+val one_of : ?ignore_trailing_slash:bool -> 'a t list -> 'a router
+(** [one_of] accepts a list of route parsers and converts into a router.
+    ignore_trailing_slash is a boolean flag that can control whether to keep
+    or ignore the trailing slash in the input target url. The default value
+    is true. *)
 
-val with_method : (Method.t * 'a t) list -> 'a router
+val with_method : ?ignore_trailing_slash:bool -> (Method.t * 'a t) list -> 'a router
 (** [with_method] accepts a list of routes + http methods and converts it into a router.
     This will also group methods based on the Http verb. If there are multiple route
-    definitions that overlap and are potential matches, the one defined first will be returned. *)
+    definitions that overlap and are potential matches, the one defined first will be returned.
+
+    ignore_trailing_slash is a boolean flag that can control whether to keep
+    or ignore the trailing slash in the input target url. The default value
+    is true. *)
 
 val match' : 'a router -> string -> 'a option
 (** [match'] runs the router against the provided target url. *)
@@ -101,6 +108,6 @@ end
 
 module Routes_private : sig
   module Util : sig
-    val split_path : string -> string list
+    val split_path : bool -> string -> string list
   end
 end
