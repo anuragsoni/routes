@@ -12,12 +12,11 @@ type 'a node =
   { parsers : 'a list
   ; children : 'a node KeyMap.t
   ; capture : 'a node option
-  ; max_path_len : int
   }
 
 type 'a t = 'a node
 
-let empty = { parsers = []; children = KeyMap.empty; capture = None; max_path_len = 0 }
+let empty = { parsers = []; children = KeyMap.empty; capture = None }
 
 let is_empty = function
   | { parsers = []; children; _ } -> KeyMap.is_empty children
@@ -27,7 +26,6 @@ let is_empty = function
 let feed_params t params =
   let rec aux t params captures =
     match t, params with
-    | { max_path_len; _ }, _ when List.length params > max_path_len -> [], []
     | { parsers = []; _ }, [] -> [], []
     | { parsers = rs; _ }, [] -> rs, List.rev captures
     | { children; capture; _ }, x :: xs ->
@@ -45,9 +43,7 @@ let add k v t =
   let rec aux k t =
     match k, t with
     | [], ({ parsers = x; _ } as n) -> { n with parsers = v :: x }
-    | x :: r, ({ children; max_path_len; capture; _ } as n) ->
-      let path_len = List.length k in
-      let max_path_len = if path_len > max_path_len then path_len else max_path_len in
+    | x :: r, ({ children; capture; _ } as n) ->
       (match x with
       | Key.PMatch w ->
         let t' =
@@ -56,7 +52,7 @@ let add k v t =
           | Some v -> v
         in
         let t'' = aux r t' in
-        { n with children = KeyMap.add w t'' children; max_path_len }
+        { n with children = KeyMap.add w t'' children }
       | Key.PCapture ->
         let t' =
           match capture with
@@ -64,7 +60,7 @@ let add k v t =
           | Some v -> v
         in
         let t'' = aux r t' in
-        { n with capture = Some t''; max_path_len })
+        { n with capture = Some t'' })
   in
   aux k t
 ;;

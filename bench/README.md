@@ -7,18 +7,18 @@ License for that can be found httprouter.LICENSE
 ### Results
 
 * i7-8550U CPU @ 1.80GHz
-* OCaml version 4.07.1
-* Ubuntu 19.04 (Kernel 5.0.0-13-generic)
+* OCaml version 4.08.1+flambda
+* Ubuntu 19.04 (Kernel 5.0.0-27-generic)
 
 ```
- Name               Time/Run     mWd/Run   mjWd/Run   Prom/Run   Percentage
+    Name               Time/Run     mWd/Run   mjWd/Run   Prom/Run   Percentage
  --------------- ------------- ----------- ---------- ---------- ------------
-  Static Bench    27_767.11ns   5_834.12w      4.20w      4.20w      100.00%
-  Github Static      109.61ns      33.00w                              0.39%
-  Github Params      203.99ns      86.00w                              0.73%
-  Parse Static        86.91ns      33.00w                              0.31%
-  Parse 1 param      120.73ns      56.00w                              0.43%
-  Parse 2 param      208.58ns      84.00w                              0.75%
+  Static Bench    26_729.04ns   6_119.12w      4.52w      4.52w      100.00%
+  Github Static      103.85ns      35.00w                              0.39%
+  Github Params      201.25ns      88.00w                              0.75%
+  Parse Static        91.54ns      35.00w                              0.34%
+  Parse 1 param      118.92ns      58.00w                              0.44%
+  Parse 2 param      220.28ns      86.00w                              0.82%
 ```
 
 * Static bench: Collection of random 157 routes. Runs 157 urls through the router in every run.
