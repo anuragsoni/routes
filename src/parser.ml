@@ -15,17 +15,17 @@ module R = Router
 module K = R.Key
 
 let get_patterns route =
-  let rec aux : type a. a t -> R.Key.t list list -> R.Key.t list list =
+  let rec aux : type a. a t -> R.Key.t list -> R.Key.t list =
    fun t acc ->
     match t with
     | Return _ -> acc
     | Empty -> acc
-    | Int -> [ K.PCapture ] :: acc
-    | Int32 -> [ K.PCapture ] :: acc
-    | Int64 -> [ K.PCapture ] :: acc
-    | Bool -> [ K.PCapture ] :: acc
-    | Str -> [ K.PCapture ] :: acc
-    | Match w -> [ K.PMatch w ] :: acc
+    | Int -> K.PCapture :: acc
+    | Int32 -> K.PCapture :: acc
+    | Int64 -> K.PCapture :: acc
+    | Bool -> K.PCapture :: acc
+    | Str -> K.PCapture :: acc
+    | Match w -> K.PMatch w :: acc
     | SkipLeft (l, r) ->
       let l = aux l acc in
       let r' = aux r [] in
@@ -39,7 +39,7 @@ let get_patterns route =
       let r' = aux r [] in
       List.concat [ l; r' ]
   in
-  List.concat (aux route [])
+  aux route []
 ;;
 
 let s x = Match x
