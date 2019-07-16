@@ -1,3 +1,3 @@
-(lang dune 1.8)
+(lang dune 1.1)
 (using fmt 1.1)
 (name routes)
