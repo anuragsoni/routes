@@ -195,7 +195,7 @@ let router =
   with_method
     (List.map
        (fun (m, u) ->
-         let split = Routes_private.Util.split_path u in
+         let split = Routes_private.Util.split_path true u in
          let p =
            match split with
            | [] -> empty

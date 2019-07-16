@@ -27,7 +27,17 @@ module Method = struct
 end
 
 type 'a t = 'a Parser.t
-type 'a router = 'a t Router.t array
+
+module R = struct
+  type 'a t =
+    { routes : 'a Parser.t Router.t array
+    ; url_split : string -> string list
+    }
+
+  let create url_split routes = { routes; url_split }
+end
+
+type 'a router = 'a R.t
 
 let empty = Parser.empty
 let str = Parser.str
@@ -43,7 +53,7 @@ module Infix = struct
   include Parser.Infix
 end
 
-let with_method routes =
+let with_method ?(ignore_trailing_slash = true) routes =
   let routes = List.rev routes in
   let a = Array.make 9 Router.empty in
   List.iter
@@ -53,10 +63,10 @@ let with_method routes =
       let patterns = Parser.get_patterns r in
       a.(idx) <- Router.add patterns (Parser.strip_route r) current_routes)
     routes;
-  a
+  R.create (Util.split_path ignore_trailing_slash) a
 ;;
 
-let one_of routes =
+let one_of ?(ignore_trailing_slash = true) routes =
   let routes = List.rev routes in
   let a = Array.make 9 Router.empty in
   let r =
@@ -68,7 +78,7 @@ let one_of routes =
       routes
   in
   a.(0) <- r;
-  a
+  R.create (Util.split_path ignore_trailing_slash) a
 ;;
 
 let run_route routes params =
@@ -83,15 +93,14 @@ let run_route routes params =
   aux routes
 ;;
 
-let run_router t target =
-  let params = Util.split_path target in
+let run_router t params =
   let routes, params' = Router.feed_params t params in
   run_route routes params'
 ;;
 
-let match' routes target = run_router routes.(0) target
+let match' { R.routes; url_split } target = run_router routes.(0) (url_split target)
 
-let match_with_method routes ~target ~meth =
+let match_with_method { R.routes; url_split } ~target ~meth =
   let idx = Method.to_int meth in
-  run_router routes.(idx) target
+  run_router routes.(idx) (url_split target)
 ;;
