@@ -29,7 +29,11 @@ let test_no_match () =
 let test_method_match () =
   let open Routes in
   let open Infix in
-  let routes = with_method [ `GET, idx <$ empty ] in
+  let routes = with_method [ `GET, idx <$ empty; `Other "PATCH", idx <$ empty ] in
+  Alcotest.(check (option string))
+    "Matches handler with patch method"
+    (Some "Matched")
+    (extract_response (match_with_method ~target:"/" ~meth:(`Other "PATCH") routes));
   Alcotest.(check (option string))
     "Matches handler with get method"
     (Some "Matched")
