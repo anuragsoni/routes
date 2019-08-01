@@ -10,7 +10,8 @@ tags: [ "router" "http" ]
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
-  ["dune" "runtest" "-p" name] {with-test}
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+  ["dune" "build" "-p" name "@doc"] {with-doc}
 ]
 depends: [
   "ocaml" {>= "4.05"}
