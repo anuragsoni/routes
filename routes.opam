@@ -27,3 +27,7 @@ of any particular web framework or runtime. It does
 path based dispatch from a target url to a user
 provided handler.
 """
+
+pin-depends: [
+  ["mdx.dev" "git+https://github.com/gpetiot/mdx.git#b138190714b5a1614112fe0719cd10b0a34e4e6e"]
+]
