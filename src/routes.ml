@@ -82,18 +82,7 @@ let with_method ?(ignore_trailing_slash = true) routes =
 
 let one_of ?(ignore_trailing_slash = true) routes =
   let m = Method.default in
-  let routes = List.rev routes in
-  let f acc r =
-    let current_routes =
-      match MethodMap.find_opt m acc with
-      | None -> Router.empty
-      | Some v -> v
-    in
-    let patterns = Parser.get_patterns r in
-    MethodMap.add m (Router.add patterns (Parser.strip_route r) current_routes) acc
-  in
-  let map = List.fold_left f MethodMap.empty routes in
-  R.create (Util.split_path ignore_trailing_slash) map
+  with_method ~ignore_trailing_slash (List.map (fun r -> m, r) routes)
 ;;
 
 let run_route routes params =
