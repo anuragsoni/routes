@@ -1,3 +1,7 @@
+# 0.5.2
+
+* Support custom HTTP methods via `Other of string` (#58 , @sazarkin)
+
 # 0.5.1
 
 * Allow user to decide if they want to keep or ignore trailing slash (#50)
