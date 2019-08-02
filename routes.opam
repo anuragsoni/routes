@@ -11,7 +11,6 @@ build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
-  ["dune" "build" "-p" name "@doc"] {with-doc}
 ]
 depends: [
   "ocaml" {>= "4.05"}
@@ -27,7 +26,3 @@ of any particular web framework or runtime. It does
 path based dispatch from a target url to a user
 provided handler.
 """
-
-pin-depends: [
-  ["mdx.dev" "git+https://github.com/gpetiot/mdx.git#b138190714b5a1614112fe0719cd10b0a34e4e6e"]
-]
