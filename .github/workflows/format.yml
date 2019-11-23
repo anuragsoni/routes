@@ -1,5 +1,8 @@
 name: Fix Formatting
-on: [push]
+on:
+  push:
+    branches:
+      - master
 jobs:
   build:
     name: Format OCaml code
