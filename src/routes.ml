@@ -1,5 +1,5 @@
 module Routes_private = struct
-  module Util = Util
+    module Util = Util
 end
 
 module Method = struct
