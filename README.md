@@ -1,4 +1,4 @@
-## Routes &nbsp; [![Build Status][travis-img]][travis]
+## Routes &nbsp; [![Actions Status](https://github.com/anuragsoni/routes/workflows/Build/badge.svg)](https://github.com/anuragsoni/routes/actions)
 
 [travis]: https://travis-ci.com/anuragsoni/routes/branches
 [travis-img]: https://travis-ci.com/anuragsoni/routes.svg?branch=master
