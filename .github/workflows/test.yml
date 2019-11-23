@@ -1,4 +1,4 @@
-name: Test routes
+name: RoutesTest
 on:
   pull_request:
 jobs:

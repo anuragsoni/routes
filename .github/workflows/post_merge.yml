@@ -1,4 +1,4 @@
-name: Test routes on all Operating Systems
+name: Build
 on:
   push:
     branches:
