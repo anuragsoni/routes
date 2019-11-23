@@ -1,0 +1,24 @@
+name: Test routes on all Operating Systems
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    name: PostMerge
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ubuntu-latest, macos-latest, windows-latest]
+        ocaml-version: [ '4.08.1', '4.07.1', '4.06.1', '4.05.0', '4.09.0' ]
+    steps:
+      - uses: actions/checkout@master
+      - uses: avsm/setup-ocaml@v1.0
+        with:
+          ocaml-version: ${{ matrix.ocaml-version }}
+      - name: Install dependencies
+        run: |
+          opam install dune
+      - name: Build
+        run: opam exec -- dune build
