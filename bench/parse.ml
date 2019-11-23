@@ -52,8 +52,7 @@ let routes =
     ; `DELETE, (fun _ -> "") <$> inst_param *> str
     ]
   in
-  with_method
-    (List.concat [ object_routes; user_routes; role_routes; misc; inst_routes ])
+  with_method (List.concat [ object_routes; user_routes; role_routes; misc; inst_routes ])
 ;;
 
 open Core_bench

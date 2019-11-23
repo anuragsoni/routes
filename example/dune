@@ -1,7 +1,7 @@
 (executable
  (name main)
  (modules main)
- (libraries routes core async httpaf httpaf-async))
+ (libraries routes lwt.unix httpaf httpaf-lwt-unix logs.fmt base))
 
 (executable
  (name no_method)

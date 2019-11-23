@@ -23,8 +23,7 @@ let router =
     ]
   in
   let applications =
-    [ ( `GET
-      , (fun _ _ -> "client token") <$> applications_root *> str </> s "tokens" *> str )
+    [ `GET, (fun _ _ -> "client token") <$> applications_root *> str </> s "tokens" *> str
     ; `DELETE, (fun _ -> "delete token") <$> applications_root *> str <* s "tokens"
     ; `DELETE, (fun _ _ -> "delete") <$> applications_root *> str </> s "tokens" *> str
     ]
@@ -137,20 +136,13 @@ let router =
     ; `GET, (fun _ _ -> "assigned") <$> repo_owner </> str <* s "assignees"
     ; `GET, (fun _ _ _ -> "assigned") <$> repo_owner </> str </> s "assignees" *> str
     ; ( `GET
-      , (fun _ _ _ -> "comments")
-        <$> repo_owner
-        </> str
-        </> issues *> int
-        <* s "comments" )
-    ; ( `POST
-      , (fun _ _ _ -> "comments")
-        <$> repo_owner
-        </> str
-        </> issues *> int
-        <* s "comments" )
-    ; ( `GET
-      , (fun _ _ _ -> "comments") <$> repo_owner </> str </> issues *> int <* s "events"
+      , (fun _ _ _ -> "comments") <$> repo_owner </> str </> issues *> int <* s "comments"
       )
+    ; ( `POST
+      , (fun _ _ _ -> "comments") <$> repo_owner </> str </> issues *> int <* s "comments"
+      )
+    ; ( `GET
+      , (fun _ _ _ -> "comments") <$> repo_owner </> str </> issues *> int <* s "events" )
     ]
   in
   with_method
