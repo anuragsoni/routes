@@ -106,10 +106,7 @@ let test_matches_routes_with_common_prefix () =
   let routes =
     one_of [ "root" <$ empty; "one" <$ s "foo" *> s "bar"; "two" <$ s "foo" ]
   in
-  Alcotest.(check (option string))
-    "Matches empty route"
-    (Some "root")
-    (match' routes "/");
+  Alcotest.(check (option string)) "Matches empty route" (Some "root") (match' routes "/");
   Alcotest.(check (option string))
     "Matches first overlapping path param"
     (Some "two")

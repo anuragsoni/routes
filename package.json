@@ -1,16 +1,22 @@
 {
   "dependencies": {
-    "@opam/dune": "*",
-    "ocaml": "*"
+    "@opam/dune": "1.11.4",
+    "@opam/ocamlformat": "0.12",
+    "@opam/ocp-indent": "1.8.1",
+    "ocaml": "~4.8"
   },
   "devDependencies": {
-    "@opam/alcotest": "*",
-    "@opam/httpaf": "*",
-    "@opam/httpaf-async": "*"
+    "@opam/mdx": "1.4.0",
+    "@opam/logs": "0.7.0",
+    "@opam/merlin": "3.3.2",
+    "@opam/httpaf": "0.6.5",
+    "@opam/httpaf-lwt-unix": "0.6.5",
+    "@opam/alcotest": "0.8.5"
   },
-  "esy": { "build": "dune build" },
+  "esy": { "build": "dune build", "buildsInSource": "_build" },
   "scripts": {
     "test": "esy dune runtest -f",
-    "buildExample": "esy dune build example/main.exe --profile=release"
+    "buildExample": "esy dune build example/main.exe --profile=release",
+    "format": "esy dune build @fmt --auto-promote"
   }
 }
