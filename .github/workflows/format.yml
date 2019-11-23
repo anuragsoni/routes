@@ -1,0 +1,27 @@
+name: Fix Formatting
+on: [push]
+jobs:
+  build:
+    name: Format OCaml code
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: avsm/setup-ocaml@v1.0
+        with:
+          ocaml-version: 4.08.1
+      - name: Install dependencies
+        run: opam install dune ocamlformat
+      - name: Build
+        run: opam exec -- dune build
+      - name: Format
+        run: opam exec -- dune build @fmt --auto-promote || true
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v1
+        with:
+          token: ${{ secrets.REPO_TOKEN }}
+          commit-message: ocamlformat fixes
+          author-name: Anurag Soni
+          title: ocamlformat fixes
+          body: This is an auto-generated PR with fixes by ocamlformat.
+          labels: ocamlformat, automated pr
+          reviewers: anuragsoni
