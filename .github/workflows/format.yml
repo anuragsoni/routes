@@ -6,12 +6,12 @@ on:
 jobs:
   build:
     name: Format OCaml code
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - uses: avsm/setup-ocaml@v1.0
         with:
-          ocaml-version: 4.08.1
+          ocaml-version: 4.09.0
       - name: Install dependencies
         run: opam install dune ocamlformat
       - name: Build
@@ -21,9 +21,10 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v1
         with:
-          token: ${{ secrets.REPO_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: ocamlformat fixes
           author-name: Anurag Soni
+          author-email: anurag@sonianurag.com
           title: ocamlformat fixes
           body: This is an auto-generated PR with fixes by ocamlformat.
           labels: ocamlformat, automated pr
