@@ -1,6 +1,6 @@
 module Key = struct
   type t =
-      | PMatch : string -> t
+    | PMatch : string -> t
     | PCapture : t
 end
 
@@ -16,8 +16,7 @@ type 'a node =
 
 type 'a t = 'a node
 
-let empty = { parsers = []; children = KeyMap.empty; capture = None 
-}
+let empty = { parsers = []; children = KeyMap.empty; capture = None }
 
 let is_empty = function
   | { parsers = []; children; _ } -> KeyMap.is_empty children
@@ -52,7 +51,7 @@ let add k v t =
           | None -> empty
           | Some v -> v
         in
-          let t'' = aux r t' in
+        let t'' = aux r t' in
         { n with children = KeyMap.add w t'' children }
       | Key.PCapture ->
         let t' =
