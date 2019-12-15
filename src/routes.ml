@@ -34,10 +34,8 @@ module Method = struct
   ;;
 
   let compare m1 m2 = String.compare (to_string m1) (to_string m2)
-
   let pp fmt m = Format.fprintf fmt "%s" (to_string m)
-
-  let equal m1 m2 = (compare m1 m2) = 0
+  let equal m1 m2 = compare m1 m2 = 0
 end
 
 module MethodMap = Map.Make (Method)
@@ -64,9 +62,10 @@ let pattern_of_route r =
 let pp_router fmt r =
   let patterns = get_route_patterns r in
   Format.fprintf fmt "Routes:\n";
-  List.iter (fun (meth, route) ->
-      Format.fprintf fmt "> %s %s\n" (Method.to_string meth) route
-    ) patterns
+  List.iter
+    (fun (meth, route) -> Format.fprintf fmt "> %s %s\n" (Method.to_string meth) route)
+    patterns
+;;
 
 let pp_route fmt r = Format.fprintf fmt "Route: %s" (pattern_of_route r)
 

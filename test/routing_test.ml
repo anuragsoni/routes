@@ -181,7 +181,7 @@ let convert_router_to_string_pattern_list () =
   let r1 = one_of [ "foo" <$ s "foo"; "empty" <$ empty ] in
   let meth = Alcotest.testable Method.pp Method.equal in
   let h a b c = Printf.sprintf "%d%b%ld" a b c in
-  Alcotest.(check (list (pair meth  string)))
+  Alcotest.(check (list (pair meth string)))
     "convert r1 to list of patterns"
     [ `GET, "foo"; `GET, "" ]
     (get_route_patterns r1);
@@ -191,9 +191,9 @@ let convert_router_to_string_pattern_list () =
       ; `POST, h <$> s "user" *> int </> bool </> s "baz" *> int32
       ]
   in
-  Alcotest.(check (list (pair meth  string)))
+  Alcotest.(check (list (pair meth string)))
     "convert router to list of patterns"
-    [ `GET,  "foo/bar/baz"; `POST,  "user/<int>/<bool>/baz/<int32>" ]
+    [ `GET, "foo/bar/baz"; `POST, "user/<int>/<bool>/baz/<int32>" ]
     (get_route_patterns routes)
 ;;
 
@@ -202,15 +202,15 @@ let convert_route_to_pattern () =
   let open Infix in
   let r1 = s "foo" *> s "bar" *> s "baz" in
   let h (_ : int) (_ : string) (_ : bool) (_ : int64) (_ : int32) = () in
-  let r2 = h <$ s "user" </> int </> str </> s "admin" *> bool </> int64 </> s "age" *> int32 in
-  Alcotest.(check string)
-    "convert r1 to pattern"
-    "foo/bar/baz"
-    (pattern_of_route r1);
+  let r2 =
+    h <$ s "user" </> int </> str </> s "admin" *> bool </> int64 </> s "age" *> int32
+  in
+  Alcotest.(check string) "convert r1 to pattern" "foo/bar/baz" (pattern_of_route r1);
   Alcotest.(check string)
     "convert r2 to pattern"
     "user/<int>/<string>/admin/<bool>/<int64>/age/<int32>"
     (pattern_of_route r2)
+;;
 
 let tests =
   [ "Empty routes will have no matches", `Quick, test_no_match
