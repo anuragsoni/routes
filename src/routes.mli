@@ -22,6 +22,15 @@ module Method : sig
     ]
   (** HTTP methods. This is an optional input for route matching.
       The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
+
+  val pp : Format.formatter -> t -> unit
+  (** @since 0.5.3 *)
+
+  val equal : t -> t -> bool
+  (** @since 0.5.3 *)
+
+  val compare : t -> t -> int
+  (** @since 0.5.3 *)
 end
 
 type 'a t
@@ -84,6 +93,25 @@ val match_with_method : 'a router -> target:string -> meth:Method.t -> 'a option
     a request of any type (which is forwarded as the last parameter to the handler functions).
     If a route matches it runs the attached handler and returns the result.
 *)
+
+val get_route_patterns : 'a router -> (Method.t * string) list
+(** [get_route_patterns] returns a list of human readable route patterns
+    that will be matched by a router.
+
+    @since 0.5.3 *)
+
+val pattern_of_route : 'a t -> string
+(** [pattern_of_route] convert a route to a human readable string pattern.
+
+    @since 0.5.3 *)
+
+val pp_route : Format.formatter -> 'a t -> unit
+  [@@ocaml.toplevel_printer]
+(** @since 0.5.3 *)
+
+val pp_router : Format.formatter -> 'a router -> unit
+  [@@ocaml.toplevel_printer]
+(** @since 0.5.3 *)
 
 module Infix : sig
   val ( <*> ) : ('a -> 'b) t -> 'a t -> 'b t

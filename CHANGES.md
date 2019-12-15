@@ -1,3 +1,9 @@
+# 0.5.3
+
+* Improve mdx test tules (#73, @NathanReb)
+* Use github actions instead of travis ci (#70, #72)
+* Get human readable route pattern from a route (#64, #74)
+
 # 0.5.2
 
 * Support custom HTTP methods via `Other of string` (#58 , @sazarkin)
