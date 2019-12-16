@@ -10,12 +10,12 @@ let to_meth = function
   | `POST -> `POST
   | `HEAD -> `HEAD
   | `DELETE -> `DELETE
-  | `PATCH -> failwith "PATCH is not supported"
+  | `PATCH -> `Other "PATCH"
   | `PUT -> `PUT
   | `OPTIONS -> `OPTIONS
   | `TRACE -> `TRACE
   | `CONNECT -> `CONNECT
-  | `Other w -> failwith (w ^ " is not supported.")
+  | `Other w -> `Other w
 ;;
 
 let router routes =
