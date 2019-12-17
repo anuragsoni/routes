@@ -121,8 +121,8 @@ let test_verify_first_parsed_route_matches () =
   let open Routes in
   let open Infix in
   (* Route `string_of_int` and `capitalize_ascii` overlap.
-  But if `string_of_int` succeeds we stop there and return the result.
-  Otherwise we try the remaining parsers that overlap. *)
+     But if `string_of_int` succeeds we stop there and return the result.
+     Otherwise we try the remaining parsers that overlap. *)
   let routes =
     one_of
       [ "empty" <$ empty
@@ -212,6 +212,52 @@ let convert_route_to_pattern () =
     (pattern_of_route r2)
 ;;
 
+type shape =
+  | Point
+  | Circle
+
+let shape_of_string = function
+  | "Point" | "point" -> Some Point
+  | "Circle" | "circle" -> Some Circle
+  | _ -> None
+;;
+
+let shape_to_string = function
+  | Point -> "point"
+  | Circle -> "circle"
+;;
+
+let custom_matchers () =
+  let open Routes in
+  let open Infix in
+  let shape = pattern shape_of_string "<shape>" in
+  let handler1 a b = Printf.sprintf "%d - %s" a (shape_to_string b) in
+  let handler2 a b = a ^ b in
+  let routes =
+    with_method
+      [ `GET, handler1 <$> s "foo" *> int </> s "shape" *> shape <* s "find"
+      ; `POST, handler2 <$> s "words" *> str </> str
+      ]
+  in
+  let meth = Alcotest.testable Method.pp Method.equal in
+  Alcotest.(check (list (pair meth string)))
+    "Custom matcher to pattern"
+    [ `GET, "foo/<int>/shape/<shape>/find"; `POST, "words/<string>/<string>" ]
+    (get_route_patterns routes);
+  Alcotest.(check (option string))
+    "Can match on custom patterns"
+    (Some "12 - circle")
+    (match_with_method routes ~target:"/foo/12/shape/Circle/find" ~meth:`GET);
+  Alcotest.(check (option string))
+    "Can match point"
+    (Some "12 - point")
+    (match_with_method routes ~target:"/foo/12/shape/point/find" ~meth:`GET);
+  Alcotest.(check (option string))
+    "Invalid shape"
+    None
+    (match_with_method routes ~target:"/foo/12/shape/BADPOINT/find" ~meth:`GET)
+;;
+
 let tests =
   [ "Empty routes will have no matches", `Quick, test_no_match
   ; "Method matches", `Quick, test_method_match
@@ -226,6 +272,7 @@ let tests =
   ; "Leading slash is discarded", `Quick, test_leading_slash_is_discarded
   ; "Convert router to list of patterns", `Quick, convert_router_to_string_pattern_list
   ; "Convert route to pattern", `Quick, convert_route_to_pattern
+  ; "Custom matchers", `Quick, custom_matchers
   ]
 ;;
 

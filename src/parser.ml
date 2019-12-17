@@ -1,15 +1,18 @@
+type 'a pattern =
+  { of_string : string -> 'a option
+  ; label : string
+  }
+
 type 'a t =
   | Return : 'a -> 'a t
   | Empty : unit t
   | Match : string -> unit t
+  | Capture : 'a pattern -> 'a t
   | Apply : ('a -> 'b) t * 'a t -> 'b t
   | SkipLeft : 'a t * 'b t -> 'b t
   | SkipRight : 'a t * 'b t -> 'a t
-  | Int : int t
-  | Int32 : int32 t
-  | Int64 : int64 t
-  | Bool : bool t
-  | Str : string t
+
+let pattern of_string label = Capture { of_string; label }
 
 module R = Router
 module K = R.Key
@@ -20,11 +23,7 @@ let get_patterns route =
     match t with
     | Return _ -> acc
     | Empty -> acc
-    | Int -> ("<int>", K.PCapture) :: acc
-    | Int32 -> ("<int32>", K.PCapture) :: acc
-    | Int64 -> ("<int64>", K.PCapture) :: acc
-    | Bool -> ("<bool>", K.PCapture) :: acc
-    | Str -> ("<string>", K.PCapture) :: acc
+    | Capture { label; _ } -> (label, K.PCapture) :: acc
     | Match w -> (w, K.PMatch w) :: acc
     | SkipLeft (l, r) ->
       let l = aux l acc in
@@ -43,11 +42,11 @@ let get_patterns route =
 ;;
 
 let s x = Match x
-let int = Int
-let int32 = Int32
-let int64 = Int64
-let bool = Bool
-let str = Str
+let int = pattern int_of_string_opt "<int>"
+let int32 = pattern Int32.of_string_opt "<int32>"
+let int64 = pattern Int64.of_string_opt "<int64>"
+let bool = pattern bool_of_string_opt "<bool>"
+let str = pattern (fun x -> Some x) "<string>"
 let empty = Empty
 let return x = Return x
 
@@ -103,11 +102,7 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
     | [] -> Some ((), params)
     | _ -> None)
   | Match s -> verify (fun w -> if String.compare w s = 0 then Some () else None) params
-  | Int -> verify int_of_string_opt params
-  | Int32 -> verify Int32.of_string_opt params
-  | Int64 -> verify Int64.of_string_opt params
-  | Bool -> verify bool_of_string_opt params
-  | Str -> verify (fun w -> Some w) params
+  | Capture { of_string; _ } -> verify of_string params
   | Apply (f, t) ->
     (match parse f params with
     | None -> None
