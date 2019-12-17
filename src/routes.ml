@@ -74,11 +74,11 @@ let pp_route fmt r = Format.fprintf fmt "%s" (pattern_of_route r)
 type 'a router = 'a R.t
 
 let empty = Parser.empty
-let str = Parser.str
-let int = Parser.int
-let int32 = Parser.int32
-let int64 = Parser.int64
-let bool = Parser.bool
+let str = pattern (fun x -> Some x) "<string>"
+let int = pattern int_of_string_opt "<int>"
+let int32 = pattern Int32.of_string_opt "<int32>"
+let int64 = pattern Int64.of_string_opt "<int64>"
+let bool = pattern bool_of_string_opt "<bool>"
 let s = Parser.s
 let apply = Parser.apply
 let return = Parser.return

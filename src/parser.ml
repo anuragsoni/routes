@@ -42,11 +42,6 @@ let get_patterns route =
 ;;
 
 let s x = Match x
-let int = pattern int_of_string_opt "<int>"
-let int32 = pattern Int32.of_string_opt "<int32>"
-let int64 = pattern Int64.of_string_opt "<int64>"
-let bool = pattern bool_of_string_opt "<bool>"
-let str = pattern (fun x -> Some x) "<string>"
 let empty = Empty
 let return x = Return x
 
