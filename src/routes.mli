@@ -24,13 +24,13 @@ module Method : sig
       The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
 
   val pp : Format.formatter -> t -> unit
-  (** @since 0.5.3 *)
+  (** @since 0.6.0 *)
 
   val equal : t -> t -> bool
-  (** @since 0.5.3 *)
+  (** @since 0.6.0 *)
 
   val compare : t -> t -> int
-  (** @since 0.5.3 *)
+  (** @since 0.6.0 *)
 end
 
 type 'a t
@@ -39,6 +39,13 @@ type 'a t
 type 'a router
 (** ['a router] represents the internal router data type, where each route
     can potentially return a value of type 'a .*)
+
+val pattern : (string -> 'a option) -> string -> 'a t
+(** [pattern] allows the creation of custom param matchers.
+    This allows creating matchers for custom types so the router
+    can be extended to use types beyond the ones that ship with the library
+
+    @since 0.6.0 *)
 
 val return : 'a -> 'a t
 (** [return v] is a path param parser that always returns v. *)
@@ -98,20 +105,20 @@ val get_route_patterns : 'a router -> (Method.t * string) list
 (** [get_route_patterns] returns a list of human readable route patterns
     that will be matched by a router.
 
-    @since 0.5.3 *)
+    @since 0.6.0 *)
 
 val pattern_of_route : 'a t -> string
 (** [pattern_of_route] convert a route to a human readable string pattern.
 
-    @since 0.5.3 *)
+    @since 0.6.0 *)
 
 val pp_route : Format.formatter -> 'a t -> unit
   [@@ocaml.toplevel_printer]
-(** @since 0.5.3 *)
+(** @since 0.6.0 *)
 
 val pp_router : Format.formatter -> 'a router -> unit
   [@@ocaml.toplevel_printer]
-(** @since 0.5.3 *)
+(** @since 0.6.0 *)
 
 module Infix : sig
   val ( <*> ) : ('a -> 'b) t -> 'a t -> 'b t

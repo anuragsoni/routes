@@ -1,4 +1,4 @@
-# 0.5.3
+# 0.6.0
 
 * Improve mdx test tules (#73, @NathanReb)
 * Use github actions instead of travis ci (#70, #72)

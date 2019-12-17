@@ -47,6 +47,35 @@ val req : req = {target = "/user/12"}
 - : string = "Received request from /user/12 to fetch id: 12"
 ```
 
+It is possible to define custom patterns that can be used for route matching.
+
+```ocaml
+# type shape = Point | Circle
+type shape = Point | Circle
+
+# let shape_of_string = function "point" -> Some Point | "circle" -> Some Circle | _ -> None
+val shape_of_string : string -> shape option = <fun>
+
+# let shape_to_string = function Point -> "point" | Circle -> "circle"
+val shape_to_string : shape -> string = <fun>
+
+# let shape = pattern shape_of_string "<shape>"
+val shape : shape t = <abstr>
+
+# let process_shape (s : shape) = shape_to_string s
+val process_shape : shape -> string = <fun>
+
+# let route = one_of [ process_shape <$> s "shape" *> shape ]
+val route : string router = <abstr>
+
+# match' route "/shape/circle"
+- : string option = Some "circle"
+
+# match' route "/shape/point"
+- : string option = Some "point"
+```
+
+
 ## Installation
 
 ###### To use the version published on opam:

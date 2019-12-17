@@ -42,6 +42,8 @@ module MethodMap = Map.Make (Method)
 
 type 'a t = 'a Parser.t
 
+let pattern = Parser.pattern
+
 module R = struct
   type 'a t =
     { routes : 'a Parser.t Router.t MethodMap.t
