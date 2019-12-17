@@ -41,9 +41,21 @@ type 'a router
     can potentially return a value of type 'a .*)
 
 val pattern : (string -> 'a option) -> string -> 'a t
-(** [pattern] allows the creation of custom param matchers.
+(** [pattern convert label] allows the creation of custom param matchers.
     This allows creating matchers for custom types so the router
-    can be extended to use types beyond the ones that ship with the library
+    can be extended to use types beyond the ones that ship with the library.
+
+    The provided label will be used when pretty printing routes, or when
+    converting a route to a human readable string pattern.
+
+    Example:
+
+    {[
+      (* This pattern matches any integer *)
+      let int = pattern int_of_string_opt "<int>"
+
+      let bool = pattern bool_of_string_opt "<bool>"
+    ]}
 
     @since 0.6.0 *)
 
@@ -53,7 +65,18 @@ val return : 'a -> 'a t
 val apply : ('a -> 'b) t -> 'a t -> 'b t
 (** [apply f t]  applies a function f that is wrapped inside
     a ['a t] context to a path param parser.
-    f <*> p is the same as f >>= fun f -> map ~f p *)
+    f <*> p is the same as f >>= fun f -> map ~f p
+
+    Example:
+    {[
+      let add = a + b (* int -> int -> int *)
+
+      let add' = return add (* (int -> int -> int) t *)
+
+      apply add' int (* (int -> int) t *)
+    ]}
+
+*)
 
 val s : string -> unit t
 (** [s word] returns a path parser that matches [word] exactly and then

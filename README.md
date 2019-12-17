@@ -37,6 +37,17 @@ val search_user : string -> string -> req -> string = <fun>
   ]
 val routes : (req -> string) router = <abstr>
 
+# pp_router Format.str_formatter routes
+- : unit = ()
+
+# print_endline (Format.flush_str_formatter ())
+Routes:
+> GET
+> GET user/<int>
+> POST user/<string>/<string>
+
+- : unit = ()
+
 # let req = { target = "/user/12" };;
 val req : req = {target = "/user/12"}
 
@@ -73,6 +84,9 @@ val route : string router = <abstr>
 
 # match' route "/shape/point"
 - : string option = Some "point"
+
+# pattern_of_route (s "shape" *> shape)
+- : string = "shape/<shape>"
 ```
 
 

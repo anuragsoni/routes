@@ -69,7 +69,7 @@ let pp_router fmt r =
     patterns
 ;;
 
-let pp_route fmt r = Format.fprintf fmt "Route: %s" (pattern_of_route r)
+let pp_route fmt r = Format.fprintf fmt "%s" (pattern_of_route r)
 
 type 'a router = 'a R.t
 

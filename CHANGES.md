@@ -3,6 +3,7 @@
 * Improve mdx test tules (#73, @NathanReb)
 * Use github actions instead of travis ci (#70, #72)
 * Get human readable route pattern from a route (#64, #74)
+* Allow writing custom path match patterns (#76)
 
 # 0.5.2
 
