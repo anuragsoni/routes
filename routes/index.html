@@ -1,2 +1,86 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (routes.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc %%VERSION%%"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body><div class="content"><header><nav><a href="../index.html">Up</a> – routes</nav><h1 id="routes-index"><a href="#routes-index" class="anchor"></a>routes index</h1><nav class="toc"><ul><li><a href="#library-routes">Library routes</a></li></ul></nav></header><h2 id="library-routes"><a href="#library-routes" class="anchor"></a>Library routes</h2><p>The entry point of this library is the module: <a href="Routes/index.html"><code>Routes</code></a>.</p></div></body></html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (routes.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc %%VERSION%%"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body><div class="content"><header><nav><a href="../index.html">Up</a> – routes</nav><h1 id="routes"><a href="#routes" class="anchor"></a>Routes</h1><nav class="toc"><ul><li><a href="#introduction">Introduction</a><ul><li><a href="#installation">Installation</a></li><li><a href="#usage">Usage</a></li></ul></li><li><a href="#support">Support</a></li><li><a href="#license">License</a></li><li><a href="#api-documentation">API documentation</a></li></ul></nav></header><h2 id="introduction"><a href="#introduction" class="anchor"></a>Introduction</h2><p>Routes is a routing library for OCaml that allows defining type safe routes, to dispatch a request to a matching handler, based on path parameters in the input URI target. Type safe in this context, refers to processing the input URI in a manner that assigns concrete types to the values extracted from the path parameters.</p><p>The library has no external dependencies aside from the OCaml standard library, and it can be used in both native (via ocamlopt) and javascript usecases (via js_of_ocaml). It isn't tied to any particular framework, with the intention for frameworks to provide a higher level wrapper around it.</p><h3 id="installation"><a href="#installation" class="anchor"></a>Installation</h3><p>Routes is published on the opam repository. If using opam, install it via</p><p>stable version:</p><pre><code class="ml">opam install routes </code></pre><p>development version:</p><pre><code class="ml">opam pin add routes.dev git+https://github.com/anuragsoni/routes.git </code></pre><p>If using esy, add the dependency <code>@opam/routes</code> to <code>package.json/esy.json</code>. Or you can use <code>esy add @opam/routes</code> to add it to the manifest file automatically.</p><h3 id="usage"><a href="#usage" class="anchor"></a>Usage</h3><pre><code class="ml">open Routes
+open Infix
+
+(* val greet_user : string -&gt; int -&gt; string *)
+let greet_user name id =
+  Printf.sprintf &quot;Hello, %s [%d]&quot; name id
+
+let add_user name id is_admin =
+  Printf.sprintf &quot;Added user %s with id %d. IsAdmin? %b&quot; name id is_admin
+
+let routes =
+  with_method
+    [ `GET, greet_user &lt;$&gt; s &quot;user&quot; *&gt; str &lt;/&gt; s &quot;id&quot; *&gt; int
+    ; `POST, add_user &lt;$&gt; s &quot;user&quot; *&gt; str &lt;/&gt; int &lt;/&gt; bool
+    ]
+
+match match_with_method routes ~target:&quot;/user/john/id/12&quot; ~meth:`GET with
+| Some response -&gt; response
+| None -&gt; &quot;No match&quot;</code></pre><p>Using routes as an <a href="https://github.com/rgrinberg/opium">Opium</a> middleware</p><pre><code class="ml">open Opium.Std
+
+let to_meth = function
+  | `GET -&gt; `GET
+  | `POST -&gt; `POST
+  | `HEAD -&gt; `HEAD
+  | `DELETE -&gt; `DELETE
+  | `PATCH -&gt; `Other &quot;PATCH&quot;
+  | `PUT -&gt; `PUT
+  | `OPTIONS -&gt; `OPTIONS
+  | `TRACE -&gt; `TRACE
+  | `CONNECT -&gt; `CONNECT
+  | `Other w -&gt; `Other w
+
+let router routes =
+  let open Routes in
+  let filter handler req =
+    let target = Request.uri req |&gt; Uri.path in
+    let meth = Request.meth req in
+    match match_with_method routes ~target ~meth:(to_meth meth) with
+    | None -&gt; handler req
+    | Some h -&gt; h req
+  in
+  Rock.Middleware.create ~name:&quot;Routes&quot; ~filter
+
+(* This can be used with any opium app now *)
+
+open Routes
+open Infix
+
+type person =
+  { name : string
+  ; age : int
+  }
+
+let json_of_person { name; age } =
+  let open Ezjsonm in
+  dict [ &quot;name&quot;, string name; &quot;age&quot;, int age ]
+;;
+
+let hello (_ : Request.t) = `String &quot;Hello World!&quot; |&gt; respond'
+
+let routes =
+  with_method [ `GET, hello &lt;$ empty; `GET, print_person &lt;$&gt; s &quot;person&quot; *&gt; str &lt;/&gt; int ]
+
+let () =
+  App.empty
+  |&gt; middleware (router routes)
+  |&gt; App.run_command</code></pre><p>Routes ships with patterns that match the following types: int, int32, int64, bool, string, but it is possible to define custom patterns that can be used to extract path parameters that can be parsed into a user defined type.</p><pre><code class="ml">type shape =
+  | Square
+  | Circle
+
+let shape_of_string = function
+  | &quot;square&quot; -&gt; Some Square
+  | &quot;circle&quot; -&gt; Some Circle
+
+let shape_to_string = function
+  | Square -&gt; &quot;square&quot;
+  | Circle -&gt; &quot;circle&quot;
+
+(* &quot;&lt;shape&gt;&quot; will be used when printing the route
+   as a human readable pattern. *)
+let shape = Routes.pattern shape_of_string &quot;&lt;shape&gt;&quot;
+
+(* Now the shape pattern can be used just like any
+   of the built in patterns like int, bool etc *)
+let route = Routes.(one_of [ shape_to_string &lt;$&gt; s &quot;shape&quot; *&gt; shape ])</code></pre><h2 id="support"><a href="#support" class="anchor"></a>Support</h2><p>Routes' git repository is located on <a href="https://github.com/anuragsoni/routes">Github</a>. Use the repository's <a href="https://github.com/anuragsoni/routes/issues">issue tracker</a> to file bug reports and feature requests.</p><h2 id="license"><a href="#license" class="anchor"></a>License</h2><p>Routes is distributed under the BSD-3-clause license.</p><h2 id="api-documentation"><a href="#api-documentation" class="anchor"></a>API documentation</h2><ul class="modules"><li><a href="Routes/index.html"><code>Routes</code></a></li></ul></div></body></html>
