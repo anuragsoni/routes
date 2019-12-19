@@ -118,6 +118,7 @@ type shape =
 let shape_of_string = function
   | "square" -> Some Square
   | "circle" -> Some Circle
+  | _ -> None
 
 let shape_to_string = function
   | Square -> "square"
@@ -129,7 +130,7 @@ let shape = Routes.pattern shape_of_string "<shape>"
 
 (* Now the shape pattern can be used just like any
    of the built in patterns like int, bool etc *)
-let route = Routes.(one_of [ shape_to_string <$> s "shape" *> shape ])
+let router = Routes.(one_of [ shape_to_string <$> s "shape" *> shape ])
 ]}
 
 {1 Support}
