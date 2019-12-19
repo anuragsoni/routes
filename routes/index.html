@@ -72,6 +72,7 @@ let () =
 let shape_of_string = function
   | &quot;square&quot; -&gt; Some Square
   | &quot;circle&quot; -&gt; Some Circle
+  | _ -&gt; None
 
 let shape_to_string = function
   | Square -&gt; &quot;square&quot;
@@ -83,4 +84,4 @@ let shape = Routes.pattern shape_of_string &quot;&lt;shape&gt;&quot;
 
 (* Now the shape pattern can be used just like any
    of the built in patterns like int, bool etc *)
-let route = Routes.(one_of [ shape_to_string &lt;$&gt; s &quot;shape&quot; *&gt; shape ])</code></pre><h2 id="support"><a href="#support" class="anchor"></a>Support</h2><p>Routes' git repository is located on <a href="https://github.com/anuragsoni/routes">Github</a>. Use the repository's <a href="https://github.com/anuragsoni/routes/issues">issue tracker</a> to file bug reports and feature requests.</p><h2 id="license"><a href="#license" class="anchor"></a>License</h2><p>Routes is distributed under the BSD-3-clause license.</p><h2 id="api-documentation"><a href="#api-documentation" class="anchor"></a>API documentation</h2><ul class="modules"><li><a href="Routes/index.html"><code>Routes</code></a></li></ul></div></body></html>
+let router = Routes.(one_of [ shape_to_string &lt;$&gt; s &quot;shape&quot; *&gt; shape ])</code></pre><h2 id="support"><a href="#support" class="anchor"></a>Support</h2><p>Routes' git repository is located on <a href="https://github.com/anuragsoni/routes">Github</a>. Use the repository's <a href="https://github.com/anuragsoni/routes/issues">issue tracker</a> to file bug reports and feature requests.</p><h2 id="license"><a href="#license" class="anchor"></a>License</h2><p>Routes is distributed under the BSD-3-clause license.</p><h2 id="api-documentation"><a href="#api-documentation" class="anchor"></a>API documentation</h2><ul class="modules"><li><a href="Routes/index.html"><code>Routes</code></a></li></ul></div></body></html>
