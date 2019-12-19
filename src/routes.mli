@@ -157,15 +157,15 @@ module Infix : sig
   val ( <$> ) : ('a -> 'b) -> 'a t -> 'b t
   (** [f <$> p] is sugar for [return f <*> p] *)
 
-  val ( *> ) : 'a t -> 'b t -> 'b t
+  val ( *> ) : unit t -> 'b t -> 'b t
   (** [p1 *> p2] takes two parsers p1 and p2, runs p1, discards its results
       and then returns the result of parser p2. *)
 
-  val ( <* ) : 'a t -> 'b t -> 'a t
+  val ( <* ) : 'a t -> unit t -> 'a t
   (** [p1 <* p2] runs p1 followed by p2. It discards the result of p2 and returns
       the result of p1. *)
 
-  val ( <$ ) : 'a -> 'b t -> 'a t
+  val ( <$ ) : 'a -> unit t -> 'a t
   (** [f <$ p] is sugar for [return f <* p] *)
 end
 

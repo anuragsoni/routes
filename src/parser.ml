@@ -44,30 +44,15 @@ let get_patterns route =
 let s x = Match x
 let empty = Empty
 let return x = Return x
-
-let rec skip_left : type a b. a t -> b t -> b t =
- fun p1 p2 ->
-  match p1 with
-  | SkipLeft (a, b) -> SkipLeft (a, skip_left b p2)
-  | _ -> SkipLeft (p1, p2)
-;;
-
-let rec apply : type a b. (a -> b) t -> a t -> b t =
- fun f t ->
-  match f, t with
-  | (Return _ as f'), SkipLeft (p, r) -> SkipLeft (p, apply f' r)
-  | SkipLeft (p1, f), _ -> skip_left p1 (apply f t)
-  | _, SkipRight (p1, p2) -> SkipRight (apply f p1, p2)
-  | _ -> Apply (f, t)
-;;
+let apply f t = Apply (f, t)
 
 module Infix = struct
-  let ( <*> ) = apply
-  let ( </> ) = apply
-  let ( <$> ) f p = apply (return f) p
-  let ( *> ) x y = skip_left x y
+  let ( <*> ) f t = Apply (f, t)
+  let ( </> ) f t = Apply (f, t)
+  let ( <$> ) f p = Apply (return f, p)
+  let ( *> ) x y = SkipLeft (x, y)
   let ( <* ) x y = SkipRight (x, y)
-  let ( <$ ) f t = skip_left t (return f)
+  let ( <$ ) f t = SkipLeft (t, return f)
 end
 
 let verify f params =
