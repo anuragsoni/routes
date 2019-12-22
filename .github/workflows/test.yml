@@ -8,8 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: Add 4.09 to the matrix once mdx works on that version
-        ocaml-version: [ '4.08.1', '4.07.1', '4.06.1', '4.05.0' ]
+        ocaml-version: ['4.09.0', '4.08.1', '4.07.1', '4.06.1', '4.05.0' ]
     steps:
       - uses: actions/checkout@master
       - uses: avsm/setup-ocaml@v1.0
@@ -20,7 +19,5 @@ jobs:
           opam pin add routes.dev -n .
           opam depext -yt routes
           opam install -t . --deps-only
-      - name: Build
-        run: opam exec -- dune build
       - name: Run tests
         run: opam exec -- dune runtest
