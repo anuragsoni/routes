@@ -100,6 +100,8 @@ val str : string t
 val empty : unit t
 (** [empty] matches an empty target. This can be used to match against "/". *)
 
+val capture_all : string t
+
 val one_of : ?ignore_trailing_slash:bool -> 'a t list -> 'a router
 (** [one_of] accepts a list of route parsers and converts into a router.
     ignore_trailing_slash is a boolean flag that can control whether to keep

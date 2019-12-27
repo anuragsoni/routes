@@ -74,6 +74,7 @@ let pp_route fmt r = Format.fprintf fmt "%s" (pattern_of_route r)
 type 'a router = 'a R.t
 
 let empty = Parser.empty
+let capture_all = Parser.capture_all
 let str = pattern (fun x -> Some x) "<string>"
 let int = pattern int_of_string_opt "<int>"
 let int32 = pattern Int32.of_string_opt "<int32>"

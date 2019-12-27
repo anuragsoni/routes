@@ -26,6 +26,12 @@ module Handlers = struct
   let sum a b _ = `String (Printf.sprintf "The sum of %d and %d = %d" a b (a + b))
   let return_bigstring _ = `Bigstring (Bigstringaf.of_string "Hello world" ~off:0 ~len:11)
 
+  let users name rest _ =
+    `String (Printf.sprintf "User: %s Rest: %s" name rest)
+
+  let users' name rest _ =
+    `String (Printf.sprintf "User: %s Rest: %s" name rest)
+
   (* let retrieve_user state name id = *)
   (*   let req : Request.t = Routes.RouterState.get_request state in *)
   (*   Log.Global.printf "Fetching user with name %s and id %ld." name id; *)
@@ -41,6 +47,8 @@ let routes =
     [ `GET, return_bigstring <$ empty
     ; `GET, greeter <$> s "greet" *> int </> str </> str
     ; `GET, sum <$> s "sum" *> int </> int
+    ; `GET, users' <$> s "users" *> str </> str
+    ; `GET, users <$> s "users" *> str </> capture_all
     ]
 ;;
 

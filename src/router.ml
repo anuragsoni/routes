@@ -1,6 +1,7 @@
 module Key = struct
   type t =
     | PMatch : string -> t
+    | PAll : t
     | PCapture : t
 end
 
@@ -12,11 +13,12 @@ type 'a node =
   { parsers : 'a list
   ; children : 'a node KeyMap.t
   ; capture : 'a node option
+  ; match_all : bool
   }
 
 type 'a t = 'a node
 
-let empty = { parsers = []; children = KeyMap.empty; capture = None }
+let empty = { parsers = []; children = KeyMap.empty; capture = None; match_all = false }
 
 let is_empty = function
   | { parsers = []; children; _ } -> KeyMap.is_empty children
@@ -28,13 +30,16 @@ let feed_params t params =
     match t, params with
     | { parsers = []; _ }, [] -> [], []
     | { parsers = rs; _ }, [] -> rs, List.rev captures
-    | { children; capture; _ }, x :: xs ->
-      (match KeyMap.find_opt x children with
-      | None ->
-        (match capture with
-        | None -> [], []
-        | Some t' -> aux t' xs (x :: captures))
-      | Some m' -> aux m' xs captures)
+    | { children; capture; match_all; parsers }, x :: xs ->
+      if match_all
+      then parsers, List.rev (String.concat "/" params :: captures)
+      else (
+        match KeyMap.find_opt x children with
+        | None ->
+          (match capture with
+          | None -> [], []
+          | Some t' -> aux t' xs (x :: captures))
+        | Some m' -> aux m' xs captures)
   in
   aux t params []
 ;;
@@ -53,6 +58,7 @@ let add k v t =
         in
         let t'' = aux r t' in
         { n with children = KeyMap.add w t'' children }
+      | Key.PAll -> { n with parsers = v :: n.parsers; match_all = true }
       | Key.PCapture ->
         let t' =
           match capture with

@@ -7,6 +7,7 @@ type 'a t =
   | Return : 'a -> 'a t
   | Empty : unit t
   | Match : string -> unit t
+  | CaptureAll : string t
   | Capture : 'a pattern -> 'a t
   | Apply : ('a -> 'b) t * 'a t -> 'b t
   | SkipLeft : 'a t * 'b t -> 'b t
@@ -24,6 +25,7 @@ let get_patterns route =
     | Return _ -> acc
     | Empty -> acc
     | Capture { label; _ } -> (label, K.PCapture) :: acc
+    | CaptureAll -> ("<anything>", K.PAll) :: acc
     | Match w -> (w, K.PMatch w) :: acc
     | SkipLeft (l, r) ->
       let l = aux l acc in
@@ -43,6 +45,7 @@ let get_patterns route =
 
 let s x = Match x
 let empty = Empty
+let capture_all = CaptureAll
 let return x = Return x
 let apply f t = Apply (f, t)
 
@@ -83,6 +86,10 @@ let rec parse : type a. a t -> string list -> (a * string list) option =
     | _ -> None)
   | Match s -> verify (fun w -> if String.compare w s = 0 then Some () else None) params
   | Capture { of_string; _ } -> verify of_string params
+  | CaptureAll ->
+    (match params with
+    | [] -> Some ("", [])
+    | p :: ps -> Some (p, ps))
   | Apply (f, t) ->
     (match parse f params with
     | None -> None
