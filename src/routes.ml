@@ -45,13 +45,38 @@ type 'a t = 'a Parser.t
 let pattern = Parser.pattern
 
 module R = struct
+  let prepare_target ignore_trailing_slash target =
+    let target =
+      match String.index_opt target '?' with
+      | None -> target
+      | Some 0 -> ""
+      | Some i -> String.sub target 0 i
+    in
+    match target with
+    | "" | "/" -> ""
+    | _ ->
+      let t =
+        if target.[0] = '/'
+        then String.sub target 1 (String.length target - 1)
+        else target
+      in
+      let t =
+        if t.[String.length t - 1] = '/' && ignore_trailing_slash
+        then String.sub t 0 (String.length t - 1)
+        else t
+      in
+      t
+  ;;
+
   type 'a t =
     { routes : 'a Parser.t Router.t MethodMap.t
-    ; url_split : string -> string list
     ; route_patterns : (Method.t * string) list
+    ; prepare_target : string -> string
     }
 
-  let create url_split routes route_patterns = { routes; url_split; route_patterns }
+  let create routes route_patterns ignore_trailing_slash =
+    { routes; route_patterns; prepare_target = prepare_target ignore_trailing_slash }
+  ;;
 end
 
 let get_route_patterns { R.route_patterns; _ } = route_patterns
@@ -103,7 +128,7 @@ let with_method ?(ignore_trailing_slash = true) routes =
     (m, readable_pattern) :: xs, acc
   in
   let route_patterns, map = List.fold_left f ([], MethodMap.empty) routes in
-  R.create (Util.split_path ignore_trailing_slash) map route_patterns
+  R.create map route_patterns ignore_trailing_slash
 ;;
 
 let one_of ?(ignore_trailing_slash = true) routes =
@@ -124,17 +149,17 @@ let run_route routes params =
 ;;
 
 let run_router t params =
-  let routes, params' = Router.feed_params t params in
+  let routes, params', (_ : string) = Router.feed_params t params in
   run_route routes params'
 ;;
 
-let match_with_method { R.routes; url_split; _ } ~target ~meth =
+let match_with_method { R.routes; prepare_target; _ } ~target ~meth =
   let routes =
     match MethodMap.find_opt meth routes with
     | None -> Router.empty
     | Some v -> v
   in
-  run_router routes (url_split target)
+  run_router routes (prepare_target target)
 ;;
 
 let match' r target = match_with_method r ~target ~meth:Method.default

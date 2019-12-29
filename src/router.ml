@@ -23,20 +23,40 @@ let is_empty = function
   | _ -> false
 ;;
 
+exception Not_equal
+
+let str_equal target start stop s =
+  if String.length s <> stop - start
+  then false
+  else (
+    try
+      for i = start to stop - 1 do
+        if target.[i] <> s.[i - start] then raise_notrace Not_equal
+      done;
+      true
+    with
+    | Not_equal -> false)
+;;
+
 let feed_params t params =
-  let rec aux t params captures =
-    match t, params with
-    | { parsers = []; _ }, [] -> [], []
-    | { parsers = rs; _ }, [] -> rs, List.rev captures
-    | { children; capture; _ }, x :: xs ->
-      (match KeyMap.find_opt x children with
+  let len = String.length params in
+  let rec aux idx captures t =
+    if idx >= len
+    then t.parsers, List.rev captures, ""
+    else (
+      let c =
+        match String.index_from_opt params idx '/' with
+        | None -> len
+        | Some i -> i
+      in
+      match KeyMap.find_first_opt (fun k -> str_equal params idx c k) t.children with
       | None ->
-        (match capture with
-        | None -> [], []
-        | Some t' -> aux t' xs (x :: captures))
-      | Some m' -> aux m' xs captures)
+        (match t.capture with
+        | None -> [], [], params
+        | Some t' -> aux (c + 1) (String.sub params idx (c - idx) :: captures) t')
+      | Some (_, m') -> aux (c + 1) captures m')
   in
-  aux t params []
+  aux 0 [] t
 ;;
 
 let add k v t =
