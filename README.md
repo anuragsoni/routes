@@ -52,7 +52,7 @@ val my_fancy_route : unit -> (int -> 'a, 'a) Routes.path = <fun>
 val print_route : int -> string = <fun>
 
 # print_route 12;;
-- : string = "user/12/add/"
+- : string = "user/12/add"
 ```
 
 ## Installation
