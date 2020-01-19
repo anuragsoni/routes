@@ -172,7 +172,7 @@ let parse_route fmt handler params =
    fun t f s ->
     match t with
     | End ->
-      (match params with
+      (match s with
       | [] -> Some f
       | _ -> None)
     | Match (x, fmt) ->
