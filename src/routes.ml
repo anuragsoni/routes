@@ -1,3 +1,19 @@
+module Util = struct
+  let split_path target =
+    let split_target target =
+      match target with
+      | "" -> []
+      | _ ->
+        (match String.split_on_char '/' target with
+        | "" :: xs -> xs
+        | xs -> xs)
+    in
+    match String.index_opt target '?' with
+    | None -> split_target target
+    | Some 0 -> []
+    | Some i -> split_target (String.sub target 0 i)
+end
+
 module Method = struct
   module T = struct
     type standard =
@@ -15,8 +31,6 @@ module Method = struct
       [ standard
       | `Other of string
       ]
-
-    let default = `GET
 
     let to_string = function
       | `GET -> "GET"
@@ -110,18 +124,23 @@ type ('a, 'b) path =
   | Match : string * ('a, 'b) path -> ('a, 'b) path
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
-type 'b route = Route : Method.t option * ('a, 'b) path * 'a -> 'b route
+type 'b route = Route : ('a, 'b) path * 'a -> 'b route
 
-(* let route r handler = Route (r, handler) *)
-(* let ( @--> ) = route *)
+type 'b router =
+  { method_routes : 'b route PatternTrie.t Method.M.t
+  ; any_method : 'b route PatternTrie.t
+  }
 
-let route ?meth r handler = Route (meth, r, handler)
+let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
+let route r handler = Route (r, handler)
+let ( @--> ) = route
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt) r
 let str r = of_conv (conv Fun.id (fun (x : string) -> Some x)) r
 let bool r = of_conv (conv string_of_bool bool_of_string_opt) r
 let ( / ) m1 m2 r = m1 @@ m2 r
+let ( /? ) m1 m2 = m1 m2
 let nil = End
 
 let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
@@ -131,6 +150,11 @@ let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
   | Conv ({ to_; _ }, fmt) ->
     let f x = print_params (fun str -> k @@ String.concat "/" [ to_ x; str ]) fmt in
     f
+
+let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = function
+  | End -> []
+  | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
+  | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 
 let rec print_pattern : type a b. (a, b) path -> string = function
   | End -> ""
@@ -159,13 +183,44 @@ let parse_route fmt handler params =
   in
   match_target fmt handler params
 
-let match' routes target =
-  let target = String.split_on_char '/' target in
-  let rec route' = function
+let one_of routes =
+  let routes = List.rev routes in
+  List.fold_left
+    (fun ({ method_routes; any_method } as router) (meth, (Route (r, _) as route)) ->
+      let patterns = route_pattern r in
+      match meth with
+      | None -> { router with any_method = PatternTrie.add patterns route any_method }
+      | Some m ->
+        let method_routes =
+          Method.M.update
+            m
+            (fun v ->
+              match v with
+              | None -> Some (PatternTrie.add patterns route PatternTrie.empty)
+              | Some tr -> Some (PatternTrie.add patterns route tr))
+            method_routes
+        in
+        { router with method_routes })
+    empty_router
+    routes
+
+let run_routes target router =
+  let routes, params = PatternTrie.feed_params router target in
+  let rec aux = function
     | [] -> None
-    | Route (m, r, h) :: ps ->
-      (match parse_route r h target with
-      | None -> route' ps
-      | Some f -> Some f)
+    | Route (r, h) :: rs ->
+      (match parse_route r h params with
+      | None -> aux rs
+      | Some r -> Some r)
   in
-  route' routes
+  aux routes
+
+let match' ?meth { method_routes; any_method } ~target =
+  let target = Util.split_path target in
+  let matcher = run_routes target in
+  match meth with
+  | None -> matcher any_method
+  | Some m ->
+    (match Method.M.find_opt m method_routes with
+    | None -> None
+    | Some rs -> matcher rs)

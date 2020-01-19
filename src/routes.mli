@@ -35,15 +35,18 @@ end
 
 type ('a, 'b) path
 type 'b route
+type 'b router
 
 val int : ('a, 'b) path -> (int -> 'a, 'b) path
 val str : ('a, 'b) path -> (string -> 'a, 'b) path
 val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
 val s : string -> ('a, 'b) path -> ('a, 'b) path
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
-
-val route : ?meth:Method.t -> ('a, 'b) path -> 'a -> 'b route
-val match' : 'a route list -> string -> 'a option
+val ( /? ) : (('a, 'b) path -> 'c) -> ('a, 'b) path -> 'c
+val route : ('a, 'b) path -> 'a -> 'b route
+val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
+val match' : ?meth:Method.t -> 'a router -> target:string -> 'a option
 val sprintf : ('a, string) path -> 'a
 val pp : (Format.formatter -> ('a, 'b) path -> unit[@ocaml.toplevel_printer])
 val nil : ('a, 'a) path
+val one_of : (Method.t option * 'b route) list -> 'b router
