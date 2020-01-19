@@ -30,13 +30,11 @@ let rec print_params : type a b. (string -> b) -> (a, b) t -> a =
   | Conv ({ to_; _ }, fmt) ->
     let f x = print_params (fun str -> k @@ String.concat "/" [ to_ x; str ]) fmt in
     f
-;;
 
 let rec print_pattern : type a b. (a, b) t -> string = function
   | End -> ""
   | Match (w, fmt) -> w ^ "/" ^ print_pattern fmt
   | Conv (_, fmt) -> ":capture/" ^ print_pattern fmt
-;;
 
 let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) t -> a -> string list -> b option =
@@ -56,7 +54,6 @@ let parse_route fmt handler params =
         | Some x' -> match_target fmt (f x') xs))
   in
   match_target fmt handler params
-;;
 
 let meth' meth r = Req (meth, r End)
 
@@ -70,4 +67,3 @@ let match' routes target =
       | Some f -> Some f)
   in
   route' routes
-;;
