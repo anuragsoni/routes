@@ -74,13 +74,14 @@ module PatternTrie = struct
   let feed_params t params =
     let rec aux t params captures =
       match t, params with
-      | { parsers = []; _ }, [] -> [], []
-      | { parsers = rs; _ }, [] -> rs, List.rev captures
+      | { parsers = []; _ }, [] -> []
+      | { parsers = rs; _ }, [] -> rs
+      | { parsers = rs; _ }, [ "" ] -> rs
       | { children; capture; _ }, x :: xs ->
         (match KeyMap.find_opt x children with
         | None ->
           (match capture with
-          | None -> [], []
+          | None -> []
           | Some t' -> aux t' xs (x :: captures))
         | Some m' -> aux m' xs captures)
     in
@@ -141,6 +142,8 @@ let str r = of_conv (conv Fun.id (fun (x : string) -> Some x)) r
 let bool r = of_conv (conv string_of_bool bool_of_string_opt) r
 let ( / ) m1 m2 r = m1 @@ m2 r
 let ( /? ) m1 m2 = m1 m2
+
+(* let ( /+ ) m1 m2 = m1 (m2 true) *)
 let nil = End
 
 let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
@@ -168,7 +171,10 @@ let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
    fun t f s ->
     match t with
-    | End -> Some f
+    | End ->
+      (match params with
+      | [] -> Some f
+      | _ -> None)
     | Match (x, fmt) ->
       (match s with
       | x' :: xs when x = x' -> match_target fmt f xs
@@ -205,11 +211,11 @@ let one_of routes =
     routes
 
 let run_routes target router =
-  let routes, params = PatternTrie.feed_params router target in
+  let routes = PatternTrie.feed_params router target in
   let rec aux = function
     | [] -> None
     | Route (r, h) :: rs ->
-      (match parse_route r h params with
+      (match parse_route r h target with
       | None -> aux rs
       | Some r -> Some r)
   in
