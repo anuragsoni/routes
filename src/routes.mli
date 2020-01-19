@@ -38,6 +38,8 @@ type 'b route
 type 'b router
 
 val int : ('a, 'b) path -> (int -> 'a, 'b) path
+val int32 : ('a, 'b) path -> (int32 -> 'a, 'b) path
+val int64 : ('a, 'b) path -> (int64 -> 'a, 'b) path
 val str : ('a, 'b) path -> (string -> 'a, 'b) path
 val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
 val s : string -> ('a, 'b) path -> ('a, 'b) path
