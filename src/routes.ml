@@ -138,12 +138,10 @@ let ( @--> ) = route
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt) r
-let str r = of_conv (conv Fun.id (fun (x : string) -> Some x)) r
+let str r = of_conv (conv (fun x -> x) (fun (x : string) -> Some x)) r
 let bool r = of_conv (conv string_of_bool bool_of_string_opt) r
 let ( / ) m1 m2 r = m1 @@ m2 r
 let ( /? ) m1 m2 = m1 m2
-
-(* let ( /+ ) m1 m2 = m1 (m2 true) *)
 let nil = End
 
 let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
@@ -164,7 +162,7 @@ let rec print_pattern : type a b. (a, b) path -> string = function
   | Match (w, fmt) -> w ^ "/" ^ print_pattern fmt
   | Conv (_, fmt) -> ":capture/" ^ print_pattern fmt
 
-let sprintf r = print_params Fun.id r
+let sprintf r = print_params (fun x -> x) r
 let pp fmt r = Format.fprintf fmt "%s" (print_pattern r)
 
 let parse_route fmt handler params =
