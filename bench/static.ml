@@ -1,7 +1,5 @@
 (**
 Copyright (c) 2013 Julien Schmidt. All rights reserved.
-
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
     * Redistributions of source code must retain the above copyright
@@ -12,7 +10,6 @@ modification, are permitted provided that the following conditions are met:
     * The names of the contributors may not be used to endorse or promote
       products derived from this software without specific prior written
       permission.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,187 +23,207 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *)
 
 let urls =
-  [ `GET, "/"
-  ; `GET, "/cmd.html"
-  ; `GET, "/code.html"
-  ; `GET, "/contrib.html"
-  ; `GET, "/contribute.html"
-  ; `GET, "/debugging_with_gdb.html"
-  ; `GET, "/docs.html"
-  ; `GET, "/effective_go.html"
-  ; `GET, "/files.log"
-  ; `GET, "/gccgo_contribute.html"
-  ; `GET, "/gccgo_install.html"
-  ; `GET, "/go-logo-black.png"
-  ; `GET, "/go-logo-blue.png"
-  ; `GET, "/go-logo-white.png"
-  ; `GET, "/go1.1.html"
-  ; `GET, "/go1.2.html"
-  ; `GET, "/go1.html"
-  ; `GET, "/go1compat.html"
-  ; `GET, "/go_faq.html"
-  ; `GET, "/go_mem.html"
-  ; `GET, "/go_spec.html"
-  ; `GET, "/help.html"
-  ; `GET, "/ie.css"
-  ; `GET, "/install-source.html"
-  ; `GET, "/install.html"
-  ; `GET, "/logo-153x55.png"
-  ; `GET, "/Makefile"
-  ; `GET, "/root.html"
-  ; `GET, "/share.png"
-  ; `GET, "/sieve.gif"
-  ; `GET, "/tos.html"
-  ; `GET, "/articles/"
-  ; `GET, "/articles/go_command.html"
-  ; `GET, "/articles/index.html"
-  ; `GET, "/articles/wiki/"
-  ; `GET, "/articles/wiki/edit.html"
-  ; `GET, "/articles/wiki/final-noclosure.go"
-  ; `GET, "/articles/wiki/final-noerror.go"
-  ; `GET, "/articles/wiki/final-parsetemplate.go"
-  ; `GET, "/articles/wiki/final-template.go"
-  ; `GET, "/articles/wiki/final.go"
-  ; `GET, "/articles/wiki/get.go"
-  ; `GET, "/articles/wiki/http-sample.go"
-  ; `GET, "/articles/wiki/index.html"
-  ; `GET, "/articles/wiki/Makefile"
-  ; `GET, "/articles/wiki/notemplate.go"
-  ; `GET, "/articles/wiki/part1-noerror.go"
-  ; `GET, "/articles/wiki/part1.go"
-  ; `GET, "/articles/wiki/part2.go"
-  ; `GET, "/articles/wiki/part3-errorhandling.go"
-  ; `GET, "/articles/wiki/part3.go"
-  ; `GET, "/articles/wiki/test.bash"
-  ; `GET, "/articles/wiki/test_edit.good"
-  ; `GET, "/articles/wiki/test_Test.txt.good"
-  ; `GET, "/articles/wiki/test_view.good"
-  ; `GET, "/articles/wiki/view.html"
-  ; `GET, "/codewalk/"
-  ; `GET, "/codewalk/codewalk.css"
-  ; `GET, "/codewalk/codewalk.js"
-  ; `GET, "/codewalk/codewalk.xml"
-  ; `GET, "/codewalk/functions.xml"
-  ; `GET, "/codewalk/markov.go"
-  ; `GET, "/codewalk/markov.xml"
-  ; `GET, "/codewalk/pig.go"
-  ; `GET, "/codewalk/popout.png"
-  ; `GET, "/codewalk/run"
-  ; `GET, "/codewalk/sharemem.xml"
-  ; `GET, "/codewalk/urlpoll.go"
-  ; `GET, "/devel/"
-  ; `GET, "/devel/release.html"
-  ; `GET, "/devel/weekly.html"
-  ; `GET, "/gopher/"
-  ; `GET, "/gopher/appenginegopher.jpg"
-  ; `GET, "/gopher/appenginegophercolor.jpg"
-  ; `GET, "/gopher/appenginelogo.gif"
-  ; `GET, "/gopher/bumper.png"
-  ; `GET, "/gopher/bumper192x108.png"
-  ; `GET, "/gopher/bumper320x180.png"
-  ; `GET, "/gopher/bumper480x270.png"
-  ; `GET, "/gopher/bumper640x360.png"
-  ; `GET, "/gopher/doc.png"
-  ; `GET, "/gopher/frontpage.png"
-  ; `GET, "/gopher/gopherbw.png"
-  ; `GET, "/gopher/gophercolor.png"
-  ; `GET, "/gopher/gophercolor16x16.png"
-  ; `GET, "/gopher/help.png"
-  ; `GET, "/gopher/pkg.png"
-  ; `GET, "/gopher/project.png"
-  ; `GET, "/gopher/ref.png"
-  ; `GET, "/gopher/run.png"
-  ; `GET, "/gopher/talks.png"
-  ; `GET, "/gopher/pencil/"
-  ; `GET, "/gopher/pencil/gopherhat.jpg"
-  ; `GET, "/gopher/pencil/gopherhelmet.jpg"
-  ; `GET, "/gopher/pencil/gophermega.jpg"
-  ; `GET, "/gopher/pencil/gopherrunning.jpg"
-  ; `GET, "/gopher/pencil/gopherswim.jpg"
-  ; `GET, "/gopher/pencil/gopherswrench.jpg"
-  ; `GET, "/play/"
-  ; `GET, "/play/fib.go"
-  ; `GET, "/play/hello.go"
-  ; `GET, "/play/life.go"
-  ; `GET, "/play/peano.go"
-  ; `GET, "/play/pi.go"
-  ; `GET, "/play/sieve.go"
-  ; `GET, "/play/solitaire.go"
-  ; `GET, "/play/tree.go"
-  ; `GET, "/progs/"
-  ; `GET, "/progs/cgo1.go"
-  ; `GET, "/progs/cgo2.go"
-  ; `GET, "/progs/cgo3.go"
-  ; `GET, "/progs/cgo4.go"
-  ; `GET, "/progs/defer.go"
-  ; `GET, "/progs/defer.out"
-  ; `GET, "/progs/defer2.go"
-  ; `GET, "/progs/defer2.out"
-  ; `GET, "/progs/eff_bytesize.go"
-  ; `GET, "/progs/eff_bytesize.out"
-  ; `GET, "/progs/eff_qr.go"
-  ; `GET, "/progs/eff_sequence.go"
-  ; `GET, "/progs/eff_sequence.out"
-  ; `GET, "/progs/eff_unused1.go"
-  ; `GET, "/progs/eff_unused2.go"
-  ; `GET, "/progs/error.go"
-  ; `GET, "/progs/error2.go"
-  ; `GET, "/progs/error3.go"
-  ; `GET, "/progs/error4.go"
-  ; `GET, "/progs/go1.go"
-  ; `GET, "/progs/gobs1.go"
-  ; `GET, "/progs/gobs2.go"
-  ; `GET, "/progs/image_draw.go"
-  ; `GET, "/progs/image_package1.go"
-  ; `GET, "/progs/image_package1.out"
-  ; `GET, "/progs/image_package2.go"
-  ; `GET, "/progs/image_package2.out"
-  ; `GET, "/progs/image_package3.go"
-  ; `GET, "/progs/image_package3.out"
-  ; `GET, "/progs/image_package4.go"
-  ; `GET, "/progs/image_package4.out"
-  ; `GET, "/progs/image_package5.go"
-  ; `GET, "/progs/image_package5.out"
-  ; `GET, "/progs/image_package6.go"
-  ; `GET, "/progs/image_package6.out"
-  ; `GET, "/progs/interface.go"
-  ; `GET, "/progs/interface2.go"
-  ; `GET, "/progs/interface2.out"
-  ; `GET, "/progs/json1.go"
-  ; `GET, "/progs/json2.go"
-  ; `GET, "/progs/json2.out"
-  ; `GET, "/progs/json3.go"
-  ; `GET, "/progs/json4.go"
-  ; `GET, "/progs/json5.go"
-  ; `GET, "/progs/run"
-  ; `GET, "/progs/slices.go"
-  ; `GET, "/progs/timeout1.go"
-  ; `GET, "/progs/timeout2.go"
-  ; `GET, "/progs/update.bash"
+  [ "/"
+  ; "/cmd.html"
+  ; "/code.html"
+  ; "/contrib.html"
+  ; "/contribute.html"
+  ; "/debugging_with_gdb.html"
+  ; "/docs.html"
+  ; "/effective_go.html"
+  ; "/files.log"
+  ; "/gccgo_contribute.html"
+  ; "/gccgo_install.html"
+  ; "/go-logo-black.png"
+  ; "/go-logo-blue.png"
+  ; "/go-logo-white.png"
+  ; "/go1.1.html"
+  ; "/go1.2.html"
+  ; "/go1.html"
+  ; "/go1compat.html"
+  ; "/go_faq.html"
+  ; "/go_mem.html"
+  ; "/go_spec.html"
+  ; "/help.html"
+  ; "/ie.css"
+  ; "/install-source.html"
+  ; "/install.html"
+  ; "/logo-153x55.png"
+  ; "/Makefile"
+  ; "/root.html"
+  ; "/share.png"
+  ; "/sieve.gif"
+  ; "/tos.html"
+  ; "/articles/"
+  ; "/articles/go_command.html"
+  ; "/articles/index.html"
+  ; "/articles/wiki/"
+  ; "/articles/wiki/edit.html"
+  ; "/articles/wiki/final-noclosure.go"
+  ; "/articles/wiki/final-noerror.go"
+  ; "/articles/wiki/final-parsetemplate.go"
+  ; "/articles/wiki/final-template.go"
+  ; "/articles/wiki/final.go"
+  ; "/articles/wiki/get.go"
+  ; "/articles/wiki/http-sample.go"
+  ; "/articles/wiki/index.html"
+  ; "/articles/wiki/Makefile"
+  ; "/articles/wiki/notemplate.go"
+  ; "/articles/wiki/part1-noerror.go"
+  ; "/articles/wiki/part1.go"
+  ; "/articles/wiki/part2.go"
+  ; "/articles/wiki/part3-errorhandling.go"
+  ; "/articles/wiki/part3.go"
+  ; "/articles/wiki/test.bash"
+  ; "/articles/wiki/test_edit.good"
+  ; "/articles/wiki/test_Test.txt.good"
+  ; "/articles/wiki/test_view.good"
+  ; "/articles/wiki/view.html"
+  ; "/codewalk/"
+  ; "/codewalk/codewalk.css"
+  ; "/codewalk/codewalk.js"
+  ; "/codewalk/codewalk.xml"
+  ; "/codewalk/functions.xml"
+  ; "/codewalk/markov.go"
+  ; "/codewalk/markov.xml"
+  ; "/codewalk/pig.go"
+  ; "/codewalk/popout.png"
+  ; "/codewalk/run"
+  ; "/codewalk/sharemem.xml"
+  ; "/codewalk/urlpoll.go"
+  ; "/devel/"
+  ; "/devel/release.html"
+  ; "/devel/weekly.html"
+  ; "/gopher/"
+  ; "/gopher/appenginegopher.jpg"
+  ; "/gopher/appenginegophercolor.jpg"
+  ; "/gopher/appenginelogo.gif"
+  ; "/gopher/bumper.png"
+  ; "/gopher/bumper192x108.png"
+  ; "/gopher/bumper320x180.png"
+  ; "/gopher/bumper480x270.png"
+  ; "/gopher/bumper640x360.png"
+  ; "/gopher/doc.png"
+  ; "/gopher/frontpage.png"
+  ; "/gopher/gopherbw.png"
+  ; "/gopher/gophercolor.png"
+  ; "/gopher/gophercolor16x16.png"
+  ; "/gopher/help.png"
+  ; "/gopher/pkg.png"
+  ; "/gopher/project.png"
+  ; "/gopher/ref.png"
+  ; "/gopher/run.png"
+  ; "/gopher/talks.png"
+  ; "/gopher/pencil/"
+  ; "/gopher/pencil/gopherhat.jpg"
+  ; "/gopher/pencil/gopherhelmet.jpg"
+  ; "/gopher/pencil/gophermega.jpg"
+  ; "/gopher/pencil/gopherrunning.jpg"
+  ; "/gopher/pencil/gopherswim.jpg"
+  ; "/gopher/pencil/gopherswrench.jpg"
+  ; "/play/"
+  ; "/play/fib.go"
+  ; "/play/hello.go"
+  ; "/play/life.go"
+  ; "/play/peano.go"
+  ; "/play/pi.go"
+  ; "/play/sieve.go"
+  ; "/play/solitaire.go"
+  ; "/play/tree.go"
+  ; "/progs/"
+  ; "/progs/cgo1.go"
+  ; "/progs/cgo2.go"
+  ; "/progs/cgo3.go"
+  ; "/progs/cgo4.go"
+  ; "/progs/defer.go"
+  ; "/progs/defer.out"
+  ; "/progs/defer2.go"
+  ; "/progs/defer2.out"
+  ; "/progs/eff_bytesize.go"
+  ; "/progs/eff_bytesize.out"
+  ; "/progs/eff_qr.go"
+  ; "/progs/eff_sequence.go"
+  ; "/progs/eff_sequence.out"
+  ; "/progs/eff_unused1.go"
+  ; "/progs/eff_unused2.go"
+  ; "/progs/error.go"
+  ; "/progs/error2.go"
+  ; "/progs/error3.go"
+  ; "/progs/error4.go"
+  ; "/progs/go1.go"
+  ; "/progs/gobs1.go"
+  ; "/progs/gobs2.go"
+  ; "/progs/image_draw.go"
+  ; "/progs/image_package1.go"
+  ; "/progs/image_package1.out"
+  ; "/progs/image_package2.go"
+  ; "/progs/image_package2.out"
+  ; "/progs/image_package3.go"
+  ; "/progs/image_package3.out"
+  ; "/progs/image_package4.go"
+  ; "/progs/image_package4.out"
+  ; "/progs/image_package5.go"
+  ; "/progs/image_package5.out"
+  ; "/progs/image_package6.go"
+  ; "/progs/image_package6.out"
+  ; "/progs/interface.go"
+  ; "/progs/interface2.go"
+  ; "/progs/interface2.out"
+  ; "/progs/json1.go"
+  ; "/progs/json2.go"
+  ; "/progs/json2.out"
+  ; "/progs/json3.go"
+  ; "/progs/json4.go"
+  ; "/progs/json5.go"
+  ; "/progs/run"
+  ; "/progs/slices.go"
+  ; "/progs/timeout1.go"
+  ; "/progs/timeout2.go"
+  ; "/progs/update.bash"
   ]
-;;
 
 let handler = ()
 
+module Util = struct
+  let split_path target =
+    let split_target target =
+      match target with
+      | "" -> []
+      | _ ->
+        (match String.split_on_char '/' target with
+        | "" :: xs -> xs
+        | xs -> xs)
+    in
+    match String.index_opt target '?' with
+    | None -> split_target target
+    | Some 0 -> []
+    | Some i -> split_target (String.sub target 0 i)
+end
+
 open Routes
-open Infix
+
+let mr r = None, r @--> handler
 
 let router =
-  with_method
+  one_of
     (List.map
-       (fun (m, u) ->
-         let split = Routes_private.Util.split_path true u in
-         let p =
+       (fun u ->
+         let split = Util.split_path u |> List.map (fun q -> s q) in
+         let r =
            match split with
-           | [] -> empty
-           | [ x ] -> s x
-           | x :: xs -> List.fold_left (fun acc y -> acc *> s y) (s x) xs
+           | [] -> nil
+           | [ x ] -> x /? nil
+           | x :: xs ->
+             let t = List.fold_left (fun acc y -> acc / x) x xs in
+             t /? nil
          in
-         m, handler <$ p)
+         mr (fun () -> r))
        urls)
-;;
+
+let bench_routes router targets = List.map (fun u -> match' ~target:u router) targets
 
 let bench =
   let open Core_bench in
-  Bench.Test.create ~name:"Static Bench" (fun () -> Util.bench_routes router urls)
-;;
+  Bench.Test.create ~name:"Static Bench" (fun () -> bench_routes router urls)
+
+let benches = [ bench ]

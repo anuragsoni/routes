@@ -1,19 +1,4 @@
 (executable
- (name main)
- (modules main)
- (libraries routes lwt.unix httpaf httpaf-lwt-unix logs.fmt base))
-
-(executable
  (name no_method)
  (modules no_method)
  (libraries routes))
-
-(executable
- (name opium_example)
- (modules opium_example)
- (libraries opium routes))
-
-(alias
- (name examples)
- (deps
-  (glob_files *.exe)))

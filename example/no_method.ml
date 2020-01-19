@@ -1,42 +1,29 @@
-open Routes
-open Infix
+module R = struct
+  open Routes
 
-(** Handlers can be defined outside the [choice] method. *)
-let sum a b = Printf.sprintf "Sum of %d and %d = %d" a b (a + b)
+  let sum a b = Printf.sprintf "Sum of %d and %d = %d" a b (a + b)
+  let id_handler id = Printf.sprintf "Requested user with id %d" id
+  let admin_handler a = if a then "User is admin" else "User is not an admin"
+  let route r = None, r
+  let user () = s "user"
+  let user_and_id () = user () / int /? nil
+  let user_and_admin () = user () / bool /? nil
+  let q () = s "confusing" /? nil
 
-(** We can build up our route matchers piece by piece. *)
-let user = s "user"
-
-let user_and_id = user *> int64
-let user_and_admin = user *> bool
-let id_handler id = Printf.sprintf "Requested user with id %Ld" id
-let admin_handler a = if a then "User is admin" else "User is not an admin"
-
-(** Routes defined earlier have higher precedence *)
-let q = "Foobar" <$ s "confusing" <* str
-
-(** r has an overlap with q since both match the same number of segments.
-    and q is more general. As a result anything that matches r, also matches
-    q and thus r is never matched. In future i'd like to perform checks
-    and warn the user about ambiguous route matches and crash early. *)
-let r = (fun _ -> "Bad") <$ s "confusing" </> int
-
-let routes =
-  one_of
-    [ "Hello, World!" <$ s "hi"
-    ; "Hello, Routes" <$ s "hello" <* s "from" <* s "routes"
-    ; sum <$> s "sum" *> int </> int
-    ; id_handler <$> user_and_id
-    ; admin_handler <$> user_and_admin
-    ; q
-    ; r
-    ]
-;;
+  let routes =
+    one_of
+      [ route @@ (fun () -> s "hi" /? nil) @--> "Hello, World"
+      ; route @@ (fun () -> s "hello" / s "from" / s "routes" /? nil) @--> "Hello, Routes"
+      ; route @@ (fun () -> s "sum" / int / int /? nil) @--> sum
+      ; route @@ user_and_id @--> id_handler
+      ; route @@ user_and_admin @--> admin_handler
+      ; route @@ q @--> "Foobar"
+      ]
+end
 
 let unwrap_result = function
   | None -> "No match"
   | Some r -> r
-;;
 
 let () =
   let targets =
@@ -45,9 +32,10 @@ let () =
     ; "/hello/from/routes"
     ; "/user/121"
     ; "user/false"
-    ; "confusing/121"
-    ; "confusing/foobar"
+    ; "confusing/"
+    ; "confusing"
     ]
   in
-  List.iter (fun t -> print_endline (unwrap_result (match' routes t))) targets
-;;
+  List.iter
+    (fun target -> print_endline (unwrap_result @@ Routes.match' ~target R.routes))
+    targets

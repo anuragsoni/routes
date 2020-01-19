@@ -1,140 +1,222 @@
-module Routes_private = struct
-  module Util = Util
+module Util = struct
+  let split_path target =
+    let split_target target =
+      match target with
+      | "" -> []
+      | _ ->
+        (match String.split_on_char '/' target with
+        | "" :: xs -> xs
+        | xs -> xs)
+    in
+    match String.index_opt target '?' with
+    | None -> split_target target
+    | Some 0 -> []
+    | Some i -> split_target (String.sub target 0 i)
 end
 
 module Method = struct
-  type standard =
-    [ `GET
-    | `HEAD
-    | `POST
-    | `PUT
-    | `DELETE
-    | `CONNECT
-    | `OPTIONS
-    | `TRACE
-    ]
+  module T = struct
+    type standard =
+      [ `GET
+      | `HEAD
+      | `POST
+      | `PUT
+      | `DELETE
+      | `CONNECT
+      | `OPTIONS
+      | `TRACE
+      ]
 
-  type t =
-    [ standard
-    | `Other of string
-    ]
+    type t =
+      [ standard
+      | `Other of string
+      ]
 
-  let default = `GET
+    let to_string = function
+      | `GET -> "GET"
+      | `HEAD -> "HEAD"
+      | `POST -> "POST"
+      | `PUT -> "PUT"
+      | `DELETE -> "DELETE"
+      | `CONNECT -> "CONNECT"
+      | `OPTIONS -> "OPTION"
+      | `TRACE -> "TRACE"
+      | `Other s -> s
 
-  let to_string = function
-    | `GET -> "GET"
-    | `HEAD -> "HEAD"
-    | `POST -> "POST"
-    | `PUT -> "PUT"
-    | `DELETE -> "DELETE"
-    | `CONNECT -> "CONNECT"
-    | `OPTIONS -> "OPTION"
-    | `TRACE -> "TRACE"
-    | `Other s -> s
-  ;;
+    let compare m1 m2 = String.compare (to_string m1) (to_string m2)
+    let pp fmt m = Format.fprintf fmt "%s" (to_string m)
+    let equal m1 m2 = compare m1 m2 = 0
+  end
 
-  let compare m1 m2 = String.compare (to_string m1) (to_string m2)
-  let pp fmt m = Format.fprintf fmt "%s" (to_string m)
-  let equal m1 m2 = compare m1 m2 = 0
+  include T
+  module M = Map.Make (T)
 end
 
-module MethodMap = Map.Make (Method)
+module PatternTrie = struct
+  module Key = struct
+    type t =
+      | Match : string -> t
+      | Capture : t
+  end
 
-type 'a t = 'a Parser.t
+  module KeyMap = Map.Make (String)
 
-let pattern = Parser.pattern
-
-module R = struct
-  type 'a t =
-    { routes : 'a Parser.t Router.t MethodMap.t
-    ; url_split : string -> string list
-    ; route_patterns : (Method.t * string) list
+  type 'a node =
+    { parsers : 'a list
+    ; children : 'a node KeyMap.t
+    ; capture : 'a node option
     }
 
-  let create url_split routes route_patterns = { routes; url_split; route_patterns }
+  type 'a t = 'a node
+
+  let empty = { parsers = []; children = KeyMap.empty; capture = None }
+
+  let feed_params t params =
+    let rec aux t params captures =
+      match t, params with
+      | { parsers = []; _ }, [] -> []
+      | { parsers = rs; _ }, [] -> rs
+      | { parsers = rs; _ }, [ "" ] -> rs
+      | { children; capture; _ }, x :: xs ->
+        (match KeyMap.find_opt x children with
+        | None ->
+          (match capture with
+          | None -> []
+          | Some t' -> aux t' xs (x :: captures))
+        | Some m' -> aux m' xs captures)
+    in
+    aux t params []
+
+  let add k v t =
+    let rec aux k t =
+      match k, t with
+      | [], ({ parsers = x; _ } as n) -> { n with parsers = v :: x }
+      | x :: r, ({ children; capture; _ } as n) ->
+        (match x with
+        | Key.Match w ->
+          let t' =
+            match KeyMap.find_opt w children with
+            | None -> empty
+            | Some v -> v
+          in
+          let t'' = aux r t' in
+          { n with children = KeyMap.add w t'' children }
+        | Key.Capture ->
+          let t' =
+            match capture with
+            | None -> empty
+            | Some v -> v
+          in
+          let t'' = aux r t' in
+          { n with capture = Some t'' })
+    in
+    aux k t
 end
 
-let get_route_patterns { R.route_patterns; _ } = route_patterns
+type 'a conv =
+  { to_ : 'a -> string
+  ; from_ : string -> 'a option
+  }
 
-let pattern_of_route r =
-  let xs, _ = Parser.get_patterns r |> List.split in
-  String.concat "/" xs
-;;
+let conv to_ from_ = { to_; from_ }
 
-let pp_router fmt r =
-  let patterns = get_route_patterns r in
-  Format.fprintf fmt "Routes:\n";
-  List.iter
-    (fun (meth, route) -> Format.fprintf fmt "> %s %s\n" (Method.to_string meth) route)
-    patterns
-;;
+type ('a, 'b) path =
+  | End : ('a, 'a) path
+  | Match : string * ('a, 'b) path -> ('a, 'b) path
+  | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
-let pp_route fmt r = Format.fprintf fmt "%s" (pattern_of_route r)
+type 'b route = Route : ('a, 'b) path * 'a -> 'b route
 
-type 'a router = 'a R.t
+type 'b router =
+  { method_routes : 'b route PatternTrie.t Method.M.t
+  ; any_method : 'b route PatternTrie.t
+  }
 
-let empty = Parser.empty
-let str = pattern (fun x -> Some x) "<string>"
-let int = pattern int_of_string_opt "<int>"
-let int32 = pattern Int32.of_string_opt "<int32>"
-let int64 = pattern Int64.of_string_opt "<int64>"
-let bool = pattern bool_of_string_opt "<bool>"
-let s = Parser.s
-let apply = Parser.apply
-let return = Parser.return
+let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
+let ( @--> ) r handler = Route (r (), handler)
+let s w r = Match (w, r)
+let of_conv conv r = Conv (conv, r)
+let int r = of_conv (conv string_of_int int_of_string_opt) r
+let str r = of_conv (conv (fun x -> x) (fun (x : string) -> Some x)) r
+let bool r = of_conv (conv string_of_bool bool_of_string_opt) r
+let ( / ) m1 m2 r = m1 @@ m2 r
+let ( /? ) m1 m2 = m1 m2
+let nil = End
 
-module Infix = struct
-  include Parser.Infix
-end
+let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = function
+  | End -> []
+  | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
+  | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 
-let with_method ?(ignore_trailing_slash = true) routes =
-  let routes = List.rev routes in
-  let f (xs, acc) (m, r) =
-    let current_routes =
-      match MethodMap.find_opt m acc with
-      | None -> Router.empty
-      | Some v -> v
-    in
-    let segment_patterns, patterns = Parser.get_patterns r |> List.split in
-    let readable_pattern = String.concat "/" segment_patterns in
-    let acc =
-      MethodMap.add m (Router.add patterns (Parser.strip_route r) current_routes) acc
-    in
-    (m, readable_pattern) :: xs, acc
+let rec sprintf' : type a. (a, string) path -> string -> a =
+ fun r xs ->
+  match r with
+  | End -> xs
+  | Match (w, r') -> sprintf' r' (w ^ "/" ^ xs)
+  | Conv ({ to_; _ }, r') -> fun x -> sprintf' r' (to_ x ^ "/" ^ xs)
+
+let sprintf r = sprintf' (r ()) ""
+
+let parse_route fmt handler params =
+  let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
+   fun t f s ->
+    match t with
+    | End ->
+      (match s with
+      | [] -> Some f
+      | _ -> None)
+    | Match (x, fmt) ->
+      (match s with
+      | x' :: xs when x = x' -> match_target fmt f xs
+      | _ -> None)
+    | Conv ({ from_; _ }, fmt) ->
+      (match s with
+      | [] -> None
+      | x :: xs ->
+        (match from_ x with
+        | None -> None
+        | Some x' -> match_target fmt (f x') xs))
   in
-  let route_patterns, map = List.fold_left f ([], MethodMap.empty) routes in
-  R.create (Util.split_path ignore_trailing_slash) map route_patterns
-;;
+  match_target fmt handler params
 
-let one_of ?(ignore_trailing_slash = true) routes =
-  let m = Method.default in
-  with_method ~ignore_trailing_slash (List.map (fun r -> m, r) routes)
-;;
+let one_of routes =
+  let routes = List.rev routes in
+  List.fold_left
+    (fun ({ method_routes; any_method } as router) (meth, (Route (r, _) as route)) ->
+      let patterns = route_pattern r in
+      match meth with
+      | None -> { router with any_method = PatternTrie.add patterns route any_method }
+      | Some m ->
+        let method_routes =
+          Method.M.update
+            m
+            (fun v ->
+              match v with
+              | None -> Some (PatternTrie.add patterns route PatternTrie.empty)
+              | Some tr -> Some (PatternTrie.add patterns route tr))
+            method_routes
+        in
+        { router with method_routes })
+    empty_router
+    routes
 
-let run_route routes params =
-  let rec aux routes =
-    match routes with
+let run_routes target router =
+  let routes = PatternTrie.feed_params router target in
+  let rec aux = function
     | [] -> None
-    | r :: rs ->
-      (match Parser.parse r params with
-      | Some (res, []) -> Some res
-      | _ -> aux rs)
+    | Route (r, h) :: rs ->
+      (match parse_route r h target with
+      | None -> aux rs
+      | Some r -> Some r)
   in
   aux routes
-;;
 
-let run_router t params =
-  let routes, params' = Router.feed_params t params in
-  run_route routes params'
-;;
-
-let match_with_method { R.routes; url_split; _ } ~target ~meth =
-  let routes =
-    match MethodMap.find_opt meth routes with
-    | None -> Router.empty
-    | Some v -> v
-  in
-  run_router routes (url_split target)
-;;
-
-let match' r target = match_with_method r ~target ~meth:Method.default
+let match' ?meth { method_routes; any_method } ~target =
+  let target = Util.split_path target in
+  let matcher = run_routes target in
+  match meth with
+  | None -> matcher any_method
+  | Some m ->
+    (match Method.M.find_opt m method_routes with
+    | None -> None
+    | Some rs -> matcher rs)
