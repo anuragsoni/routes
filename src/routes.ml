@@ -133,8 +133,7 @@ type 'b router =
   }
 
 let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
-let route r handler = Route (r, handler)
-let ( @--> ) = route
+let ( @--> ) r handler = Route (r (), handler)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt) r
@@ -144,26 +143,19 @@ let ( / ) m1 m2 r = m1 @@ m2 r
 let ( /? ) m1 m2 = m1 m2
 let nil = End
 
-let rec print_params : type a b. (string -> b) -> (a, b) path -> a =
- fun k -> function
-  | End -> k ""
-  | Match (w, fmt) -> print_params (fun s -> k @@ String.concat "/" [ w; s ]) fmt
-  | Conv ({ to_; _ }, fmt) ->
-    let f x = print_params (fun str -> k @@ String.concat "/" [ to_ x; str ]) fmt in
-    f
-
 let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = function
   | End -> []
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 
-let rec print_pattern : type a b. (a, b) path -> string = function
-  | End -> ""
-  | Match (w, fmt) -> w ^ "/" ^ print_pattern fmt
-  | Conv (_, fmt) -> ":capture/" ^ print_pattern fmt
+let rec sprintf' : type a. (a, string) path -> string -> a =
+ fun r xs ->
+  match r with
+  | End -> xs
+  | Match (w, r') -> sprintf' r' (w ^ "/" ^ xs)
+  | Conv ({ to_; _ }, r') -> fun x -> sprintf' r' (to_ x ^ "/" ^ xs)
 
-let sprintf r = print_params (fun x -> x) r
-let pp fmt r = Format.fprintf fmt "%s" (print_pattern r)
+let sprintf r = sprintf' (r ()) ""
 
 let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =

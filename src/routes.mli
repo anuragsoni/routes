@@ -43,10 +43,8 @@ val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
 val s : string -> ('a, 'b) path -> ('a, 'b) path
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 val ( /? ) : (('a, 'b) path -> 'c) -> ('a, 'b) path -> 'c
-val route : ('a, 'b) path -> 'a -> 'b route
-val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
+val ( @--> ) : (unit -> ('a, 'b) path) -> 'a -> 'b route
 val match' : ?meth:Method.t -> 'a router -> target:string -> 'a option
-val sprintf : ('a, string) path -> 'a
-val pp : (Format.formatter -> ('a, 'b) path -> unit[@ocaml.toplevel_printer])
+val sprintf : (unit -> ('a, string) path) -> 'a
 val nil : ('a, 'a) path
 val one_of : (Method.t option * 'b route) list -> 'b router

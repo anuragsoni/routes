@@ -217,7 +217,7 @@ let router =
              let t = List.fold_left (fun acc y -> acc / x) x xs in
              t /? nil
          in
-         mr r)
+         mr (fun () -> r))
        urls)
 
 let bench_routes router targets = List.map (fun u -> match' ~target:u router) targets

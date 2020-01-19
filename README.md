@@ -30,9 +30,9 @@ val search_user : string -> string -> req -> string = <fun>
 
 # let routes = Routes.(
     one_of [
-      Some `GET, s "" /? nil @--> idx
-    ; Some `GET, s "user" / int /? nil @--> get_user
-    ; Some `POST, s "user" / str / str /? nil @--> search_user
+      Some `GET, (fun () -> s "" /? nil) @--> idx
+    ; Some `GET, (fun () -> s "user" / int /? nil) @--> get_user
+    ; Some `POST, (fun () ->  s "user" / str / str /? nil) @--> search_user
     ]);;
 val routes : (req -> string) Routes.router = <abstr>
 
@@ -45,14 +45,14 @@ val req : req = {target = "/user/12"}
 # match Routes.match' ~meth:`GET ~target:req.target routes with None -> "No match" | Some r -> r req;;
 - : string = "Received request from /user/12 to fetch id: 12"
 
-# let my_fancy_route = Routes.(s "user" / int / s "add" /? nil);;
-val my_fancy_route : (int -> '_weak1, '_weak1) Routes.path = <abstr>
+# let my_fancy_route = Routes.(fun () -> s "user" / int / s "add" /? nil);;
+val my_fancy_route : unit -> (int -> 'a, 'a) Routes.path = <fun>
 
 # let print_route = Routes.sprintf my_fancy_route;;
 val print_route : int -> string = <fun>
 
 # print_route 12;;
-- : string = "user/12/add/"
+- : string = "add/12/user/"
 ```
 
 ## Installation
