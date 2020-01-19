@@ -34,7 +34,6 @@ module Method : sig
 end
 
 type ('a, 'b) path
-type ('a, 'b) req
 type 'b route
 
 val int : ('a, 'b) path -> (int -> 'a, 'b) path
@@ -42,8 +41,8 @@ val str : ('a, 'b) path -> (string -> 'a, 'b) path
 val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
 val s : string -> ('a, 'b) path -> ('a, 'b) path
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
-val ( @--> ) : ('a, 'b) req -> 'a -> 'b route
-val meth' : Method.t -> (('a, 'a) path -> ('b, 'c) path) -> ('b, 'c) req
+
+val route : ?meth:Method.t -> ('a, 'b) path -> 'a -> 'b route
 val match' : 'a route list -> string -> 'a option
 val sprintf : ('a, string) path -> 'a
 val pp : (Format.formatter -> ('a, 'b) path -> unit[@ocaml.toplevel_printer])

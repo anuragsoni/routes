@@ -110,12 +110,12 @@ type ('a, 'b) path =
   | Match : string * ('a, 'b) path -> ('a, 'b) path
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
-and ('a, 'b) req = Req : Method.t * ('a, 'b) path -> ('a, 'b) req
+type 'b route = Route : Method.t option * ('a, 'b) path * 'a -> 'b route
 
-type 'b route = Route : ('a, 'b) req * 'a -> 'b route
+(* let route r handler = Route (r, handler) *)
+(* let ( @--> ) = route *)
 
-let route r handler = Route (r, handler)
-let ( @--> ) = route
+let route ?meth r handler = Route (meth, r, handler)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt) r
@@ -159,13 +159,11 @@ let parse_route fmt handler params =
   in
   match_target fmt handler params
 
-let meth' meth r = Req (meth, r End)
-
 let match' routes target =
   let target = String.split_on_char '/' target in
   let rec route' = function
     | [] -> None
-    | Route (Req (_, r), h) :: ps ->
+    | Route (m, r, h) :: ps ->
       (match parse_route r h target with
       | None -> route' ps
       | Some f -> Some f)
