@@ -150,14 +150,13 @@ let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = functi
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 
-let rec sprintf' : type a. (a, string) path -> string -> a =
- fun r xs ->
-  match r with
-  | End -> xs
-  | Match (w, r') -> sprintf' r' (w ^ "/" ^ xs)
-  | Conv ({ to_; _ }, r') -> fun x -> sprintf' r' (to_ x ^ "/" ^ xs)
+let rec ksprintf : type a b. (string -> b) -> (a, b) path -> a =
+ fun k -> function
+  | End -> k ""
+  | Match (w, fmt) -> ksprintf (fun s -> k @@ w ^ "/" ^ s) fmt
+  | Conv ({ to_; _ }, fmt) -> fun x -> ksprintf (fun rest -> k @@ to_ x ^ "/" ^ rest) fmt
 
-let sprintf r = sprintf' (r ()) ""
+let sprintf r = ksprintf (fun x -> x) (r ())
 
 let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
