@@ -37,6 +37,12 @@ type ('a, 'b) path
 type 'b route
 type 'b router
 
+val pattern
+  :  ('c -> string)
+  -> (string -> 'c option)
+  -> ('a, 'b) path
+  -> ('c -> 'a, 'b) path
+
 val int : ('a, 'b) path -> (int -> 'a, 'b) path
 val int32 : ('a, 'b) path -> (int32 -> 'a, 'b) path
 val int64 : ('a, 'b) path -> (int64 -> 'a, 'b) path
