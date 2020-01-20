@@ -132,6 +132,7 @@ type 'b router =
   ; any_method : 'b route PatternTrie.t
   }
 
+let pattern to_ from_ r = Conv (conv to_ from_, r)
 let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
 let ( @--> ) r handler = Route (r (), handler)
 let s w r = Match (w, r)

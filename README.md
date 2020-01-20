@@ -55,6 +55,48 @@ val print_route : int -> string = <fun>
 - : string = "user/12/add"
 ```
 
+It is possible to define custom patterns that can be used for matching.
+
+```ocaml
+# open Routes;;
+# type shape = Circle | Square
+type shape = Circle | Square
+
+# let shape_of_string = function "circle" -> Some Circle | "square" -> Some Square | _ -> None
+val shape_of_string : string -> shape option = <fun>
+
+# let shape_to_string = function Circle -> "circle" | Square -> "square"
+val shape_to_string : shape -> string = <fun>
+
+# let shape = pattern shape_to_string shape_of_string
+val shape : ('_weak1, '_weak2) path -> (shape -> '_weak1, '_weak2) path =
+  <fun>
+
+# let process_shape (s : shape) = shape_to_string s
+val process_shape : shape -> string = <fun>
+
+# let route () = s "shape" / shape / s "create" /? nil
+val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
+
+# sprintf route
+- : shape -> string = <fun>
+
+# sprintf route Square
+- : string = "shape/square/create"
+
+# let router = one_of [ None, route @--> process_shape ]
+val router : string router = <abstr>
+
+# match' ~target:"/shape/circle/create" router
+- : string option = Some "circle"
+
+# match' ~target:"/shape/square/create" router
+- : string option = Some "square"
+
+# match' ~target:"/shape/triangle/create" router
+- : string option = None
+```
+
 ## Installation
 
 ###### To use the version published on opam:
