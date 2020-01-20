@@ -81,6 +81,7 @@ val nil : ('a, 'a) path
 val pattern
   :  ('c -> string)
   -> (string -> 'c option)
+  -> string
   -> ('a, 'b) path
   -> ('c -> 'a, 'b) path
 (** [pattern] accepts two functions, one for converting a user provided type to
@@ -146,7 +147,24 @@ val match' : ?meth:Method.t -> 'a router -> target:string -> 'a option
 *)
 
 val sprintf : (unit -> ('a, string) path) -> 'a
-(** [sprintf] takes a route pattern as an input, and returns a string with the result of formatting the pattern into a URI path. *)
+(** [sprintf] takes a route pattern as an input, and returns a string with the result
+    of formatting the pattern into a URI path. *)
 
 val ksprintf : (string list -> 'b) -> (unit -> ('a, 'b) path) -> 'a
-(** [ksprintf] is the same as [sprintf], but instead of returning a string, it passes it to the function provided as the first argument. *)
+(** [ksprintf] is the same as [sprintf], but instead of returning a string, it passes
+    it to the function provided as the first argument. *)
+
+val pp_route : Format.formatter -> (unit -> ('a, 'b) path) -> unit
+(** [pp_route] can be used to pretty-print a route. This can be useful
+    to get a human readable output that indicates the kind of pattern
+    that a route will match. When creating a custom pattern matcher
+    using [pattern], a string label needs to be provided. This label
+    is used by [pp_route] when preparing the pretty-print output.
+
+    Example:
+    {[
+      let r () = Routes.(s "foo" / int / s "add" / bool);;
+      Format.asprintf "%a" Routes.pp_route r;;
+      -: "foo/:int/add/:bool"
+    ]}
+*)

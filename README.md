@@ -68,7 +68,7 @@ val shape_of_string : string -> shape option = <fun>
 # let shape_to_string = function Circle -> "circle" | Square -> "square"
 val shape_to_string : shape -> string = <fun>
 
-# let shape = pattern shape_to_string shape_of_string
+# let shape = pattern shape_to_string shape_of_string ":shape"
 val shape : ('_weak1, '_weak2) path -> (shape -> '_weak1, '_weak2) path =
   <fun>
 
@@ -95,6 +95,9 @@ val router : string router = <abstr>
 
 # match' ~target:"/shape/triangle/create" router
 - : string option = None
+
+# Format.asprintf "%a" pp_route route
+- : string = "shape/:shape/create"
 ```
 
 ## Installation
