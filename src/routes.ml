@@ -116,9 +116,10 @@ end
 type 'a conv =
   { to_ : 'a -> string
   ; from_ : string -> 'a option
+  ; label : string
   }
 
-let conv to_ from_ = { to_; from_ }
+let conv to_ from_ label = { to_; from_; label }
 
 type ('a, 'b) path =
   | End : ('a, 'a) path
@@ -132,16 +133,16 @@ type 'b router =
   ; any_method : 'b route PatternTrie.t
   }
 
-let pattern to_ from_ r = Conv (conv to_ from_, r)
+let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
 let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
 let ( @--> ) r handler = Route (r (), handler)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
-let int r = of_conv (conv string_of_int int_of_string_opt) r
-let int64 r = of_conv (conv Int64.to_string Int64.of_string_opt) r
-let int32 r = of_conv (conv Int32.to_string Int32.of_string_opt) r
-let str r = of_conv (conv (fun x -> x) (fun (x : string) -> Some x)) r
-let bool r = of_conv (conv string_of_bool bool_of_string_opt) r
+let int r = of_conv (conv string_of_int int_of_string_opt ":int") r
+let int64 r = of_conv (conv Int64.to_string Int64.of_string_opt ":int64") r
+let int32 r = of_conv (conv Int32.to_string Int32.of_string_opt ":int32") r
+let str r = of_conv (conv (fun x -> x) (fun (x : string) -> Some x) ":string") r
+let bool r = of_conv (conv string_of_bool bool_of_string_opt ":bool") r
 let ( / ) m1 m2 r = m1 @@ m2 r
 let ( /? ) m1 m2 = m1 m2
 let nil = End
@@ -150,6 +151,13 @@ let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = functi
   | End -> []
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
+
+let rec pp_route' : type a b. (a, b) path -> string list = function
+  | End -> []
+  | Match (w, fmt) -> w :: pp_route' fmt
+  | Conv ({ label; _ }, fmt) -> label :: pp_route' fmt
+
+let pp_route fmt r = Format.fprintf fmt "%s" (String.concat "/" @@ pp_route' (r ()))
 
 let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
  fun k -> function
