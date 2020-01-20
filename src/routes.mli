@@ -147,3 +147,6 @@ val match' : ?meth:Method.t -> 'a router -> target:string -> 'a option
 
 val sprintf : (unit -> ('a, string) path) -> 'a
 (** [sprintf] takes a route pattern as an input, and returns a string with the result of formatting the pattern into a URI path. *)
+
+val ksprintf : (string list -> 'b) -> (unit -> ('a, 'b) path) -> 'a
+(** [ksprintf] is the same as [sprintf], but instead of returning a string, it passes it to the function provided as the first argument. *)
