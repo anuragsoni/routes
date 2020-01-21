@@ -175,8 +175,8 @@ let parse_route fmt handler params =
     match t with
     | End { trailing_slash } ->
       (match s with
-      | [ "" ] when trailing_slash -> Some f
-      | [] -> Some f
+      | [ "" ] when trailing_slash = true -> Some f
+      | [] when trailing_slash = false -> Some f
       | _ -> None)
     | Match (x, fmt) ->
       (match s with

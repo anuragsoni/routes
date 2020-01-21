@@ -77,7 +77,12 @@ val s : string -> ('a, 'b) path -> ('a, 'b) path
 (** [s word] matches a path segment if it exactly matches [word]. The matched path param is then discarded. *)
 
 val nil : ('a, 'a) path
+(** [nil] is used at the end of a path pattern sequence to indicate that a route
+    should only match if it ends without a trailing slash. *)
+
 val trail : ('a, 'a) path
+(** [trail] is used at the end of a path pattern sequence to indicate that a route
+    should only match if it ends with a trailing slash. *)
 
 val pattern
   :  ('c -> string)
