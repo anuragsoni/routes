@@ -150,10 +150,6 @@ val sprintf : (unit -> ('a, string) path) -> 'a
 (** [sprintf] takes a route pattern as an input, and returns a string with the result
     of formatting the pattern into a URI path. *)
 
-val ksprintf : (string list -> 'b) -> (unit -> ('a, 'b) path) -> 'a
-(** [ksprintf] is the same as [sprintf], but instead of returning a string, it passes
-    it to the function provided as the first argument. *)
-
 val pp_route : Format.formatter -> (unit -> ('a, 'b) path) -> unit
 (** [pp_route] can be used to pretty-print a route. This can be useful
     to get a human readable output that indicates the kind of pattern
