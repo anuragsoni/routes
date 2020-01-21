@@ -19,9 +19,9 @@ end
 
 let routes =
   let open Routes in
-  [ Some `GET, (fun () -> nil) @--> Handlers.hello
-  ; Some `GET, (fun () -> s "sum" / int / int /? trail) @--> Handlers.sum
-  ; Some `GET, (fun () -> s "greet" / int / str / str /? nil) @--> Handlers.greeter
+  [ Some `GET, nil @--> Handlers.hello
+  ; Some `GET, (s "sum" / int / int /? trail) @--> Handlers.sum
+  ; Some `GET, (s "greet" / int / str / str /? nil) @--> Handlers.greeter
   ]
 
 let all_route_patterns =

@@ -134,7 +134,7 @@ val ( /? ) : (('a, 'b) path -> 'c) -> ('a, 'b) path -> 'c
     This is used at the end of the route pattern to define how a route should end. The right hand parameter
     [r] should be a pattern definition that cannot be used in further chains joined by [/] (One such operator is [nil]). *)
 
-val ( @--> ) : (unit -> ('a, 'b) path) -> 'a -> 'b route
+val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
 (** [r @--> h] is used to connect a route pattern [r] to a function [h] that gets called
     if this pattern is successfully matched.*)
 
@@ -152,11 +152,11 @@ val match' : ?meth:Method.t -> 'a router -> target:string -> 'a option
     that is not associated to any HTTP verb.
 *)
 
-val sprintf : (unit -> ('a, string) path) -> 'a
+val sprintf : ('a, string) path -> 'a
 (** [sprintf] takes a route pattern as an input, and returns a string with the result
     of formatting the pattern into a URI path. *)
 
-val pp_path : Format.formatter -> (unit -> ('a, 'b) path) -> unit
+val pp_path : Format.formatter -> ('a, 'b) path -> unit
 (** [pp_path] can be used to pretty-print a path sequence. This can be useful
     to get a human readable output that indicates the kind of pattern
     that a route will match. When creating a custom pattern matcher

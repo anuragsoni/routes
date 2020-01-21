@@ -30,9 +30,9 @@ val search_user : string -> string -> req -> string = <fun>
 
 # let routes = Routes.(
     one_of [
-      Some `GET, (fun () -> s "" /? nil) @--> idx
-    ; Some `GET, (fun () -> s "user" / int /? nil) @--> get_user
-    ; Some `POST, (fun () ->  s "user" / str / str /? trail) @--> search_user
+      Some `GET, (s "" /? nil) @--> idx
+    ; Some `GET, (s "user" / int /? nil) @--> get_user
+    ; Some `POST, (s "user" / str / str /? trail) @--> search_user
     ]);;
 val routes : (req -> string) Routes.router = <abstr>
 
@@ -51,10 +51,10 @@ val req : req = {target = "/user/12"}
 # match Routes.match' ~meth:`POST ~target:"/user/hello/world" routes with None -> "No match because of missing trailing slash" | Some r -> r req;;
 - : string = "No match because of missing trailing slash"
 
-# let my_fancy_route = Routes.(fun () -> s "user" / int / s "add" /? nil);;
+# let my_fancy_route () = Routes.(s "user" / int / s "add" /? nil);;
 val my_fancy_route : unit -> (int -> 'a, 'a) Routes.path = <fun>
 
-# let print_route = Routes.sprintf my_fancy_route;;
+# let print_route = Routes.sprintf @@ my_fancy_route ();;
 val print_route : int -> string = <fun>
 
 # print_route 12;;
@@ -84,13 +84,13 @@ val process_shape : shape -> string = <fun>
 # let route () = s "shape" / shape / s "create" /? nil
 val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
 
-# sprintf route
+# sprintf (route ())
 - : shape -> string = <fun>
 
-# sprintf route Square
+# sprintf (route ()) Square
 - : string = "/shape/square/create"
 
-# let router = one_of [ None, route @--> process_shape ]
+# let router = one_of [ None, route () @--> process_shape ]
 val router : string router = <abstr>
 
 # match' ~target:"/shape/circle/create" router
@@ -102,7 +102,7 @@ val router : string router = <abstr>
 # match' ~target:"/shape/triangle/create" router
 - : string option = None
 
-# Format.asprintf "%a" pp_path route
+# Format.asprintf "%a" pp_path (route ())
 - : string = "/shape/:shape/create"
 ```
 
