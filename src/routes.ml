@@ -135,7 +135,7 @@ type 'b router =
 
 let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
 let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
-let ( @--> ) r handler = Route (r (), handler)
+let ( @--> ) r handler = Route (r, handler)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt ":int") r
@@ -158,8 +158,8 @@ let rec pp_path' : type a b. (a, b) path -> string list = function
   | Match (w, fmt) -> w :: pp_path' fmt
   | Conv ({ label; _ }, fmt) -> label :: pp_path' fmt
 
-let pp_path fmt r = Format.fprintf fmt "%s" ("/" ^ String.concat "/" @@ pp_path' (r ()))
-let pp_route fmt (Route (p, _)) = pp_path fmt (fun () -> p)
+let pp_path fmt r = Format.fprintf fmt "%s" ("/" ^ String.concat "/" @@ pp_path' r)
+let pp_route fmt (Route (p, _)) = pp_path fmt p
 
 let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
  fun k -> function
@@ -167,7 +167,7 @@ let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
   | Match (w, fmt) -> ksprintf' (fun s -> k @@ (w :: s)) fmt
   | Conv ({ to_; _ }, fmt) -> fun x -> ksprintf' (fun rest -> k @@ (to_ x :: rest)) fmt
 
-let sprintf r = ksprintf' (fun x -> "/" ^ String.concat "/" x) (r ())
+let sprintf r = ksprintf' (fun x -> "/" ^ String.concat "/" x) r
 
 let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
