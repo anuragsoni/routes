@@ -52,7 +52,7 @@ val my_fancy_route : unit -> (int -> 'a, 'a) Routes.path = <fun>
 val print_route : int -> string = <fun>
 
 # print_route 12;;
-- : string = "user/12/add"
+- : string = "/user/12/add"
 ```
 
 It is possible to define custom patterns that can be used for matching.
@@ -82,7 +82,7 @@ val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
 - : shape -> string = <fun>
 
 # sprintf route Square
-- : string = "shape/square/create"
+- : string = "/shape/square/create"
 
 # let router = one_of [ None, route @--> process_shape ]
 val router : string router = <abstr>
@@ -96,8 +96,8 @@ val router : string router = <abstr>
 # match' ~target:"/shape/triangle/create" router
 - : string option = None
 
-# Format.asprintf "%a" pp_route route
-- : string = "shape/:shape/create"
+# Format.asprintf "%a" pp_path route
+- : string = "/shape/:shape/create"
 ```
 
 ## Installation

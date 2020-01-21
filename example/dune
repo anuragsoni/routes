@@ -2,3 +2,8 @@
  (name no_method)
  (modules no_method)
  (libraries routes))
+
+(executable
+ (name http_server)
+ (modules http_server)
+ (libraries routes httpaf-lwt-unix httpaf logs.fmt))

@@ -2,7 +2,7 @@ module Util = struct
   let split_path target =
     let split_target target =
       match target with
-      | "" -> []
+      | "" | "/" -> []
       | _ ->
         (match String.split_on_char '/' target with
         | "" :: xs -> xs
@@ -152,12 +152,13 @@ let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = functi
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 
-let rec pp_route' : type a b. (a, b) path -> string list = function
+let rec pp_path' : type a b. (a, b) path -> string list = function
   | End -> []
-  | Match (w, fmt) -> w :: pp_route' fmt
-  | Conv ({ label; _ }, fmt) -> label :: pp_route' fmt
+  | Match (w, fmt) -> w :: pp_path' fmt
+  | Conv ({ label; _ }, fmt) -> label :: pp_path' fmt
 
-let pp_route fmt r = Format.fprintf fmt "%s" (String.concat "/" @@ pp_route' (r ()))
+let pp_path fmt r = Format.fprintf fmt "%s" ("/" ^ String.concat "/" @@ pp_path' (r ()))
+let pp_route fmt (Route (p, _)) = pp_path fmt (fun () -> p)
 
 let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
  fun k -> function
@@ -165,7 +166,7 @@ let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
   | Match (w, fmt) -> ksprintf' (fun s -> k @@ (w :: s)) fmt
   | Conv ({ to_; _ }, fmt) -> fun x -> ksprintf' (fun rest -> k @@ (to_ x :: rest)) fmt
 
-let sprintf r = ksprintf' (fun x -> String.concat "/" x) (r ())
+let sprintf r = ksprintf' (fun x -> "/" ^ String.concat "/" x) (r ())
 
 let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =

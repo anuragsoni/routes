@@ -150,17 +150,21 @@ val sprintf : (unit -> ('a, string) path) -> 'a
 (** [sprintf] takes a route pattern as an input, and returns a string with the result
     of formatting the pattern into a URI path. *)
 
-val pp_route : Format.formatter -> (unit -> ('a, 'b) path) -> unit
-(** [pp_route] can be used to pretty-print a route. This can be useful
+val pp_path : Format.formatter -> (unit -> ('a, 'b) path) -> unit
+(** [pp_path] can be used to pretty-print a path sequence. This can be useful
     to get a human readable output that indicates the kind of pattern
     that a route will match. When creating a custom pattern matcher
     using [pattern], a string label needs to be provided. This label
-    is used by [pp_route] when preparing the pretty-print output.
+    is used by [pp_path] when preparing the pretty-print output.
 
     Example:
     {[
       let r () = Routes.(s "foo" / int / s "add" / bool);;
-      Format.asprintf "%a" Routes.pp_route r;;
+      Format.asprintf "%a" Routes.pp_path r;;
       -: "foo/:int/add/:bool"
     ]}
 *)
+
+val pp_route : Format.formatter -> 'a route -> unit
+(** [pp_route] is similar to [pp_path], except it takes a route (combination of path sequence
+    and a handler) as input, instead of just a path sequence. *)
