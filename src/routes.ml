@@ -72,7 +72,7 @@ module PatternTrie = struct
   let empty = { parsers = []; children = KeyMap.empty; capture = None }
 
   let feed_params t params =
-    let rec aux t params captures =
+    let rec aux t params =
       match t, params with
       | { parsers = []; _ }, [] -> []
       | { parsers = rs; _ }, [] -> rs
@@ -82,10 +82,10 @@ module PatternTrie = struct
         | None ->
           (match capture with
           | None -> []
-          | Some t' -> aux t' xs (x :: captures))
-        | Some m' -> aux m' xs captures)
+          | Some t' -> aux t' xs)
+        | Some m' -> aux m' xs)
     in
-    aux t params []
+    aux t params
 
   let add k v t =
     let rec aux k t =
@@ -122,7 +122,7 @@ type 'a conv =
 let conv to_ from_ label = { to_; from_; label }
 
 type ('a, 'b) path =
-  | End : ('a, 'a) path
+  | End : { trailing_slash : bool } -> ('a, 'a) path
   | Match : string * ('a, 'b) path -> ('a, 'b) path
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
@@ -145,15 +145,16 @@ let str r = of_conv (conv (fun x -> x) (fun (x : string) -> Some x) ":string") r
 let bool r = of_conv (conv string_of_bool bool_of_string_opt ":bool") r
 let ( / ) m1 m2 r = m1 @@ m2 r
 let ( /? ) m1 m2 = m1 m2
-let nil = End
+let nil = End { trailing_slash = false }
+let trail = End { trailing_slash = true }
 
 let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = function
-  | End -> []
+  | End _ -> []
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 
 let rec pp_path' : type a b. (a, b) path -> string list = function
-  | End -> []
+  | End { trailing_slash } -> if trailing_slash then [ "" ] else []
   | Match (w, fmt) -> w :: pp_path' fmt
   | Conv ({ label; _ }, fmt) -> label :: pp_path' fmt
 
@@ -162,7 +163,7 @@ let pp_route fmt (Route (p, _)) = pp_path fmt (fun () -> p)
 
 let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
  fun k -> function
-  | End -> k []
+  | End { trailing_slash } -> if trailing_slash then k [ "" ] else k []
   | Match (w, fmt) -> ksprintf' (fun s -> k @@ (w :: s)) fmt
   | Conv ({ to_; _ }, fmt) -> fun x -> ksprintf' (fun rest -> k @@ (to_ x :: rest)) fmt
 
@@ -172,8 +173,9 @@ let parse_route fmt handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
    fun t f s ->
     match t with
-    | End ->
+    | End { trailing_slash } ->
       (match s with
+      | [ "" ] when trailing_slash -> Some f
       | [] -> Some f
       | _ -> None)
     | Match (x, fmt) ->

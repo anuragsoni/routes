@@ -77,6 +77,7 @@ val s : string -> ('a, 'b) path -> ('a, 'b) path
 (** [s word] matches a path segment if it exactly matches [word]. The matched path param is then discarded. *)
 
 val nil : ('a, 'a) path
+val trail : ('a, 'a) path
 
 val pattern
   :  ('c -> string)
