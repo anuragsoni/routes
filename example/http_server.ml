@@ -20,7 +20,7 @@ end
 let routes =
   let open Routes in
   [ Some `GET, (fun () -> nil) @--> Handlers.hello
-  ; Some `GET, (fun () -> s "sum" / int / int /? nil) @--> Handlers.sum
+  ; Some `GET, (fun () -> s "sum" / int / int /? trail) @--> Handlers.sum
   ; Some `GET, (fun () -> s "greet" / int / str / str /? nil) @--> Handlers.greeter
   ]
 
