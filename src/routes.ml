@@ -165,7 +165,6 @@ let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
   | Match (w, fmt) -> ksprintf' (fun s -> k @@ (w :: s)) fmt
   | Conv ({ to_; _ }, fmt) -> fun x -> ksprintf' (fun rest -> k @@ (to_ x :: rest)) fmt
 
-let ksprintf k r = ksprintf' k (r ())
 let sprintf r = ksprintf' (fun x -> String.concat "/" x) (r ())
 
 let parse_route fmt handler params =
