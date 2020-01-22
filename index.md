@@ -22,15 +22,15 @@ let id_handler id = Printf.sprintf "Requested user with id %d" id
 let admin_handler a = if a then "User is admin" else "User is not an admin"
 let route r = None, r
 let user () = s "user"
-let user_and_id () = user () / int /? nil
-let user_and_admin () = user () / bool /? nil
-let q () = s "confusing" /? nil
+let user_and_id = user () / int /? nil
+let user_and_admin = user () / bool /? nil
+let q = s "confusing" /? nil
 
 let routes =
   one_of
-    [ route @@ (fun () -> s "hi" /? nil) @--> "Hello, World"
-    ; route @@ (fun () -> s "hello" / s "from" / s "routes" /? nil) @--> "Hello, Routes"
-    ; route @@ (fun () -> s "sum" / int / int /? nil) @--> sum
+    [ route @@ (s "hi" /? nil) @--> "Hello, World"
+    ; route @@ (s "hello" / s "from" / s "routes" /? nil) @--> "Hello, Routes"
+    ; route @@ (s "sum" / int / int /? nil) @--> sum
     ; route @@ user_and_id @--> id_handler
     ; route @@ user_and_admin @--> admin_handler
     ; route @@ q @--> "Foobar"
@@ -50,7 +50,7 @@ val shape_of_string : string -> shape option = <fun>
 # let shape_to_string = function Circle -> "circle" | Square -> "square"
 val shape_to_string : shape -> string = <fun>
 
-# let shape = pattern shape_to_string shape_of_string
+# let shape = pattern shape_to_string shape_of_string ":shape"
 val shape : ('_weak1, '_weak2) path -> (shape -> '_weak1, '_weak2) path =
   <fun>
 
@@ -60,13 +60,13 @@ val process_shape : shape -> string = <fun>
 # let route () = s "shape" / shape / s "create" /? nil
 val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
 
-# sprintf route
+# sprintf (route ())
 - : shape -> string = <fun>
 
-# sprintf route Square
-- : string = "shape/square/create"
+# sprintf (route ()) Square
+- : string = "/shape/square/create"
 
-# let router = one_of [ None, route @--> process_shape ]
+# let router = one_of [ None, route () @--> process_shape ]
 val router : string router = <abstr>
 
 # match' ~target:"/shape/circle/create" router
@@ -77,6 +77,9 @@ val router : string router = <abstr>
 
 # match' ~target:"/shape/triangle/create" router
 - : string option = None
+
+# Format.asprintf "%a" pp_path (route ())
+- : string = "/shape/:shape/create"
 ```
 
 ## Installation
