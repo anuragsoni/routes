@@ -30,7 +30,7 @@ val search_user : string -> string -> req -> string = <fun>
 
 # let routes = Routes.(
     one_of [
-      Some `GET, (s "" /? nil) @--> idx
+      Some `GET, nil @--> idx
     ; Some `GET, (s "user" / int /? nil) @--> get_user
     ; Some `POST, (s "user" / str / str /? trail) @--> search_user
     ]);;
