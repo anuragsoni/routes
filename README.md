@@ -32,25 +32,25 @@ val search_user : string -> string -> req -> string = <fun>
 
 # let routes = Routes.(
     one_of [
-      Some `GET, nil @--> idx
-    ; Some `GET, (s "user" / int /? nil) @--> get_user
-    ; Some `POST, (s "user" / str / str /? trail) @--> search_user
+      nil @--> idx
+    ; (s "user" / int /? nil) @--> get_user
+    ; (s "user" / str / str /? trail) @--> search_user
     ]);;
 val routes : (req -> string) Routes.router = <abstr>
 
 # let req = { target = "/user/12" };;
 val req : req = {target = "/user/12"}
 
-# match Routes.match' ~meth:`GET ~target:"/some/url" routes with None -> "No match" | Some r -> r req;;
+# match Routes.match' ~target:"/some/url" routes with None -> "No match" | Some r -> r req;;
 - : string = "No match"
 
-# match Routes.match' ~meth:`GET ~target:req.target routes with None -> "No match" | Some r -> r req;;
+# match Routes.match' ~target:req.target routes with None -> "No match" | Some r -> r req;;
 - : string = "Received request from /user/12 to fetch id: 12"
 
-# match Routes.match' ~meth:`POST ~target:"/user/hello/world/" routes with None -> "No match" | Some r -> r req;;
+# match Routes.match' ~target:"/user/hello/world/" routes with None -> "No match" | Some r -> r req;;
 - : string = "search for user"
 
-# match Routes.match' ~meth:`POST ~target:"/user/hello/world" routes with None -> "No match because of missing trailing slash" | Some r -> r req;;
+# match Routes.match' ~target:"/user/hello/world" routes with None -> "No match because of missing trailing slash" | Some r -> r req;;
 - : string = "No match because of missing trailing slash"
 
 # let my_fancy_route () = Routes.(s "user" / int / s "add" /? nil);;
@@ -92,7 +92,7 @@ val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
 # sprintf (route ()) Square
 - : string = "/shape/square/create"
 
-# let router = one_of [ None, route () @--> process_shape ]
+# let router = one_of [ route () @--> process_shape ]
 val router : string router = <abstr>
 
 # match' ~target:"/shape/circle/create" router

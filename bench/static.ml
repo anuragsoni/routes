@@ -202,7 +202,7 @@ end
 
 open Routes
 
-let mr r = None, r @--> handler
+let mr r = r @--> handler
 
 let router =
   one_of
@@ -214,7 +214,7 @@ let router =
            | [] -> nil
            | [ x ] -> x /? nil
            | x :: xs ->
-             let t = List.fold_left (fun acc y -> acc / x) x xs in
+             let t = List.fold_left (fun acc y -> acc / y) x xs in
              t /? nil
          in
          mr r)

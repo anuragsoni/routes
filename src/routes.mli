@@ -4,35 +4,6 @@
     of any particular web framework or runtime.
 *)
 
-module Method : sig
-  type standard =
-    [ `GET
-    | `HEAD
-    | `POST
-    | `PUT
-    | `DELETE
-    | `CONNECT
-    | `OPTIONS
-    | `TRACE
-    ]
-
-  type t =
-    [ standard
-    | `Other of string
-    ]
-  (** HTTP methods. This is an optional input for route matching.
-      The current types are chosen to be compatible with what Httpaf uses - {{:https://github.com/inhabitedtype/httpaf/blob/c2ee924eaccd2adb2e6aea0b9bc6a0ffe6132723/lib/method.ml} link}. *)
-
-  val pp : Format.formatter -> t -> unit
-  (** @since 0.6.0 *)
-
-  val equal : t -> t -> bool
-  (** @since 0.6.0 *)
-
-  val compare : t -> t -> int
-  (** @since 0.6.0 *)
-end
-
 type ('a, 'b) path
 (** [path] represents a sequence of path parameter patterns that are expected in a route. *)
 
@@ -138,14 +109,14 @@ val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
 (** [r @--> h] is used to connect a route pattern [r] to a function [h] that gets called
     if this pattern is successfully matched.*)
 
-val one_of : (Method.t option * 'b route) list -> 'b router
+val one_of : 'b route list -> 'b router
 (** [one_of] accepts a list of tuples comprised of an optional HTTP verb and a route definition
     of type ['b route] where 'b is the type that a successful route match will return.
 
     It transforms the input list of routes into a trie like structure that can later be used
     to perform route matches. *)
 
-val match' : ?meth:Method.t -> 'a router -> target:string -> 'a option
+val match' : 'a router -> target:string -> 'a option
 (** [match'] accepts an optional HTTP verb, a router and the target url to match.
     if the HTTP verb is provided, it tries to look for a matching route that was defined
     with the specific HTTP verb provided as input. Otherwise it looks for a route

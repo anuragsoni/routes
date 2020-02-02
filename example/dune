@@ -1,6 +1,6 @@
 (executable
- (name no_method)
- (modules no_method)
+ (name no_http)
+ (modules no_http)
  (libraries routes))
 
 (executable
