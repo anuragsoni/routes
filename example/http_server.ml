@@ -19,13 +19,12 @@ end
 
 let routes =
   let open Routes in
-  [ Some `GET, nil @--> Handlers.hello
-  ; Some `GET, (s "sum" / int / int /? trail) @--> Handlers.sum
-  ; Some `GET, (s "greet" / int / str / str /? nil) @--> Handlers.greeter
+  [ nil @--> Handlers.hello
+  ; (s "sum" / int / int /? trail) @--> Handlers.sum
+  ; (s "greet" / int / str / str /? nil) @--> Handlers.greeter
   ]
 
-let all_route_patterns =
-  List.map (fun (_, r) -> Format.asprintf "%a" Routes.pp_route r) routes
+let all_route_patterns = List.map (fun r -> Format.asprintf "%a" Routes.pp_route r) routes
 
 let not_found_message =
   let join_routes =
@@ -37,9 +36,9 @@ let not_found_message =
     join_routes
 
 let request_handler _ reqd =
-  let ({ Request.target; meth; _ } as req) = Reqd.request reqd in
+  let ({ Request.target; _ } as req) = Reqd.request reqd in
   let router = Routes.one_of routes in
-  match Routes.match' ~meth ~target router with
+  match Routes.match' ~target router with
   | None -> respond_with_text reqd `Not_found not_found_message
   | Some f -> respond_with_text reqd `OK (f req)
 

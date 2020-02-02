@@ -14,44 +14,6 @@ module Util = struct
     | Some i -> split_target (String.sub target 0 i)
 end
 
-module Method = struct
-  module T = struct
-    type standard =
-      [ `GET
-      | `HEAD
-      | `POST
-      | `PUT
-      | `DELETE
-      | `CONNECT
-      | `OPTIONS
-      | `TRACE
-      ]
-
-    type t =
-      [ standard
-      | `Other of string
-      ]
-
-    let to_string = function
-      | `GET -> "GET"
-      | `HEAD -> "HEAD"
-      | `POST -> "POST"
-      | `PUT -> "PUT"
-      | `DELETE -> "DELETE"
-      | `CONNECT -> "CONNECT"
-      | `OPTIONS -> "OPTION"
-      | `TRACE -> "TRACE"
-      | `Other s -> s
-
-    let compare m1 m2 = String.compare (to_string m1) (to_string m2)
-    let pp fmt m = Format.fprintf fmt "%s" (to_string m)
-    let equal m1 m2 = compare m1 m2 = 0
-  end
-
-  include T
-  module M = Map.Make (T)
-end
-
 module PatternTrie = struct
   module Key = struct
     type t =
@@ -127,14 +89,10 @@ type ('a, 'b) path =
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
 type 'b route = Route : ('a, 'b) path * 'a -> 'b route
-
-type 'b router =
-  { method_routes : 'b route PatternTrie.t Method.M.t
-  ; any_method : 'b route PatternTrie.t
-  }
+type 'b router = 'b route PatternTrie.t
 
 let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
-let empty_router = { method_routes = Method.M.empty; any_method = PatternTrie.empty }
+let empty_router = PatternTrie.empty
 let ( @--> ) r handler = Route (r, handler)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
@@ -195,21 +153,9 @@ let parse_route fmt handler params =
 let one_of routes =
   let routes = List.rev routes in
   List.fold_left
-    (fun ({ method_routes; any_method } as router) (meth, (Route (r, _) as route)) ->
+    (fun routes (Route (r, _) as route) ->
       let patterns = route_pattern r in
-      match meth with
-      | None -> { router with any_method = PatternTrie.add patterns route any_method }
-      | Some m ->
-        let method_routes =
-          Method.M.update
-            m
-            (fun v ->
-              match v with
-              | None -> Some (PatternTrie.add patterns route PatternTrie.empty)
-              | Some tr -> Some (PatternTrie.add patterns route tr))
-            method_routes
-        in
-        { router with method_routes })
+      PatternTrie.add patterns route routes)
     empty_router
     routes
 
@@ -224,12 +170,7 @@ let run_routes target router =
   in
   aux routes
 
-let match' ?meth { method_routes; any_method } ~target =
+let match' routes ~target =
   let target = Util.split_path target in
   let matcher = run_routes target in
-  match meth with
-  | None -> matcher any_method
-  | Some m ->
-    (match Method.M.find_opt m method_routes with
-    | None -> None
-    | Some rs -> matcher rs)
+  matcher routes
