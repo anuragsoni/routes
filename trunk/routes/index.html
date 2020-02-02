@@ -8,8 +8,8 @@ let add_user (name : string) (id : int) (is_admin : bool) =
 let greet_user_route () = Routes.(s &quot;user&quot; / str / int /? nil)
 let add_user_route () = Routes.(s &quot;user&quot; / str / int / bool / s &quot;add&quot; /? nil)
 
-let router = Routes.one_of [ Some `GET, greet_user_route () @--&gt; greet_user
-                           ; Some `POST, add_user_route () @--&gt; add_user ]</code></pre><p>Routes ships with patterns that match the following types: int, int32, int64, bool, string, but it is possible to define custom patterns that can be used to extract path parameters that can be parsed into a user defined type.</p><pre><code class="ml">type shape =
+let router = Routes.one_of [ greet_user_route () @--&gt; greet_user
+                           ; add_user_route () @--&gt; add_user ]</code></pre><p>Routes ships with patterns that match the following types: int, int32, int64, bool, string, but it is possible to define custom patterns that can be used to extract path parameters that can be parsed into a user defined type.</p><pre><code class="ml">type shape =
   | Square
   | Circle
 

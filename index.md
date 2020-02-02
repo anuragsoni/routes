@@ -20,7 +20,6 @@ open Routes
 let sum a b = Printf.sprintf "Sum of %d and %d = %d" a b (a + b)
 let id_handler id = Printf.sprintf "Requested user with id %d" id
 let admin_handler a = if a then "User is admin" else "User is not an admin"
-let route r = None, r
 let user () = s "user"
 let user_and_id = user () / int /? nil
 let user_and_admin = user () / bool /? nil
@@ -28,12 +27,12 @@ let q = s "confusing" /? nil
 
 let routes =
   one_of
-    [ route @@ (s "hi" /? nil) @--> "Hello, World"
-    ; route @@ (s "hello" / s "from" / s "routes" /? nil) @--> "Hello, Routes"
-    ; route @@ (s "sum" / int / int /? nil) @--> sum
-    ; route @@ user_and_id @--> id_handler
-    ; route @@ user_and_admin @--> admin_handler
-    ; route @@ q @--> "Foobar"
+    [ (s "hi" /? nil) @--> "Hello, World"
+    ; (s "hello" / s "from" / s "routes" /? nil) @--> "Hello, Routes"
+    ; (s "sum" / int / int /? nil) @--> sum
+    ; user_and_id @--> id_handler
+    ; user_and_admin @--> admin_handler
+    ; q @--> "Foobar"
     ]
 ```
 
@@ -66,7 +65,7 @@ val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
 # sprintf (route ()) Square
 - : string = "/shape/square/create"
 
-# let router = one_of [ None, route () @--> process_shape ]
+# let router = one_of [ route () @--> process_shape ]
 val router : string router = <abstr>
 
 # match' ~target:"/shape/circle/create" router
