@@ -1,5 +1,7 @@
 ## Routes &nbsp; [![Actions Status](https://github.com/anuragsoni/routes/workflows/Build/badge.svg)](https://github.com/anuragsoni/routes/actions)
 
+### Note: This library is undergoing some restructuring. If you need something that is available on opam, refer to the 0.6.0 release located at https://github.com/anuragsoni/routes/tree/0.6.0
+
 [travis]: https://travis-ci.com/anuragsoni/routes/branches
 [travis-img]: https://travis-ci.com/anuragsoni/routes.svg?branch=master
 
