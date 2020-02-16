@@ -1,10 +1,4 @@
-(executable
+(test
  (name routing_test)
  (modules routing_test)
  (libraries alcotest routes))
-
-(alias
- (name runtest)
- (package routes)
- (action
-  (run ./routing_test.exe --color=always)))
