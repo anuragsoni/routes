@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: opam install dune ocamlformat
       - name: Build
-        run: opam exec -- dune build
+        run: opam exec -- dune build @install
       - name: Format
         run: opam exec -- dune build @fmt --auto-promote || true
       - name: Create Pull Request
