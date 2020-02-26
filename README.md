@@ -1,6 +1,6 @@
 ## Routes &nbsp; [![Actions Status](https://github.com/anuragsoni/routes/workflows/Build/badge.svg)](https://github.com/anuragsoni/routes/actions)
 
-### Note: This library is undergoing some restructuring. If you need something that is available on opam, refer to the 0.6.0 release located at https://github.com/anuragsoni/routes/tree/0.6.0
+**Note:** The version on the master branch is not backward compatible with the last release on opam. Documentation for the newest published version is available at [link](https://anuragsoni.github.io/routes/0.6.0/routes/index.html)
 
 [travis]: https://travis-ci.com/anuragsoni/routes/branches
 [travis-img]: https://travis-ci.com/anuragsoni/routes.svg?branch=master
