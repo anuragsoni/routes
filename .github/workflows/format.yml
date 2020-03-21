@@ -11,9 +11,12 @@ jobs:
       - uses: actions/checkout@master
       - uses: avsm/setup-ocaml@v1.0
         with:
-          ocaml-version: 4.09.0
+          ocaml-version: 4.10.0
       - name: Install dependencies
-        run: opam install dune ocamlformat
+        run: |
+          opam pin add routes.dev -n .
+          opam depext -yt routes
+          opam install -t . --deps-only
       - name: Build
         run: opam exec -- dune build @install
       - name: Format
