@@ -20,4 +20,5 @@ jobs:
           opam depext -yt routes
           opam install -t . --deps-only
       - name: Run tests
-        run: opam exec -- dune runtest
+        run: |
+          opam exec -- dune runtest
