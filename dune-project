@@ -7,6 +7,9 @@
 (source
  (github anuragsoni/routes))
 
+(documentation
+  https://anuragsoni.github.io/routes/)
+
 (authors "Anurag Soni <anurag@sonianurag.com>")
 
 (maintainers "Anurag Soni <anurag@sonianurag.com>")

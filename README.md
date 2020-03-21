@@ -1,10 +1,5 @@
 ## Routes &nbsp; [![Actions Status](https://github.com/anuragsoni/routes/workflows/Build/badge.svg)](https://github.com/anuragsoni/routes/actions)
 
-**Note:** The version on the master branch is not backward compatible with the last release on opam. Documentation for the newest published version is available at [link](https://anuragsoni.github.io/routes/0.6.0/routes/index.html)
-
-[travis]: https://travis-ci.com/anuragsoni/routes/branches
-[travis-img]: https://travis-ci.com/anuragsoni/routes.svg?branch=master
-
 This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
 reasonable performance [See benchmark folder](https://github.com/anuragsoni/routes/tree/master/bench).
