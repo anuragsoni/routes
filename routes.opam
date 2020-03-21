@@ -13,6 +13,7 @@ authors: ["Anurag Soni <anurag@sonianurag.com>"]
 license: "BSD-3-clause"
 tags: ["router" "http"]
 homepage: "https://github.com/anuragsoni/routes"
+doc: "https://anuragsoni.github.io/routes/"
 bug-reports: "https://github.com/anuragsoni/routes/issues"
 depends: [
   "ocaml" {>= "4.06.1"}
