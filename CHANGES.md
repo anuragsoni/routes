@@ -1,3 +1,13 @@
+# 0.7.0
+
+This is a breaking release:
+
+* Reduce the number of combinators to two. '/' and '/?' (#80)
+* Routes are now bi-directional. They can be used for matching, and for printing via a sprintf style function (#80)
+* Its now possible to configure trailing slash on individual routes (#89)
+* Remove HTTP method handling (#92)
+* dune version needs to be >= 2.1
+
 # 0.6.0
 
 * Improve mdx test tules (#73, @NathanReb)
