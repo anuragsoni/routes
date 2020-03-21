@@ -1,4 +1,4 @@
-## Routes &nbsp; [![Actions Status](https://github.com/anuragsoni/routes/workflows/Build/badge.svg)](https://github.com/anuragsoni/routes/actions)
+## Routes &nbsp; [![Actions Status](https://github.com/anuragsoni/routes/workflows/Build/badge.svg)](https://github.com/anuragsoni/routes/actions) [![Coverage Status](https://coveralls.io/repos/github/anuragsoni/routes/badge.svg?branch=master)](https://coveralls.io/github/anuragsoni/routes?branch=master)
 
 This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
