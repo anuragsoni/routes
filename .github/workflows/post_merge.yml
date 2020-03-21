@@ -19,6 +19,8 @@ jobs:
           ocaml-version: ${{ matrix.ocaml-version }}
       - name: Install dependencies
         run: |
-          opam install dune
+          opam pin add routes.dev -n .
+          opam depext -yt routes
+          opam install -t . --deps-only
       - name: Build
         run: opam exec -- dune build @install
