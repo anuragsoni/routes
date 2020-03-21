@@ -1,0 +1,22 @@
+name: RoutesCoverage
+on: [pull_request, push]
+jobs:
+  gh-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: avsm/setup-ocaml@v1.0
+        with:
+          ocaml-version: 4.10.0
+      - name: Install dependencies
+        run: |
+          opam pin add routes.dev -n .
+          opam depext -yt routes
+          opam install -t . --deps-only
+      - name: Run tests
+        run: |
+          opam exec -- env BISECT_ENABLE=yes dune runtest --force
+          opam exec -- bisect-ppx-report send-to Coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}

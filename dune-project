@@ -28,5 +28,6 @@
    (>= 4.06.1))
   (dune
    (>= 2.1))
+  (bisect_ppx (and :dev (>= "2.0.0")))
   (alcotest :with-test)
   (mdx :with-test)))
