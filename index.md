@@ -4,11 +4,6 @@ This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
 reasonable performance [See benchmark folder](https://github.com/anuragsoni/routes/tree/master/bench).
 
-Users can create a list of routes, and handler function to work
-on the extracted entities using the combinators provided by
-the library. To perform URL matching one would just need to forward
-the URL's path and query to the matcher.
-
 ## Installation
 
 ###### To use the version published on opam:
