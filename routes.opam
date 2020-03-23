@@ -19,7 +19,6 @@ depends: [
   "dune"
   "bisect_ppx" {dev & >= "2.0.0"}
   "alcotest" {with-test}
-  "mdx" {with-test}
 ]
 build: [
   ["dune" "subst"] {pinned}

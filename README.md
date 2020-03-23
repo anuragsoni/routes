@@ -7,101 +7,84 @@ reasonable performance [See benchmark folder](https://github.com/anuragsoni/rout
 Users can create a list of routes, and handler function to work
 on the extracted entities using the combinators provided by
 the library. To perform URL matching one would just need to forward
-the URL's path and query to the matcher.
+the URL's path to the router.
 
 #### Example
 
 ```ocaml
-# #require "routes";;
-# type req = { target: string };;
-type req = { target : string; }
+open Routes
 
-# let idx (_ : req) = "root";;
-val idx : req -> string = <fun>
+let greet_user name id =
+  Printf.sprintf "Hello, %s [%d]" name id
+;;
 
-# let get_user (id : int) (req : req) = Printf.sprintf "Received request from %s to fetch id: %d" req.target id;;
-val get_user : int -> req -> string = <fun>
+let sum a b =
+  Printf.sprintf "%d" (a + b)
+;;
 
-# let search_user (name: string) (city: string) (_req : req) = "search for user";;
-val search_user : string -> string -> req -> string = <fun>
+(* nil and trail are used to indicate the end of a route.
+   nil enforces that the route doesn't end with a trailing slash
+   as opposed to trail which enforces a final trailing slash. *)
+let router =
+  one_of [
+    s "sum" / int / int /? nil @--> sum
+  ; s "user" / str / int /? trail @--> greet_user
+  ]
+;;
 
-# let routes = Routes.(
-    one_of [
-      nil @--> idx
-    ; (s "user" / int /? nil) @--> get_user
-    ; (s "user" / str / str /? trail) @--> search_user
-    ]);;
-val routes : (req -> string) Routes.router = <abstr>
-
-# let req = { target = "/user/12" };;
-val req : req = {target = "/user/12"}
-
-# match Routes.match' ~target:"/some/url" routes with None -> "No match" | Some r -> r req;;
-- : string = "No match"
-
-# match Routes.match' ~target:req.target routes with None -> "No match" | Some r -> r req;;
-- : string = "Received request from /user/12 to fetch id: 12"
-
-# match Routes.match' ~target:"/user/hello/world/" routes with None -> "No match" | Some r -> r req;;
-- : string = "search for user"
-
-# match Routes.match' ~target:"/user/hello/world" routes with None -> "No match because of missing trailing slash" | Some r -> r req;;
-- : string = "No match because of missing trailing slash"
-
-# let my_fancy_route () = Routes.(s "user" / int / s "add" /? nil);;
-val my_fancy_route : unit -> (int -> 'a, 'a) Routes.path = <fun>
-
-# let print_route = Routes.sprintf @@ my_fancy_route ();;
-val print_route : int -> string = <fun>
-
-# print_route 12;;
-- : string = "/user/12/add"
+let () =
+  match (match' router ~target:"/sum/1/2") with
+  | Some "3" -> ()
+  | _ -> assert false
+;;
 ```
 
-It is possible to define custom patterns that can be used for matching.
+While the library comes with pattern definitions for some common used types like
+int, int32, string, etc, it allows for custom patterns for user-defined types to be
+used in the same manner as the pre-defined patterns.
 
 ```ocaml
-# open Routes;;
-# type shape = Circle | Square
+open Routes;;
+
 type shape = Circle | Square
 
-# let shape_of_string = function "circle" -> Some Circle | "square" -> Some Square | _ -> None
-val shape_of_string : string -> shape option = <fun>
+(* a [string -> 'a option] function is needed to define a custom pattern.
+   This is what's used by the library to determine whether a path param
+   can be successfully coerced into the type or not. *)
+let shape_of_string = function
+  | "circle" -> Some Circle
+  | "square" -> Some Square
+  | _ -> None
+;;
 
-# let shape_to_string = function Circle -> "circle" | Square -> "square"
-val shape_to_string : shape -> string = <fun>
+(* A ['a -> string] function is also needed. This is used when using
+   the [sprintf] library function to serialize a route definition into
+   a URI target. *)
+let shape_to_string = function
+  | Circle -> "circle"
+  | Square -> "square"
+;;
 
-# let shape = pattern shape_to_string shape_of_string ":shape"
-val shape : ('_weak1, '_weak2) path -> (shape -> '_weak1, '_weak2) path =
-  <fun>
+(* When creating a custom pattern, it is recommended to prefix
+   the string label with a `:`. This will ensure that when pretty printing
+   a route, the output looks consistent with the pretty printers defined
+   for the built-in patterns. *)
+let shape = pattern shape_to_string shape_of_string ":shape"
 
-# let process_shape (s : shape) = shape_to_string s
-val process_shape : shape -> string = <fun>
+let process_shape s = shape_to_string s
 
-# let route () = s "shape" / shape / s "create" /? nil
-val route : unit -> (shape -> '_weak3, '_weak3) path = <fun>
+let route () = s "shape" / shape / s "create" /? nil
 
-# sprintf (route ())
-- : shape -> string = <fun>
+let router = one_of [ route () @--> process_shape ]
 
-# sprintf (route ()) Square
-- : string = "/shape/square/create"
-
-# let router = one_of [ route () @--> process_shape ]
-val router : string router = <abstr>
-
-# match' ~target:"/shape/circle/create" router
-- : string option = Some "circle"
-
-# match' ~target:"/shape/square/create" router
-- : string option = Some "square"
-
-# match' ~target:"/shape/triangle/create" router
-- : string option = None
-
-# Format.asprintf "%a" pp_path (route ())
-- : string = "/shape/:shape/create"
+let () =
+  match' ~target:"/shape/circle/create" router with
+  | Some "circle" -> ()
+  | _ -> assert false
 ```
+
+More example of library usage can be seen in the [examples](./example) folder,
+and as part of the [test](./test/routing_test.ml) definition.
 
 ## Installation
 

@@ -10,8 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        operating-system: [ubuntu-latest]
-        ocaml-version: [ '4.10.0' , '4.09.1', '4.08.1', '4.07.1', '4.06.1' ]
+        operating-system: [windows-latest]
+        ocaml-version: [ '4.10.0' , '4.09.1', '4.08.1', '4.07.1', '4.06.1', '4.05.0' ]
     steps:
       - uses: actions/checkout@master
       - uses: avsm/setup-ocaml@v1.0
