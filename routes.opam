@@ -15,7 +15,7 @@ homepage: "https://github.com/anuragsoni/routes"
 doc: "https://anuragsoni.github.io/routes/"
 bug-reports: "https://github.com/anuragsoni/routes/issues"
 depends: [
-  "ocaml" {>= "4.06.1"}
+  "ocaml" {>= "4.05.0"}
   "dune"
   "bisect_ppx" {dev & >= "2.0.0"}
   "alcotest" {with-test}
