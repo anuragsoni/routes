@@ -18,6 +18,7 @@ opam pin add routes git+https://github.com/anuragsoni/routes.git
 
 ## Documentation by version
 
+- [0.7.1](0.7.1)
 - [0.7.0](0.7.0)
 - [0.6.0](0.6.0)
 - [0.5.2](0.5.2)
