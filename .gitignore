@@ -4,3 +4,5 @@ _esy
 *.install
 _opam
 _coverage
+node_modules
+lib
