@@ -7,14 +7,13 @@
     "url": "git+https://github.com/anuragsoni/routes.git"
   },
   "keywords": [
-    "http",
     "router",
     "bi-directional",
-    "type-safe",
     "bucklescript",
     "ocaml",
     "reasonml",
-    "reason"
+    "reason",
+    "type-safe"
   ],
   "author": {
     "name": "Anurag Soni",
