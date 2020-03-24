@@ -16,9 +16,7 @@ jobs:
           ocaml-version: ${{ matrix.ocaml-version }}
       - name: Install dependencies
         run: |
-          opam pin add routes.dev -n .
-          opam depext -yt routes
-          opam install -t . --deps-only
+          opam install dune alcotest
       - name: Run tests
         run: |
           opam exec -- dune runtest
