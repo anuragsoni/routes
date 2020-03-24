@@ -1,6 +1,6 @@
 {
   "name": "@anuragsoni/routes",
-  "version": "0.7.2",
+  "version": "0.7.2-bucklescript",
   "description": "Typed bidirectional routing for OCaml/ReasonML web applications",
   "repository": {
     "type": "git",
@@ -37,8 +37,5 @@
     "bsconfig.json",
     "dune-project",
     "src"
-  ],
-  "dependencies": {
-    "bs-platform": "^7.2.2"
-  }
+  ]
 }
