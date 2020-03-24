@@ -1,5 +1,5 @@
 {
-  "name": "routes",
+  "name": "@anuragsoni/routes",
   "version": "0.7.2",
   "description": "Typed bidirectional routing for OCaml/ReasonML web applications",
   "repository": {
