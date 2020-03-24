@@ -1,5 +1,10 @@
-# 0.7.1
+# 0.7.2
 
+* Use bisect_ppx to generate coverage reports (#95)
+* Lower version constraint for dune and ocaml. Minimum versions needed are now dune 1.0 and OCaml 4.05.0 (#99, #100)
+
+# 0.7.1
+**Note**: 0.7.2 has the same content as 0.7.1 except for a dune file change needed for bisect_ppx
 * Use bisect_ppx to generate coverage reports (#95)
 * Lower version constraint for dune and ocaml. Minimum versions needed are now dune 1.0 and OCaml 4.05.0 (#99, #100)
 
