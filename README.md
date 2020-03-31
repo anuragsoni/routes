@@ -9,78 +9,140 @@ on the extracted entities using the combinators provided by
 the library. To perform URL matching one would just need to forward
 the URL's path to the router.
 
-#### Example
+#### Demo
+
+You can follow along with these examples in the OCaml toplevel (repl).
+[down](https://github.com/dbuenzli/down) or [utop](https://github.com/ocaml-community/utop) are recommended to enhance
+your REPL experience while working through these examples. They will add autocompletion support
+which can be useful when navigating a new library.
+
+We will start by setting up the toplevel by asking it to load routes.
 
 ```ocaml
-open Routes
-
-let greet_user name id =
-  Printf.sprintf "Hello, %s [%d]" name id
-;;
-
-let sum a b =
-  Printf.sprintf "%d" (a + b)
-;;
-
-(* nil and trail are used to indicate the end of a route.
-   nil enforces that the route doesn't end with a trailing slash
-   as opposed to trail which enforces a final trailing slash. *)
-let router =
-  one_of [
-    s "sum" / int / int /? nil @--> sum
-  ; s "user" / str / int /? trail @--> greet_user
-  ]
-;;
-
-let () =
-  match (match' router ~target:"/sum/1/2") with
-  | Some "3" -> ()
-  | _ -> assert false
-;;
+# #require "routes";;
 ```
 
-While the library comes with pattern definitions for some common used types like
-int, int32, string, etc, it allows for custom patterns for user-defined types to be
-used in the same manner as the pre-defined patterns.
+We will start by defining a few simple routes that don't need to extract any path parameter.
 
 ```ocaml
-open Routes;;
+# (* A simple route that matches the empty path segments. *)
+# let root () = Routes.nil;;
+val root : unit -> ('a, 'a) Routes.path = <fun>
 
-type shape = Circle | Square
+# (* We can combine multiple segments using `/` *)
+# let users () = Routes.(s "users" / s "get" /? nil);;
+val users : unit -> ('a, 'a) Routes.path = <fun>
+```
 
-(* a [string -> 'a option] function is needed to define a custom pattern.
-   This is what's used by the library to determine whether a path param
-   can be successfully coerced into the type or not. *)
-let shape_of_string = function
-  | "circle" -> Some Circle
-  | "square" -> Some Square
-  | _ -> None
-;;
+We can use these route definitions to pretty-print into "patterns" that can potentially be used
+to show what kind of routes your application can match. An application could potentially use this
+as a response to a route-not-found error and inform the client of what kind of routes it supports.
+We will use `Format.asprintf` to get a string that contains the result of our pretty printer.
 
-(* A ['a -> string] function is also needed. This is used when using
-   the [sprintf] library function to serialize a route definition into
-   a URI target. *)
-let shape_to_string = function
-  | Circle -> "circle"
-  | Square -> "square"
-;;
+```ocaml
+# Format.asprintf "%a" Routes.pp_path (root ());;
+- : string = "/"
 
-(* When creating a custom pattern, it is recommended to prefix
-   the string label with a `:`. This will ensure that when pretty printing
-   a route, the output looks consistent with the pretty printers defined
-   for the built-in patterns. *)
-let shape = pattern shape_to_string shape_of_string ":shape"
+# Format.asprintf "%a" Routes.pp_path (users ());;
+- : string = "/users/get"
+```
 
-let process_shape s = shape_to_string s
+Matching routes where we don't need to extract any parameter could be done with a simple string match.
+The part where routers are useful is when there is a need to extract some parameters are extracted from the
+path.
 
-let route () = s "shape" / shape / s "create" /? nil
+```ocaml
+# let sum () = Routes.(s "sum" / int / int /? nil);;
+val sum : unit -> (int -> int -> 'a, 'a) Routes.path = <fun>
+```
 
-let router = one_of [ route () @--> process_shape ]
+Looking at the type for `sum` we can see that our route knows about our two integer path parameters.
+A route can also extract parameters of different types.
 
-let () =
-  match' ~target:"/shape/circle/create" router with
-  | Some "circle" -> ()
-  | _ -> assert false
+```ocaml
+# let get_user () = Routes.(s "user" / str / int64 /? nil);;
+val get_user : unit -> (string -> int64 -> 'a, 'a) Routes.path = <fun>
+```
+
+We can still pretty print such routes to get a human readable "pattern" that can be used to inform
+someone what kind of routes are defined in an application.
+
+
+Once we start working with routes that extract path parameters, there is another operation that can sometimes
+be useful. Often times there can be a need to generate a URL from a route. It could be for creating
+hyperlinks in HTML pages, creating target URLs that can be forwarded to HTTP clients, etc.
+
+
+Using routes we can create url targets from the same type definition that is used for performing a route match.
+Using this approach for creating url targets has the benefit that whenever a route definition is updated,
+the printed format for the url target will also reflect that change. If the types remain the same,
+then the printing functions will automatically start generating url targets that
+reflect the change in the route type, and if the types change the user will get a compile time error about mismatched
+types. This can be useful in ensuring that we avoid using bad/outdated URLs in our application.
+
+```ocaml
+# Format.asprintf "%a" Routes.pp_path (sum ());;
+- : string = "/sum/:int/:int"
+
+# Format.asprintf "%a" Routes.pp_path (get_user ());;
+- : string = "/user/:string/:int64"
+
+# Routes.sprintf (sum ());;
+- : int -> int -> string = <fun>
+
+# Routes.sprintf (get_user ());;
+- : string -> int64 -> string = <fun>
+
+# Routes.sprintf (sum ()) 45 12;;
+- : string = "/sum/45/12"
+
+# Routes.sprintf (sum ()) 11 56;;
+- : string = "/sum/11/56"
+
+# Routes.sprintf (get_user ()) "JohnUser" 1L;;
+- : string = "/user/JohnUser/1"
+
+# Routes.sprintf (get_user ()) "foobar" 56121111L;;
+- : string = "/user/foobar/56121111"
+```
+
+We've seen a few examples so far, but none of any actual routing. Before we can perform a route match,
+we need to connect a route definition to a handler function that gets called when a successful match happens.
+
+```ocaml
+# let sum_route () = Routes.(sum () @--> fun a b -> Printf.sprintf "%d" (a + b));;
+val sum_route : unit -> string Routes.route = <fun>
+
+# let user_route () = Routes.(get_user () @--> fun name id -> Printf.sprintf "(%Ld) %s" id name);;
+val user_route : unit -> string Routes.route = <fun>
+
+# let root () = Routes.(root () @--> "Hello World");;
+val root : unit -> string Routes.route = <fun>
+```
+
+Now that we have a collection of routes connected to handlers, we can create a router and perform route matching.
+Something to keep in mind is that we can only combine routes that have the same final return type, i.e. handlers
+attached to every route in a router should have the same type for the values they return.
+
+```ocaml
+# let routes = Routes.one_of [sum_route (); user_route (); root ()];;
+val routes : string Routes.router = <abstr>
+
+# Routes.match' routes ~target:"/";;
+- : string option = Some "Hello World"
+
+# Routes.match' routes ~target:"/sum/25/11";;
+- : string option = Some "36"
+
+# Routes.match' routes ~target:"/user/John/1251";;
+- : string option = Some "(1251) John"
+
+# Routes.match' routes ~target:(Routes.sprintf (sum ()) 45 11);;
+- : string option = Some "56"
+
+# (* This route fails to match because of the final trailing slash. *)
+# Routes.match' routes ~target:"/sum/1/2/";;
+- : string option = None
 ```
 
 More example of library usage can be seen in the [examples](./example) folder,
