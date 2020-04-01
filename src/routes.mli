@@ -147,3 +147,7 @@ val pp_path : Format.formatter -> ('a, 'b) path -> unit
 (** [pp_route] is similar to [pp_path], except it takes a route (combination of path sequence
     and a handler) as input, instead of just a path sequence. *)
 val pp_route : Format.formatter -> 'a route -> unit
+
+val add_route : 'b route -> 'b router -> 'b router
+
+val empty_router : 'b router
