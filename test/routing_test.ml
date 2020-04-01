@@ -11,7 +11,7 @@ let test_no_match () =
 
 let test_add_route () =
   let open Routes in
-  let router = empty_router in
+  let router = one_of [] in
     Alcotest.(check (option string))
     "Empty router has no match"
     None
