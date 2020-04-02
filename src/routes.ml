@@ -159,7 +159,7 @@ let one_of routes =
     empty_router
     routes
 
-let add_route route routes = 
+let add_route route routes =
   let (Route (r, _)) = route in
   let patterns = route_pattern r in
   PatternTrie.add patterns route routes
