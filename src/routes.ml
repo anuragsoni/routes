@@ -159,6 +159,11 @@ let one_of routes =
     empty_router
     routes
 
+let add_route route routes =
+  let (Route (r, _)) = route in
+  let patterns = route_pattern r in
+  PatternTrie.add patterns route routes
+
 let run_routes target router =
   let routes = PatternTrie.feed_params router target in
   let rec aux = function
