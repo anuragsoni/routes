@@ -12,14 +12,33 @@ let test_no_match () =
 let test_add_route () =
   let open Routes in
   let router = one_of [] in
-    Alcotest.(check (option string))
+  Alcotest.(check (option string))
     "Empty router has no match"
     None
-    (match' ~target:"/foo/bar" (router));
-    Alcotest.(check (option string))
+    (match' ~target:"/foo/bar" router);
+  Alcotest.(check (option string))
     "Can add a route"
     (Some "bar")
-    (match' ~target:"/foo/bar" (add_route ((s "foo" / str /? nil) @--> fun a -> a) router))
+    (match'
+       ~target:"/foo/bar"
+       (add_route ((s "foo" / str /? nil) @--> fun a -> a) router));
+  let router =
+    List.fold_left
+      (fun acc r -> add_route r acc)
+      (Routes.one_of [])
+      [ ((s "user" / str / int /? nil)
+        @--> fun name age -> Printf.sprintf "%s %d" name age)
+      ; ((int / int /? nil) @--> fun a b -> Printf.sprintf "%d" (a + b))
+      ]
+  in
+  Alcotest.(check (option string))
+    "Adding a list of routes works as well"
+    (Some "5")
+    (match' router ~target:"/2/3");
+  Alcotest.(check (option string))
+    "Adding a list of routes works as well"
+    (Some "john 12")
+    (match' router ~target:"/user/john/12")
 
 let test_extractors () =
   let open Routes in
