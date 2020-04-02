@@ -9,6 +9,18 @@ let test_no_match () =
     None
     (match' ~target:"" (one_of []))
 
+let test_add_route () =
+  let open Routes in
+  let router = one_of [] in
+    Alcotest.(check (option string))
+    "Empty router has no match"
+    None
+    (match' ~target:"/foo/bar" (router));
+    Alcotest.(check (option string))
+    "Can add a route"
+    (Some "bar")
+    (match' ~target:"/foo/bar" (add_route ((s "foo" / str /? nil) @--> fun a -> a) router))
+
 let test_extractors () =
   let open Routes in
   let router =
@@ -205,6 +217,7 @@ let () =
     ; "Pretty print route", `Quick, test_route_pattern
     ; "Can work with custom patterns", `Quick, test_custom_pattern
     ; "Discards query params", `Quick, test_matcher_discards_query_params
+    ; "Can add a route", `Quick, test_add_route
     ]
   in
   Alcotest.run "Tests" [ "Routes tests", tests ]
