@@ -1,3 +1,9 @@
+# 0.7.3
+
+* Allow adding new routes to existing router. (#108, @tatchi)
+* Fix library name in bsconfig.json. (#109, @tsnobip)
+* Specify -O3 flag for ocamlopt when using dune's release profile. (#110)
+
 # 0.7.2
 
 * Use bisect_ppx to generate coverage reports (#95)

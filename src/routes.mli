@@ -149,5 +149,7 @@ val pp_path : Format.formatter -> ('a, 'b) path -> unit
 val pp_route : Format.formatter -> 'a route -> unit
 
 (** [add_route] takes a route and a router as input, and returns a new router
-    which contains the route provided as input *)
+    which contains the route provided as input.
+
+    @since 0.7.3 *)
 val add_route : 'b route -> 'b router -> 'b router

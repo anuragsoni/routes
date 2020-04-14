@@ -1,6 +1,6 @@
 {
   "name": "@anuragsoni/routes",
-  "version": "0.7.2-bucklescript",
+  "version": "0.7.3",
   "description": "Typed bidirectional routing for OCaml/ReasonML web applications",
   "repository": {
     "type": "git",
