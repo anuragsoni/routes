@@ -26,12 +26,12 @@ We will start by defining a few simple routes that don't need to extract any pat
 
 ```ocaml
 # (* A simple route that matches the empty path segments. *)
-# let root () = Routes.nil;;
-val root : unit -> ('a, 'a) Routes.path = <fun>
+# let root () = Routes.empty;;
+val root : unit -> ('a, 'a) Routes.target = <fun>
 
 # (* We can combine multiple segments using `/` *)
 # let users () = Routes.(s "users" / s "get" /? nil);;
-val users : unit -> ('a, 'a) Routes.path = <fun>
+val users : unit -> ('a, 'a) Routes.target = <fun>
 ```
 
 We can use these route definitions to pretty-print into "patterns" that can potentially be used
@@ -40,10 +40,10 @@ as a response to a route-not-found error and inform the client of what kind of r
 We will use `Format.asprintf` to get a string that contains the result of our pretty printer.
 
 ```ocaml
-# Format.asprintf "%a" Routes.pp_path (root ());;
+# Format.asprintf "%a" Routes.pp_target (root ());;
 - : string = "/"
 
-# Format.asprintf "%a" Routes.pp_path (users ());;
+# Format.asprintf "%a" Routes.pp_target (users ());;
 - : string = "/users/get"
 ```
 
@@ -53,7 +53,7 @@ path.
 
 ```ocaml
 # let sum () = Routes.(s "sum" / int / int /? nil);;
-val sum : unit -> (int -> int -> 'a, 'a) Routes.path = <fun>
+val sum : unit -> (int -> int -> 'a, 'a) Routes.target = <fun>
 ```
 
 Looking at the type for `sum` we can see that our route knows about our two integer path parameters.
@@ -61,7 +61,7 @@ A route can also extract parameters of different types.
 
 ```ocaml
 # let get_user () = Routes.(s "user" / str / int64 /? nil);;
-val get_user : unit -> (string -> int64 -> 'a, 'a) Routes.path = <fun>
+val get_user : unit -> (string -> int64 -> 'a, 'a) Routes.target = <fun>
 ```
 
 We can still pretty print such routes to get a human readable "pattern" that can be used to inform
@@ -81,10 +81,10 @@ reflect the change in the route type, and if the types change the user will get 
 types. This can be useful in ensuring that we avoid using bad/outdated URLs in our application.
 
 ```ocaml
-# Format.asprintf "%a" Routes.pp_path (sum ());;
+# Format.asprintf "%a" Routes.pp_target (sum ());;
 - : string = "/sum/:int/:int"
 
-# Format.asprintf "%a" Routes.pp_path (get_user ());;
+# Format.asprintf "%a" Routes.pp_target (get_user ());;
 - : string = "/user/:string/:int64"
 
 # Routes.sprintf (sum ());;

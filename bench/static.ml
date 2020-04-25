@@ -181,6 +181,7 @@ let urls =
   ; "/progs/timeout2.go"
   ; "/progs/update.bash"
   ]
+;;
 
 let handler = ()
 
@@ -198,6 +199,7 @@ module Util = struct
     | None -> split_target target
     | Some 0 -> []
     | Some i -> split_target (String.sub target 0 i)
+  ;;
 end
 
 open Routes
@@ -211,7 +213,7 @@ let router =
          let split = Util.split_path u |> List.map (fun q -> s q) in
          let r =
            match split with
-           | [] -> nil
+           | [] -> empty
            | [ x ] -> x /? nil
            | x :: xs ->
              let t = List.fold_left (fun acc y -> acc / y) x xs in
@@ -219,11 +221,13 @@ let router =
          in
          mr r)
        urls)
+;;
 
 let bench_routes router targets = List.map (fun u -> match' ~target:u router) targets
 
 let bench =
   let open Core_bench in
   Bench.Test.create ~name:"Static Bench" (fun () -> bench_routes router urls)
+;;
 
 let benches = [ bench ]

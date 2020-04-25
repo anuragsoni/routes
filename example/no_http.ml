@@ -18,11 +18,13 @@ module R = struct
       ; user_and_admin @--> admin_handler
       ; q @--> "Foobar"
       ]
+  ;;
 end
 
 let unwrap_result = function
   | None -> "No match"
   | Some r -> r
+;;
 
 let () =
   let targets =
@@ -38,3 +40,4 @@ let () =
   List.iter
     (fun target -> print_endline (unwrap_result @@ Routes.match' ~target R.routes))
     targets
+;;
