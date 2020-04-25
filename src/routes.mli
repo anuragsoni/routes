@@ -7,6 +7,13 @@
 (** [path] represents a sequence of path parameter patterns that are expected in a route. *)
 type ('a, 'b) path
 
+(** [target] represents a combination of a sequence of path params, and whether that
+    sequence should consider trailing slash parameters or not. Its analogous to
+    a URI target.
+
+    @since 0.8.0 *)
+type ('a, 'b) target
+
 (** [route] is a combination of a path sequence, with a function that will be
     called on a successful match. When a path sequence matches, the patterns
     that are extracted are forwarded to said function with the types that the user
@@ -48,16 +55,14 @@ val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
 (** [s word] matches a path segment if it exactly matches [word]. The matched path param is then discarded. *)
 val s : string -> ('a, 'b) path -> ('a, 'b) path
 
-(** [nil] is used at the end of a path pattern sequence to indicate that a route
-    should only match if it ends without a trailing slash. This can also be used
-    to match against the root url '/'. *)
+(** [nil] is used to end a sequence of path parameters. *)
 val nil : ('a, 'a) path
 
-(** [trail] is used at the end of a path pattern sequence to indicate that a route
-    should only match if it ends with a trailing slash. This should only be used
-    at the end of a route. If a route needs to match the root url '/' please use [nil]
-    instead. *)
-val trail : ('a, 'a) path
+(** [empty] is used to represent an empty route. This is useful for matching
+    a route that equals "/" or "".
+
+    @since 0.8.0 *)
+val empty : ('a, 'a) target
 
 (** [pattern] accepts two functions, one for converting a user provided type to
     a string representation, and another to potentially convert a string to the said type.
@@ -108,12 +113,20 @@ val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
 (** [l /? r] is used to express the sequence of, parse l followed by parse r and then stop parsing.
     This is used at the end of the route pattern to define how a route should end. The right hand parameter
-    [r] should be a pattern definition that cannot be used in further chains joined by [/] (One such operator is [nil]). *)
-val ( /? ) : (('a, 'b) path -> 'c) -> ('a, 'b) path -> 'c
+    [r] should be a pattern definition that cannot be used in further chains joined by [/].
+
+    [/?] also indicates that a route needs to finish without a trailing slash. *)
+val ( /? ) : ('a -> ('b, 'c) path) -> 'a -> ('b, 'c) target
+
+(** [//?] is similar to [/?] with the difference that it is used to create a route
+    that must finish with a trailing slash.
+
+    @since 0.8.0 *)
+val ( //? ) : ('a -> ('b, 'c) path) -> 'a -> ('b, 'c) target
 
 (** [r @--> h] is used to connect a route pattern [r] to a function [h] that gets called
     if this pattern is successfully matched.*)
-val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
+val ( @--> ) : ('a, 'b) target -> 'a -> 'b route
 
 (** [one_of] accepts a list of tuples comprised of route definitions
     of type ['b route] where 'b is the type that a successful route match will return.
@@ -127,24 +140,25 @@ val match' : 'a router -> target:string -> 'a option
 
 (** [sprintf] takes a route pattern as an input, and returns a string with the result
     of formatting the pattern into a URI path. *)
-val sprintf : ('a, string) path -> 'a
+val sprintf : ('a, string) target -> 'a
 
-(** [pp_path] can be used to pretty-print a path sequence. This can be useful
-    to get a human readable output that indicates the kind of pattern
-    that a route will match. When creating a custom pattern matcher
-    using [pattern], a string label needs to be provided. This label
-    is used by [pp_path] when preparing the pretty-print output.
+(** [pp_target] can be used to pretty-print a sequence of path params.
+    This can be useful to get a human readable output that indicates
+    the kind of pattern that a route will match. When creating a custom
+    pattern matcher using [pattern], a string label needs to be provided.
+    This label is used by [pp_target] when preparing the pretty-print output.
 
     Example:
     {[
       let r () = Routes.(s "foo" / int / s "add" / bool);;
-      Format.asprintf "%a" Routes.pp_path r;;
+      Format.asprintf "%a" Routes.pp_target r;;
       -: "foo/:int/add/:bool"
     ]}
-*)
-val pp_path : Format.formatter -> ('a, 'b) path -> unit
 
-(** [pp_route] is similar to [pp_path], except it takes a route (combination of path sequence
+    @since 0.8.0 *)
+val pp_target : Format.formatter -> ('a, 'b) target -> unit
+
+(** [pp_route] is similar to [pp_target], except it takes a route (combination of path sequence
     and a handler) as input, instead of just a path sequence. *)
 val pp_route : Format.formatter -> 'a route -> unit
 

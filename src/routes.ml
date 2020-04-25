@@ -12,6 +12,7 @@ module Util = struct
     | None -> split_target target
     | Some 0 -> []
     | Some i -> split_target (String.sub target 0 i)
+  ;;
 end
 
 module PatternTrie = struct
@@ -48,6 +49,7 @@ module PatternTrie = struct
         | Some m' -> aux m' xs)
     in
     aux t params
+  ;;
 
   let add k v t =
     let rec aux k t =
@@ -73,6 +75,7 @@ module PatternTrie = struct
           { n with capture = Some t'' })
     in
     aux k t
+  ;;
 end
 
 type 'a conv =
@@ -84,11 +87,20 @@ type 'a conv =
 let conv to_ from_ label = { to_; from_; label }
 
 type ('a, 'b) path =
-  | End : { trailing_slash : bool } -> ('a, 'a) path
+  | End : ('a, 'a) path
   | Match : string * ('a, 'b) path -> ('a, 'b) path
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
-type 'b route = Route : ('a, 'b) path * 'a -> 'b route
+type slash_kind =
+  | Trailing
+  | NoSlash
+
+type ('a, 'b) target =
+  { slash_kind : slash_kind
+  ; path : ('a, 'b) path
+  }
+
+type 'b route = Route : ('a, 'b) target * 'a -> 'b route
 type 'b router = 'b route PatternTrie.t
 
 let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
@@ -102,39 +114,67 @@ let int32 r = of_conv (conv Int32.to_string Int32.of_string_opt ":int32") r
 let str r = of_conv (conv (fun x -> x) (fun x -> Some x) ":string") r
 let bool r = of_conv (conv string_of_bool bool_of_string_opt ":bool") r
 let ( / ) m1 m2 r = m1 @@ m2 r
-let ( /? ) m1 m2 = m1 m2
-let nil = End { trailing_slash = false }
-let trail = End { trailing_slash = true }
+let nil = End
+let empty = { slash_kind = NoSlash; path = End }
+
+let ( /? ) m1 m2 =
+  let path = m1 m2 in
+  { slash_kind = NoSlash; path }
+;;
+
+let ( //? ) m1 m2 =
+  let path = m1 m2 in
+  { slash_kind = Trailing; path }
+;;
 
 let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = function
-  | End _ -> []
+  | End -> []
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
+;;
 
-let rec pp_path' : type a b. (a, b) path -> string list = function
-  | End { trailing_slash } -> if trailing_slash then [ "" ] else []
-  | Match (w, fmt) -> w :: pp_path' fmt
-  | Conv ({ label; _ }, fmt) -> label :: pp_path' fmt
+let pp_path' { slash_kind; path } =
+  let trail =
+    match slash_kind with
+    | NoSlash -> []
+    | Trailing -> [ "" ]
+  in
+  let rec aux : type a b. (a, b) path -> string list = function
+    | End -> trail
+    | Match (w, fmt) -> w :: aux fmt
+    | Conv ({ label; _ }, fmt) -> label :: aux fmt
+  in
+  aux path
+;;
 
-let pp_path fmt r = Format.fprintf fmt "%s" ("/" ^ String.concat "/" @@ pp_path' r)
-let pp_route fmt (Route (p, _)) = pp_path fmt p
+let pp_target fmt t = Format.fprintf fmt "%s" ("/" ^ String.concat "/" @@ pp_path' t)
+let pp_route fmt (Route (p, _)) = pp_target fmt p
 
-let rec ksprintf' : type a b. (string list -> b) -> (a, b) path -> a =
- fun k -> function
-  | End { trailing_slash } -> if trailing_slash then k [ "" ] else k []
-  | Match (w, fmt) -> ksprintf' (fun s -> k @@ (w :: s)) fmt
-  | Conv ({ to_; _ }, fmt) -> fun x -> ksprintf' (fun rest -> k @@ (to_ x :: rest)) fmt
+let ksprintf' k { slash_kind; path } =
+  let trail =
+    match slash_kind with
+    | NoSlash -> []
+    | Trailing -> [ "" ]
+  in
+  let rec aux : type a b. (string list -> b) -> (a, b) path -> a =
+   fun k -> function
+    | End -> k trail
+    | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
+    | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ (to_ x :: rest)) fmt
+  in
+  aux k path
+;;
 
-let sprintf r = ksprintf' (fun x -> "/" ^ String.concat "/" x) r
+let sprintf t = ksprintf' (fun x -> "/" ^ String.concat "/" x) t
 
-let parse_route fmt handler params =
+let parse_route { slash_kind; path } handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
    fun t f s ->
     match t with
-    | End { trailing_slash } ->
-      (match s with
-      | [ "" ] when trailing_slash = true -> Some f
-      | [] when trailing_slash = false -> Some f
+    | End ->
+      (match s, slash_kind with
+      | [ "" ], Trailing -> Some f
+      | [], NoSlash -> Some f
       | _ -> None)
     | Match (x, fmt) ->
       (match s with
@@ -148,21 +188,24 @@ let parse_route fmt handler params =
         | None -> None
         | Some x' -> match_target fmt (f x') xs))
   in
-  match_target fmt handler params
+  match_target path handler params
+;;
 
 let one_of routes =
   let routes = List.rev routes in
   List.fold_left
-    (fun routes (Route (r, _) as route) ->
-      let patterns = route_pattern r in
+    (fun routes (Route ({ path; _ }, _) as route) ->
+      let patterns = route_pattern path in
       PatternTrie.add patterns route routes)
     empty_router
     routes
+;;
 
 let add_route route routes =
-  let (Route (r, _)) = route in
-  let patterns = route_pattern r in
+  let (Route ({ path; _ }, _)) = route in
+  let patterns = route_pattern path in
   PatternTrie.add patterns route routes
+;;
 
 let run_routes target router =
   let routes = PatternTrie.feed_params router target in
@@ -174,8 +217,10 @@ let run_routes target router =
       | Some r -> Some r)
   in
   aux routes
+;;
 
 let match' routes ~target =
   let target = Util.split_path target in
   let matcher = run_routes target in
   matcher routes
+;;

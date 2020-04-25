@@ -50,18 +50,22 @@ let routes =
     ]
   in
   one_of (List.concat [ object_routes; user_routes; role_routes; misc; inst_routes ])
+;;
 
 open Core_bench
 
 let bench_static =
   Bench.Test.create ~name:"Parse static" (fun () -> match' ~target:"/1/users" routes)
+;;
 
 let bench_one_param =
   Bench.Test.create ~name:"Parse 1 param" (fun () ->
       match' ~target:"/1/classes/ocaml" routes)
+;;
 
 let bench_two_param =
   Bench.Test.create ~name:"Parse 2 param" (fun () ->
       match' ~target:"/1/classes/ocaml/121" routes)
+;;
 
 let benches = [ bench_static; bench_one_param; bench_two_param ]
