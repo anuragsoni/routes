@@ -1,3 +1,10 @@
+# 0.8.0
+
+* Improve trailing slash handling. Instead of separate `nil` and `trail` constructors, all routes end with `nil`.
+  The trailing slash is controlled via `/?` for no trailing slash, and `//?` for trailing slash. (#111)
+* No longer possible to use `nil` unless it follows a pattern. To create a route that matches no path params, ex: "/"
+  use `empty`. (#111)
+
 # 0.7.3
 
 * Allow adding new routes to existing router. (#108, @tatchi)
