@@ -145,6 +145,37 @@ val routes : string Routes.router = <abstr>
 - : string option = None
 ```
 
+#### Dealing with trailing slashes
+
+Every route definition can control what behavior it expects when it encounters
+a trailing slash. In the examples above all route definitions ended with
+`/? nil`. This will result in a successful match if the route does not end in a trailing slash.
+
+```ocaml
+# let no_trail () = Routes.(s "foo" / s "bar" / str /? nil @--> fun msg -> String.length msg);;
+val no_trail : unit -> int Routes.route = <fun>
+
+# Routes.(match' (one_of [ no_trail () ]) ~target:"/foo/bar/hello");;
+- : int option = Some 5
+
+# Routes.(match' (one_of [ no_trail () ]) ~target:"/foo/bar/hello/");;
+- : int option = None
+```
+
+To create a route that returns a success if there is a trailing slash, the route still needs to
+end with `nil`, but instead of `/?`, `//?` needs to be used. (note the extra slash).
+
+```ocaml
+# let trail () = Routes.(s "foo" / s "bar" / str //? nil @--> fun msg -> String.length msg);;
+val trail : unit -> int Routes.route = <fun>
+
+# Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello");;
+- : int option = None
+
+# Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello/");;
+- : int option = Some 5
+```
+
 More example of library usage can be seen in the [examples](./example) folder,
 and as part of the [test](./test/routing_test.ml) definition.
 
