@@ -88,7 +88,7 @@ val empty : ('a, 'a) target
         | Square -> "square"
         | Circle -> "circle"
 
-      let shape = Routes.pattern shape_to_string shape_of_string
+      let shape = Routes.pattern shape_to_string shape_of_string ":shape"
 
       (* Now the shape pattern can be used just like any
          of the built in patterns like int, bool etc *)
@@ -100,6 +100,42 @@ val pattern
   :  ('c -> string)
   -> (string -> 'c option)
   -> string
+  -> ('a, 'b) path
+  -> ('c -> 'a, 'b) path
+
+(** [custom] is a labelled alternative to [pattern].
+
+    Example:
+
+    {[
+
+      module Shape = struct
+        type t =
+          | Square
+          | Circle
+
+        let parse = function
+          | "square" -> Some Square
+          | "circle" -> Some Circle
+          | _ -> None
+
+        let serialize = function
+          | Square -> "square"
+          | Circle -> "circle"
+
+        let p r = Routes.custom ~serialize ~parse ~label:":shape" r
+      end
+
+      (* Now the shape pattern can be used just like any
+         of the built in patterns like int, bool etc *)
+      let route () = s "shape" / Shape.p / s "create" /? nil
+    ]}
+
+   @since 0.8.1 *)
+val custom
+  :  serialize:('c -> string)
+  -> parse:(string -> 'c option)
+  -> label:string
   -> ('a, 'b) path
   -> ('c -> 'a, 'b) path
 

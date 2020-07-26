@@ -104,6 +104,7 @@ type 'b route = Route : ('a, 'b) target * 'a -> 'b route
 type 'b router = 'b route PatternTrie.t
 
 let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
+let custom ~serialize:to_ ~parse:from_ ~label r = Conv (conv to_ from_ label, r)
 let empty_router = PatternTrie.empty
 let ( @--> ) r handler = Route (r, handler)
 let s w r = Match (w, r)

@@ -197,8 +197,9 @@ let shape_to_string = function
 let test_custom_pattern () =
   let open Routes in
   let shape = pattern shape_to_string shape_of_string ":shape" in
+  let shape' = custom ~serialize:shape_to_string ~parse:shape_of_string ~label:":shape" in
   let r1 () =
-    (s "foo" / int / s "shape" / shape /? nil)
+    (s "foo" / int / s "shape" / shape' /? nil)
     @--> fun c shape -> Printf.sprintf "%d - %s" c (shape_to_string shape)
   in
   let r2 () = s "shape" / shape / s "create" /? nil in
