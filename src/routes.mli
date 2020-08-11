@@ -203,3 +203,6 @@ val pp_route : Format.formatter -> 'a route -> unit
 
     @since 0.7.3 *)
 val add_route : 'b route -> 'b router -> 'b router
+
+(** [union] performs a left-biased merge of two routers. *)
+val union : 'a router -> 'a router -> 'a router

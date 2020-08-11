@@ -76,6 +76,28 @@ module PatternTrie = struct
     in
     aux k t
   ;;
+
+  let rec union t1 t2 =
+    let parsers = t1.parsers @ t2.parsers in
+    let children =
+      KeyMap.merge
+        (fun _ l r ->
+          match l, r with
+          | None, None -> assert false
+          | None, Some r -> Some r
+          | Some l, None -> Some l
+          | Some l, Some r -> Some (union l r))
+        t1.children t2.children
+    in
+    let capture =
+      match t1.capture, t2.capture with
+      | None, None -> None
+      | Some l, None -> Some l
+      | None, Some r -> Some r
+      | Some l, Some r -> Some (union l r)
+    in
+    { parsers; children; capture }
+  ;;
 end
 
 type 'a conv =
@@ -200,6 +222,9 @@ let one_of routes =
       PatternTrie.add patterns route routes)
     empty_router
     routes
+;;
+
+let union = PatternTrie.union
 ;;
 
 let add_route route routes =
