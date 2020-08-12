@@ -42,6 +42,43 @@ let test_add_route () =
     (match' router ~target:"/user/john/12")
 ;;
 
+let test_union_routes () =
+  let open Routes in
+
+  let union_law nb t rs1 rs2 targets =
+    let router_of_list routers =
+      List.fold_right add_route routers (one_of []) in
+    let router1 = router_of_list (rs1 @ rs2) in
+    let router2 = union (router_of_list rs1) (router_of_list rs2) in
+    Alcotest.(check (list (option t)))
+      (Printf.sprintf "union law %d" nb)
+      (List.map (fun target -> match' router1 ~target) targets)
+      (List.map (fun target -> match' router2 ~target) targets)
+  in
+
+  let r1 = ((s "foo" / int /? nil) @--> fun i -> i) in
+  let r2 = ((s "bar" / int /? nil) @--> fun i -> i) in
+  let r3 = ((s "foo" / int / s "bar" / int /? nil) @--> fun i j -> i + j) in
+  let r4 = ((s "bar" / s "baz" /? nil) @--> 0) in
+
+  let targets = ["foo/10"; "bar/20"; "foo/10/bar/20"; "bar/baz"; "baz"] in
+  union_law 1 Alcotest.int [r1] [] targets;
+  union_law 2 Alcotest.int [] [r1] targets;
+  union_law 3 Alcotest.int [r1] [r2] targets;
+  union_law 4 Alcotest.int [r1;r2] [r3;r4] targets;
+  union_law 5 Alcotest.int [r3;r4] [r1;r2] targets;
+;;
+
+let test_left_bias_union () =
+  let open Routes in
+  let r1 = one_of [ ((s "foo" / int /? nil) @--> fun i -> i) ] in
+  let r2 = one_of [ ((s "foo" / int /? nil) @--> fun i -> -i) ] in
+  Alcotest.(check (option int))
+    "A union matches the left routes in preference to the right"
+    (Some 10)
+    (match' (union r1 r2) ~target:"foo/10")
+;;
+
 let test_extractors () =
   let open Routes in
   let router =
@@ -248,6 +285,8 @@ let () =
     ; "Can work with custom patterns", `Quick, test_custom_pattern
     ; "Discards query params", `Quick, test_matcher_discards_query_params
     ; "Can add a route", `Quick, test_add_route
+    ; "Union of routers is lawful", `Quick, test_union_routes
+    ; "Unions are left-biased", `Quick, test_left_bias_union
     ]
   in
   Alcotest.run "Tests" [ "Routes tests", tests ]
