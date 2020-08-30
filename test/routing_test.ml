@@ -44,10 +44,8 @@ let test_add_route () =
 
 let test_union_routes () =
   let open Routes in
-
   let union_law nb t rs1 rs2 targets =
-    let router_of_list routers =
-      List.fold_right add_route routers (one_of []) in
+    let router_of_list routers = List.fold_right add_route routers (one_of []) in
     let router1 = router_of_list (rs1 @ rs2) in
     let router2 = union (router_of_list rs1) (router_of_list rs2) in
     Alcotest.(check (list (option t)))
@@ -55,18 +53,16 @@ let test_union_routes () =
       (List.map (fun target -> match' router1 ~target) targets)
       (List.map (fun target -> match' router2 ~target) targets)
   in
-
-  let r1 = ((s "foo" / int /? nil) @--> fun i -> i) in
-  let r2 = ((s "bar" / int /? nil) @--> fun i -> i) in
-  let r3 = ((s "foo" / int / s "bar" / int /? nil) @--> fun i j -> i + j) in
-  let r4 = ((s "bar" / s "baz" /? nil) @--> 0) in
-
-  let targets = ["foo/10"; "bar/20"; "foo/10/bar/20"; "bar/baz"; "baz"] in
-  union_law 1 Alcotest.int [r1] [] targets;
-  union_law 2 Alcotest.int [] [r1] targets;
-  union_law 3 Alcotest.int [r1] [r2] targets;
-  union_law 4 Alcotest.int [r1;r2] [r3;r4] targets;
-  union_law 5 Alcotest.int [r3;r4] [r1;r2] targets;
+  let r1 = (s "foo" / int /? nil) @--> fun i -> i in
+  let r2 = (s "bar" / int /? nil) @--> fun i -> i in
+  let r3 = (s "foo" / int / s "bar" / int /? nil) @--> fun i j -> i + j in
+  let r4 = (s "bar" / s "baz" /? nil) @--> 0 in
+  let targets = [ "foo/10"; "bar/20"; "foo/10/bar/20"; "bar/baz"; "baz" ] in
+  union_law 1 Alcotest.int [ r1 ] [] targets;
+  union_law 2 Alcotest.int [] [ r1 ] targets;
+  union_law 3 Alcotest.int [ r1 ] [ r2 ] targets;
+  union_law 4 Alcotest.int [ r1; r2 ] [ r3; r4 ] targets;
+  union_law 5 Alcotest.int [ r3; r4 ] [ r1; r2 ] targets
 ;;
 
 let test_left_bias_union () =

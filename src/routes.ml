@@ -87,7 +87,8 @@ module PatternTrie = struct
           | None, Some r -> Some r
           | Some l, None -> Some l
           | Some l, Some r -> Some (union l r))
-        t1.children t2.children
+        t1.children
+        t2.children
     in
     let capture =
       match t1.capture, t2.capture with
@@ -225,7 +226,6 @@ let one_of routes =
 ;;
 
 let union = PatternTrie.union
-;;
 
 let add_route route routes =
   let (Route ({ path; _ }, _)) = route in
