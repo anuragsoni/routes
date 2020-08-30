@@ -1,12 +1,2 @@
-(* -*- tuareg -*- *)
-
-let preprocess =
-  match Sys.getenv "BISECT_ENABLE" with
-  | exception _ -> ""
-  | "yes" -> "(preprocess (pps bisect_ppx))"
-  | _ -> ""
-
-let () = Jbuild_plugin.V1.send @@ {|
- (library
-   (name routes)
-   (public_name routes)|} ^ preprocess ^ {|)|}
+(library
+ (public_name routes))
