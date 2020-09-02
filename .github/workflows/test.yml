@@ -6,11 +6,12 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.operating-system }}
     strategy:
       fail-fast: false
       matrix:
-        ocaml-version: [ '4.11.0', '4.08.1', '4.05.0' ]
+        operating-system: [windows-latest, ubuntu-latest]
+        ocaml-version: [ '4.11.1', '4.05.0' ]
     steps:
       - uses: actions/checkout@v2
       - uses: avsm/setup-ocaml@v1
