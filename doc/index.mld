@@ -48,24 +48,26 @@ but it is possible to define custom patterns that can be used
 to extract path parameters that can be parsed into a user defined type.
 
 {[
-type shape =
-  | Square
-  | Circle
+module Shape = struct
+  type t =
+    | Square
+    | Circle
 
-let shape_of_string = function
-  | "square" -> Some Square
-  | "circle" -> Some Circle
-  | _ -> None
+  let parse = function
+    | "square" -> Some Square
+    | "circle" -> Some Circle
+    | _ -> None
 
-let shape_to_string = function
-  | Square -> "square"
-  | Circle -> "circle"
+  let serialize = function
+    | Square -> "square"
+    | Circle -> "circle"
 
-let shape = Routes.pattern shape_to_string shape_of_string
+  let p r = Routes.custom ~serialize ~parse ~label:":shape" r
+end
 
 (* Now the shape pattern can be used just like any
    of the built in patterns like int, bool etc *)
-let route () = s "shape" / shape / s "create" /? nil
+let route () = s "shape" / Shape.p / s "create" /? nil
 ]}
 
 {1 Support}
