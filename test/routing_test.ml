@@ -82,6 +82,8 @@ let test_extractors () =
       [ ((s "foo" / str /? nil) @--> fun a -> a)
       ; ((s "numbers" / int / int64 / int32 /? nil)
         @--> fun a b c -> Printf.sprintf "%d-%Ld-%ld" a b c)
+      ; ((s "bar" /? wildcard) @--> fun a -> a)
+      ; (s "baz" / int / s "and" //? wildcard) @--> Printf.sprintf "%d-%s"
       ]
   in
   Alcotest.(check (option string))
@@ -91,7 +93,27 @@ let test_extractors () =
   Alcotest.(check (option string))
     "Can extract multiple path parameters"
     (Some "1-2-3")
-    (match' ~target:"/numbers/1/2/3" router)
+    (match' ~target:"/numbers/1/2/3" router);
+  Alcotest.(check (option string))
+    "Can extract empty wildcard"
+    (Some "")
+    (match' ~target:"/bar" router);
+  Alcotest.(check (option string))
+    "Can extract non-empty wildcard"
+    (Some "a")
+    (match' ~target:"/bar/a" router);
+  Alcotest.(check (option string))
+    "Can extract non-empty wildcard ending with a slash"
+    (Some "a/")
+    (match' ~target:"/bar/a/" router);
+  Alcotest.(check (option string))
+    "Can extract non-empty wildcard with slash in the middle"
+    (Some "a/b")
+    (match' ~target:"/bar/a/b" router);
+  Alcotest.(check (option string))
+    "Can extract both int and wildcard"
+    (Some "42-x/y/z/")
+    (match' ~target:"/baz/42/and/x/y/z/" router)
 ;;
 
 let test_leading_slash_is_discarded () =
@@ -180,7 +202,8 @@ let test_route_pattern () =
   let r1 = s "foo" / s "bar" /? nil in
   let r2 = s "foo" / int / bool /? nil in
   let r3 = s "foo" / str / bool //? nil in
-  let r4 = (s "hello" / s "world" /? nil) @--> "Route" in
+  let r4 = s "baz" /? wildcard in
+  let r5 = (s "hello" / s "world" /? nil) @--> "Route" in
   Alcotest.(check string)
     "Pretty print empty route"
     "/"
@@ -208,8 +231,12 @@ let test_route_pattern () =
     (sprintf r3 "hello" false);
   Alcotest.(check string)
     "Pretty print route"
+    "/baz/:wildcard"
+    (Format.asprintf "%a" pp_target r4);
+  Alcotest.(check string)
+    "Pretty print route"
     "/hello/world"
-    (Format.asprintf "%a" pp_route r4)
+    (Format.asprintf "%a" pp_route r5)
 ;;
 
 type shape =

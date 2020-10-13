@@ -20,6 +20,7 @@ module PatternTrie = struct
     type t =
       | Match : string -> t
       | Capture : t
+      | Wildcard : t
   end
 
   module KeyMap = Map.Make (String)
@@ -28,11 +29,12 @@ module PatternTrie = struct
     { parsers : 'a list
     ; children : 'a node KeyMap.t
     ; capture : 'a node option
+    ; wildcard : bool
     }
 
   type 'a t = 'a node
 
-  let empty = { parsers = []; children = KeyMap.empty; capture = None }
+  let empty = { parsers = []; children = KeyMap.empty; capture = None; wildcard = false }
 
   let feed_params t params =
     let rec aux t params =
@@ -40,6 +42,7 @@ module PatternTrie = struct
       | { parsers = []; _ }, [] -> []
       | { parsers = rs; _ }, [] -> rs
       | { parsers = rs; _ }, [ "" ] -> rs
+      | { parsers = rs; wildcard; _ }, _ when wildcard -> rs
       | { children; capture; _ }, x :: xs ->
         (match KeyMap.find_opt x children with
         | None ->
@@ -72,7 +75,8 @@ module PatternTrie = struct
             | Some v -> v
           in
           let t'' = aux r t' in
-          { n with capture = Some t'' })
+          { n with capture = Some t'' }
+        | Key.Wildcard -> { n with parsers = v :: n.parsers; wildcard = true })
     in
     aux k t
   ;;
@@ -97,7 +101,14 @@ module PatternTrie = struct
       | None, Some r -> Some r
       | Some l, Some r -> Some (union l r)
     in
-    { parsers; children; capture }
+    let wildcard =
+      match t1.wildcard, t2.wildcard with
+      | false, false -> false
+      | true, true -> true
+      | false, true | true, false ->
+        failwith "Attemp to union wildcard and non-wildcard pattern"
+    in
+    { parsers; children; capture; wildcard }
   ;;
 end
 
@@ -111,6 +122,7 @@ let conv to_ from_ label = { to_; from_; label }
 
 type ('a, 'b) path =
   | End : ('a, 'a) path
+  | Wildcard : (string -> 'a, 'a) path
   | Match : string * ('a, 'b) path -> ('a, 'b) path
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
@@ -137,6 +149,7 @@ let int64 r = of_conv (conv Int64.to_string Int64.of_string_opt ":int64") r
 let int32 r = of_conv (conv Int32.to_string Int32.of_string_opt ":int32") r
 let str r = of_conv (conv (fun x -> x) (fun x -> Some x) ":string") r
 let bool r = of_conv (conv string_of_bool bool_of_string_opt ":bool") r
+let wildcard = Wildcard
 let ( / ) m1 m2 r = m1 @@ m2 r
 let nil = End
 let empty = { slash_kind = NoSlash; path = End }
@@ -153,6 +166,7 @@ let ( //? ) m1 m2 =
 
 let rec route_pattern : type a b. (a, b) path -> PatternTrie.Key.t list = function
   | End -> []
+  | Wildcard -> [ PatternTrie.Key.Wildcard ]
   | Match (w, fmt) -> PatternTrie.Key.Match w :: route_pattern fmt
   | Conv (_, fmt) -> PatternTrie.Key.Capture :: route_pattern fmt
 ;;
@@ -165,6 +179,7 @@ let pp_path' { slash_kind; path } =
   in
   let rec aux : type a b. (a, b) path -> string list = function
     | End -> trail
+    | Wildcard -> [ ":wildcard" ]
     | Match (w, fmt) -> w :: aux fmt
     | Conv ({ label; _ }, fmt) -> label :: aux fmt
   in
@@ -183,6 +198,7 @@ let ksprintf' k { slash_kind; path } =
   let rec aux : type a b. (string list -> b) -> (a, b) path -> a =
    fun k -> function
     | End -> k trail
+    | Wildcard -> fun _ -> k trail
     | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
     | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ (to_ x :: rest)) fmt
   in
@@ -200,6 +216,9 @@ let parse_route { slash_kind; path } handler params =
       | [ "" ], Trailing -> Some f
       | [], NoSlash -> Some f
       | _ -> None)
+    | Wildcard ->
+      let x = String.concat "/" s in
+      Some (f x)
     | Match (x, fmt) ->
       (match s with
       | x' :: xs when x = x' -> match_target fmt f xs
