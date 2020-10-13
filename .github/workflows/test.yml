@@ -1,8 +1,5 @@
 name: RoutesTest
-on:
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
 jobs:
   build:
     name: Build
@@ -11,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [windows-latest, ubuntu-latest]
-        ocaml-version: [ '4.11.1', '4.05.0' ]
+        ocaml-version: [ '4.11.1', '4.09.1', '4.07.1', '4.05.0' ]
     steps:
       - uses: actions/checkout@v2
       - name:  Setup Cache
