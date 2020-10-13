@@ -106,7 +106,7 @@ module PatternTrie = struct
       | false, false -> false
       | true, true -> true
       | false, true | true, false ->
-        failwith "Attemp to union wildcard nad non-wildcard pattern"
+        failwith "Attemp to union wildcard and non-wildcard pattern"
     in
     { parsers; children; capture; wildcard }
   ;;
