@@ -174,6 +174,8 @@ val ( @--> ) : ('a, 'b) target -> 'a -> 'b route
     to perform route matches. *)
 val one_of : 'b route list -> 'b router
 
+val map : ('a -> 'b) -> 'a route -> 'b route
+
 (** [match'] accepts a router and the target url to match. *)
 val match' : 'a router -> target:string -> 'a option
 

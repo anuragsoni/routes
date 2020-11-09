@@ -45,7 +45,9 @@ let test_add_route () =
 let test_union_routes () =
   let open Routes in
   let union_law nb t rs1 rs2 targets =
-    let router_of_list routers = List.fold_right add_route routers (one_of []) in
+    let router_of_list routers =
+      List.fold_right add_route routers (one_of [])
+    in
     let router1 = router_of_list (rs1 @ rs2) in
     let router2 = union (router_of_list rs1) (router_of_list rs2) in
     Alcotest.(check (list (option t)))
@@ -73,6 +75,24 @@ let test_left_bias_union () =
     "A union matches the left routes in preference to the right"
     (Some 10)
     (match' (union r1 r2) ~target:"foo/10")
+;;
+
+let test_map () =
+  let open Routes in
+  let map_option f = function
+    | None -> None
+    | Some x -> Some (f x)
+  in
+  let map_law t f r target =
+    Alcotest.(
+      check
+        (option t)
+        "Mapping a function over a route applies that function to the handler"
+        (map_option f (match' (one_of [ r ]) ~target))
+        (match' (one_of [ map f r ]) ~target))
+  in
+  let r = (s "foo" / int /? nil) @--> fun i -> i in
+  map_law Alcotest.string string_of_int r "foo/5"
 ;;
 
 let test_extractors () =
@@ -310,6 +330,7 @@ let () =
     ; "Can add a route", `Quick, test_add_route
     ; "Union of routers is lawful", `Quick, test_union_routes
     ; "Unions are left-biased", `Quick, test_left_bias_union
+    ; "Maps are lawful", `Quick, test_map
     ]
   in
   Alcotest.run "Tests" [ "Routes tests", tests ]
