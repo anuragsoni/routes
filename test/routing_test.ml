@@ -315,6 +315,37 @@ let test_matcher_discards_query_params () =
     (match' routes ~target:"?baz=bar")
 ;;
 
+let test_prefixing_targets () =
+  let open Routes in
+  let add_route path1 path2 handler (routes1, routes2) =
+    let routes1 =
+      routes1
+      |> add_route ((path1 / path2 /? nil) @--> handler)
+      |> add_route ((path1 / path2 //? nil) @--> handler)
+    in
+    let routes2 =
+      routes2
+      |> add_route ((path1 /~ (path2 /? nil)) @--> handler)
+      |> add_route ((path1 /~ (path2 //? nil)) @--> handler)
+    in
+    routes1, routes2
+  in
+  let check_target nb t (routes1, routes2) target =
+    Alcotest.(check (option t))
+      (Printf.sprintf "prefix test %d" nb)
+      (match' routes1 ~target)
+      (match' routes2 ~target)
+  in
+  let routes =
+    (one_of [], one_of [])
+    |> add_route (s "foo") (s "bar") 10
+    |> add_route (s "foo") int (fun n -> n)
+  in
+  check_target 1 Alcotest.int routes "foo/bar";
+  check_target 2 Alcotest.int routes "foo/bar/10";
+  check_target 3 Alcotest.int routes "foo/10"
+;;
+
 let () =
   let tests =
     [ "Empty router has no match", `Quick, test_no_match
@@ -331,6 +362,7 @@ let () =
     ; "Union of routers is lawful", `Quick, test_union_routes
     ; "Unions are left-biased", `Quick, test_left_bias_union
     ; "Maps are lawful", `Quick, test_map
+    ; "Paths can be prefixed to targets", `Quick, test_prefixing_targets
     ]
   in
   Alcotest.run "Tests" [ "Routes tests", tests ]

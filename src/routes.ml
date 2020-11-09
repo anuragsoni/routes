@@ -271,3 +271,5 @@ let match' routes ~target =
   let matcher = run_routes target in
   matcher routes
 ;;
+
+let ( /~ ) m { path; slash_kind } = { path = m path; slash_kind }

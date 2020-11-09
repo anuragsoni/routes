@@ -150,6 +150,8 @@ val custom
     ]} *)
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
+val ( /~ ) : (('a, 'b) path -> ('c, 'd) path) -> ('a, 'b) target -> ('c, 'd) target
+
 (** [l /? r] is used to express the sequence of, parse l followed by parse r and then stop parsing.
     This is used at the end of the route pattern to define how a route should end. The right hand parameter
     [r] should be a pattern definition that cannot be used in further chains joined by [/].
