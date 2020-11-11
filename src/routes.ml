@@ -135,13 +135,13 @@ type ('a, 'b) target =
   ; path : ('a, 'b) path
   }
 
-type 'b route = Route : ('a, 'b) target * 'a -> 'b route
+type 'b route = Route : ('a, 'c) target * 'a * ('c -> 'b) -> 'b route
 type 'b router = 'b route PatternTrie.t
 
 let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
 let custom ~serialize:to_ ~parse:from_ ~label r = Conv (conv to_ from_ label, r)
 let empty_router = PatternTrie.empty
-let ( @--> ) r handler = Route (r, handler)
+let ( @--> ) r handler = Route (r, handler, fun x -> x)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt ":int") r
@@ -187,7 +187,7 @@ let pp_path' { slash_kind; path } =
 ;;
 
 let pp_target fmt t = Format.fprintf fmt "%s" ("/" ^ String.concat "/" @@ pp_path' t)
-let pp_route fmt (Route (p, _)) = pp_target fmt p
+let pp_route fmt (Route (p, _, _)) = pp_target fmt p
 
 let ksprintf' k { slash_kind; path } =
   let trail =
@@ -237,7 +237,7 @@ let parse_route { slash_kind; path } handler params =
 let one_of routes =
   let routes = List.rev routes in
   List.fold_left
-    (fun routes (Route ({ path; _ }, _) as route) ->
+    (fun routes (Route ({ path; _ }, _, _) as route) ->
       let patterns = route_pattern path in
       PatternTrie.add patterns route routes)
     empty_router
@@ -247,7 +247,7 @@ let one_of routes =
 let union = PatternTrie.union
 
 let add_route route routes =
-  let (Route ({ path; _ }, _)) = route in
+  let (Route ({ path; _ }, _, _)) = route in
   let patterns = route_pattern path in
   PatternTrie.add patterns route routes
 ;;
@@ -256,16 +256,20 @@ let run_routes target router =
   let routes = PatternTrie.feed_params router target in
   let rec aux = function
     | [] -> None
-    | Route (r, h) :: rs ->
+    | Route (r, h, f) :: rs ->
       (match parse_route r h target with
       | None -> aux rs
-      | Some r -> Some r)
+      | Some r -> Some (f r))
   in
   aux routes
 ;;
+
+let map f (Route (r, h, g)) = Route (r, h, fun x -> f (g x))
 
 let match' routes ~target =
   let target = Util.split_path target in
   let matcher = run_routes target in
   matcher routes
 ;;
+
+let ( /~ ) m { path; slash_kind } = { path = m path; slash_kind }

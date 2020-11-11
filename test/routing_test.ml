@@ -45,7 +45,9 @@ let test_add_route () =
 let test_union_routes () =
   let open Routes in
   let union_law nb t rs1 rs2 targets =
-    let router_of_list routers = List.fold_right add_route routers (one_of []) in
+    let router_of_list routers =
+      List.fold_right add_route routers (one_of [])
+    in
     let router1 = router_of_list (rs1 @ rs2) in
     let router2 = union (router_of_list rs1) (router_of_list rs2) in
     Alcotest.(check (list (option t)))
@@ -73,6 +75,24 @@ let test_left_bias_union () =
     "A union matches the left routes in preference to the right"
     (Some 10)
     (match' (union r1 r2) ~target:"foo/10")
+;;
+
+let test_map () =
+  let open Routes in
+  let map_option f = function
+    | None -> None
+    | Some x -> Some (f x)
+  in
+  let map_law t f r target =
+    Alcotest.(
+      check
+        (option t)
+        "Mapping a function over a route applies that function to the handler"
+        (map_option f (match' (one_of [ r ]) ~target))
+        (match' (one_of [ map f r ]) ~target))
+  in
+  let r = (s "foo" / int /? nil) @--> fun i -> i in
+  map_law Alcotest.string string_of_int r "foo/5"
 ;;
 
 let test_extractors () =
@@ -295,6 +315,37 @@ let test_matcher_discards_query_params () =
     (match' routes ~target:"?baz=bar")
 ;;
 
+let test_prefixing_targets () =
+  let open Routes in
+  let add_route path1 path2 handler (routes1, routes2) =
+    let routes1 =
+      routes1
+      |> add_route ((path1 / path2 /? nil) @--> handler)
+      |> add_route ((path1 / path2 //? nil) @--> handler)
+    in
+    let routes2 =
+      routes2
+      |> add_route ((path1 /~ (path2 /? nil)) @--> handler)
+      |> add_route ((path1 /~ (path2 //? nil)) @--> handler)
+    in
+    routes1, routes2
+  in
+  let check_target nb t (routes1, routes2) target =
+    Alcotest.(check (option t))
+      (Printf.sprintf "prefix test %d" nb)
+      (match' routes1 ~target)
+      (match' routes2 ~target)
+  in
+  let routes =
+    (one_of [], one_of [])
+    |> add_route (s "foo") (s "bar") 10
+    |> add_route (s "foo") int (fun n -> n)
+  in
+  check_target 1 Alcotest.int routes "foo/bar";
+  check_target 2 Alcotest.int routes "foo/bar/10";
+  check_target 3 Alcotest.int routes "foo/10"
+;;
+
 let () =
   let tests =
     [ "Empty router has no match", `Quick, test_no_match
@@ -310,6 +361,8 @@ let () =
     ; "Can add a route", `Quick, test_add_route
     ; "Union of routers is lawful", `Quick, test_union_routes
     ; "Unions are left-biased", `Quick, test_left_bias_union
+    ; "Maps are lawful", `Quick, test_map
+    ; "Paths can be prefixed to targets", `Quick, test_prefixing_targets
     ]
   in
   Alcotest.run "Tests" [ "Routes tests", tests ]

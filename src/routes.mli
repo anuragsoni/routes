@@ -150,6 +150,8 @@ val custom
     ]} *)
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
+val ( /~ ) : (('a, 'b) path -> ('c, 'd) path) -> ('a, 'b) target -> ('c, 'd) target
+
 (** [l /? r] is used to express the sequence of, parse l followed by parse r and then stop parsing.
     This is used at the end of the route pattern to define how a route should end. The right hand parameter
     [r] should be a pattern definition that cannot be used in further chains joined by [/].
@@ -173,6 +175,8 @@ val ( @--> ) : ('a, 'b) target -> 'a -> 'b route
     It transforms the input list of routes into a trie like structure that can later be used
     to perform route matches. *)
 val one_of : 'b route list -> 'b router
+
+val map : ('a -> 'b) -> 'a route -> 'b route
 
 (** [match'] accepts a router and the target url to match. *)
 val match' : 'a router -> target:string -> 'a option
