@@ -205,7 +205,8 @@ let ksprintf' k { slash_kind; path } =
   aux k path
 ;;
 
-let sprintf t = ksprintf' (fun x -> "/" ^ String.concat "/" x) t
+let ksprintf k t = ksprintf' (fun x -> k ("/" ^ String.concat "/" x)) t
+let sprintf t = ksprintf (fun x -> x) t
 
 let parse_route { slash_kind; path } handler params =
   let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
