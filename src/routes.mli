@@ -181,6 +181,10 @@ val map : ('a -> 'b) -> 'a route -> 'b route
 (** [match'] accepts a router and the target url to match. *)
 val match' : 'a router -> target:string -> 'a option
 
+(** [ksprintf] takes a route pattern as an input and applies a continuation to
+   the result of formatting the pattern into a URI path. *)
+val ksprintf : (string -> 'b) -> ('a, 'b) target -> 'a
+
 (** [sprintf] takes a route pattern as an input, and returns a string with the result
     of formatting the pattern into a URI path. *)
 val sprintf : ('a, string) target -> 'a
