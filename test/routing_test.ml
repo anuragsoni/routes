@@ -45,9 +45,7 @@ let test_add_route () =
 let test_union_routes () =
   let open Routes in
   let union_law nb t rs1 rs2 targets =
-    let router_of_list routers =
-      List.fold_right add_route routers (one_of [])
-    in
+    let router_of_list routers = List.fold_right add_route routers (one_of []) in
     let router1 = router_of_list (rs1 @ rs2) in
     let router2 = union (router_of_list rs1) (router_of_list rs2) in
     Alcotest.(check (list (option t)))
