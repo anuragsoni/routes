@@ -1,4 +1,3 @@
 (executable
- (modes byte exe)
  (name main)
- (libraries routes core_bench))
+ (libraries routes bechamel-notty notty.unix bechamel))

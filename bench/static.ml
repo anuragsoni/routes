@@ -22,6 +22,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *)
 
+open Bechamel
+
 let urls =
   [ "/"
   ; "/cmd.html"
@@ -223,11 +225,8 @@ let router =
        urls)
 ;;
 
-let bench_routes router targets = List.map (fun u -> match' ~target:u router) targets
-
-let bench =
-  let open Core_bench in
-  Bench.Test.create ~name:"Static Bench" (fun () -> bench_routes router urls)
+let bench_routes router targets =
+  Staged.stage @@ fun () -> ignore (List.map (fun u -> match' ~target:u router) targets)
 ;;
 
-let benches = [ bench ]
+let bench = Test.make ~name:"Static bench" @@ bench_routes router urls
