@@ -1,1 +1,4 @@
+version=0.17.0
 profile=janestreet
+parse-docstrings=true
+wrap-comments=true
