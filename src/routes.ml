@@ -120,9 +120,21 @@ type 'a conv =
 
 let conv to_ from_ label = { to_; from_; label }
 
+module Parts = struct
+  type t =
+    { prefix : string list
+    ; matched : string list
+    }
+
+  let of_parts' xs = { prefix = []; matched = xs }
+  let of_parts x = of_parts' @@ Util.split_path x
+  let wildcard_match t = String.concat "/" t.matched
+  let prefix t = String.concat "/" t.prefix
+end
+
 type ('a, 'b) path =
   | End : ('a, 'a) path
-  | Wildcard : (string -> 'a, 'a) path
+  | Wildcard : (Parts.t -> 'a, 'a) path
   | Match : string * ('a, 'b) path -> ('a, 'b) path
   | Conv : 'c conv * ('a, 'b) path -> ('c -> 'a, 'b) path
 
@@ -198,7 +210,7 @@ let ksprintf' k { slash_kind; path } =
   let rec aux : type a b. (string list -> b) -> (a, b) path -> a =
    fun k -> function
     | End -> k trail
-    | Wildcard -> fun _ -> k trail
+    | Wildcard -> fun { Parts.matched; _ } -> k (List.concat [ matched; trail ])
     | Match (w, fmt) -> aux (fun s -> k @@ w :: s) fmt
     | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ to_ x :: rest) fmt
   in
@@ -209,20 +221,20 @@ let ksprintf k t = ksprintf' (fun x -> k ("/" ^ String.concat "/" x)) t
 let sprintf t = ksprintf (fun x -> x) t
 
 let parse_route { slash_kind; path } handler params =
-  let rec match_target : type a b. (a, b) path -> a -> string list -> b option =
-   fun t f s ->
+  let rec match_target
+      : type a b. (a, b) path -> a -> string list -> string list -> b option
+    =
+   fun t f seen s ->
     match t with
     | End ->
       (match s, slash_kind with
       | [ "" ], Trailing -> Some f
       | [], NoSlash -> Some f
       | _ -> None)
-    | Wildcard ->
-      let x = String.concat "/" s in
-      Some (f x)
+    | Wildcard -> Some (f { Parts.prefix = List.rev seen; matched = s })
     | Match (x, fmt) ->
       (match s with
-      | x' :: xs when x = x' -> match_target fmt f xs
+      | x' :: xs when x = x' -> match_target fmt f (x' :: seen) xs
       | _ -> None)
     | Conv ({ from_; _ }, fmt) ->
       (match s with
@@ -230,9 +242,9 @@ let parse_route { slash_kind; path } handler params =
       | x :: xs ->
         (match from_ x with
         | None -> None
-        | Some x' -> match_target fmt (f x') xs))
+        | Some x' -> match_target fmt (f x') (x :: seen) xs))
   in
-  match_target path handler params
+  match_target path handler [] params
 ;;
 
 let one_of routes =
