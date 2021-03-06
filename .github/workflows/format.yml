@@ -9,18 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setup cache
-        uses: actions/cache@v2
-        id: opam-deps-cache
+      - uses: actions-ml/setup-ocaml@master
         with:
-          path: ~/.opam
-          key: ${{ runner.os }}-${{ matrix.ocaml-version }}-${{ hashFiles('*.opam') }}-1
-      - uses: avsm/setup-ocaml@v1
-        with:
-          ocaml-version: 4.12.0
+          ocaml-version: 4.12.x
+          dune-cache: true
+          opam-depext: false
       - name: Install dependencies
-        if: steps.opam-deps-cache.cache-hit != 'true'
-        run: opam install dune ocamlformat
+        run: opam install dune ocamlformat.0.17.0
       - name: Format
         run: opam exec -- dune build @fmt --auto-promote || true
       - name: Create Pull Request

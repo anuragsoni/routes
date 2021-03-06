@@ -1,5 +1,9 @@
 name: RoutesTest
-on: [push, pull_request]
+
+on:
+  - push
+  - pull_request
+
 jobs:
   build:
     name: Build
@@ -7,24 +11,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        operating-system: [windows-latest, ubuntu-latest]
-        ocaml-version: [ '4.12.0', '4.11.2', '4.07.1', '4.05.0' ]
+        operating-system:
+          - ubuntu-latest
+        ocaml-version:
+          - 4.12.x
+          - 4.11.x
+          - 4.07.x
+          - 4.05.x
+        include:
+          - operating-system: windows-latest
+            ocaml-version: 4.12.x
     steps:
       - uses: actions/checkout@v2
-      - name:  Setup Cache
-        uses: actions/cache@v2
-        id: opam-deps-cache
-        with:
-          path: ~/.opam
-          key: ${{ runner.os }}-${{ matrix.ocaml-version }}-${{ hashFiles('*.opam') }}-1
-      - uses: avsm/setup-ocaml@v1
+      - name: Setup OCaml ${{ matrix.ocaml-version }}
+        uses: actions-ml/setup-ocaml@master
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
+          dune-cache: ${{ matrix.operating-system == 'ubuntu-latest' }}
+          opam-depext: false
       - name: Install dependencies
-        if: steps.opam-deps-cache.cache-hit != 'true'
         run: |
           opam pin add routes.dev -n .
-          opam depext -yt routes
           opam install -t . --deps-only
       - name: Run tests
         run: |
