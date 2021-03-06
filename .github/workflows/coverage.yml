@@ -19,7 +19,7 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.ocaml-version }}-${{ hashFiles('*.opam') }}-1
       - uses: avsm/setup-ocaml@v1
         with:
-          ocaml-version: 4.11.0
+          ocaml-version: 4.12.0
       - name: Install dependencies
         if: steps.opam-deps-cache.cache-hit != 'true'
         run: |

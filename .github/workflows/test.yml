@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [windows-latest, ubuntu-latest]
-        ocaml-version: [ '4.11.1', '4.09.1', '4.07.1', '4.05.0' ]
+        ocaml-version: [ '4.12.0', '4.11.2', '4.07.1', '4.05.0' ]
     steps:
       - uses: actions/checkout@v2
       - name:  Setup Cache
@@ -29,3 +29,7 @@ jobs:
       - name: Run tests
         run: |
           opam exec -- dune runtest
+      - name: Run doctest
+        if: runner.os == 'Linux'
+        run: |
+          opam exec -- dune build @doctest

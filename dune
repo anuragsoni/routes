@@ -1,5 +1,5 @@
 (rule
- (alias runtest)
+ (alias doctest)
  (deps
   (package routes)
   (:x README.md))
