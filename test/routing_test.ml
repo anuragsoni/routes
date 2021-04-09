@@ -100,8 +100,9 @@ let test_extractors () =
       [ ((s "foo" / str /? nil) @--> fun a -> a)
       ; ((s "numbers" / int / int64 / int32 /? nil)
         @--> fun a b c -> Printf.sprintf "%d-%Ld-%ld" a b c)
-      ; ((s "bar" /? wildcard) @--> fun a -> a)
-      ; (s "baz" / int / s "and" //? wildcard) @--> Printf.sprintf "%d-%s"
+      ; ((s "bar" /? wildcard) @--> fun a -> Routes.Parts.wildcard_match a)
+      ; ((s "baz" / int / s "and" //? wildcard)
+        @--> fun a b -> Printf.sprintf "%d-%s" a (Routes.Parts.wildcard_match b))
       ]
   in
   Alcotest.(check (option string))
@@ -118,19 +119,19 @@ let test_extractors () =
     (match' ~target:"/bar" router);
   Alcotest.(check (option string))
     "Can extract non-empty wildcard"
-    (Some "a")
+    (Some "/a")
     (match' ~target:"/bar/a" router);
   Alcotest.(check (option string))
     "Can extract non-empty wildcard ending with a slash"
-    (Some "a/")
+    (Some "/a/")
     (match' ~target:"/bar/a/" router);
   Alcotest.(check (option string))
     "Can extract non-empty wildcard with slash in the middle"
-    (Some "a/b")
+    (Some "/a/b")
     (match' ~target:"/bar/a/b" router);
   Alcotest.(check (option string))
     "Can extract both int and wildcard"
-    (Some "42-x/y/z/")
+    (Some "42-/x/y/z/")
     (match' ~target:"/baz/42/and/x/y/z/" router)
 ;;
 

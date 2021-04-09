@@ -37,6 +37,14 @@ type 'b route
     trie like structure, that is then used for matching an input target url.*)
 type 'b router
 
+module Parts : sig
+  type t
+
+  val prefix : t -> string
+  val wildcard_match : t -> string
+  val of_parts : string -> t
+end
+
 (** [int] matches a path segment if it can be successfully coerced into an integer. *)
 val int : ('a, 'b) path -> (int -> 'a, 'b) path
 
@@ -59,7 +67,7 @@ val bool : ('a, 'b) path -> (bool -> 'a, 'b) path
 val s : string -> ('a, 'b) path -> ('a, 'b) path
 
 (** [wildcard] matches all remaining path segments as a string. *)
-val wildcard : (string -> 'a, 'a) path
+val wildcard : (Parts.t -> 'a, 'a) path
 
 (** [nil] is used to end a sequence of path parameters. *)
 val nil : ('a, 'a) path
