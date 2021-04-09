@@ -119,19 +119,19 @@ let test_extractors () =
     (match' ~target:"/bar" router);
   Alcotest.(check (option string))
     "Can extract non-empty wildcard"
-    (Some "a")
+    (Some "/a")
     (match' ~target:"/bar/a" router);
   Alcotest.(check (option string))
     "Can extract non-empty wildcard ending with a slash"
-    (Some "a/")
+    (Some "/a/")
     (match' ~target:"/bar/a/" router);
   Alcotest.(check (option string))
     "Can extract non-empty wildcard with slash in the middle"
-    (Some "a/b")
+    (Some "/a/b")
     (match' ~target:"/bar/a/b" router);
   Alcotest.(check (option string))
     "Can extract both int and wildcard"
-    (Some "42-x/y/z/")
+    (Some "42-/x/y/z/")
     (match' ~target:"/baz/42/and/x/y/z/" router)
 ;;
 

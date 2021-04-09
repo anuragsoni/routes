@@ -4,5 +4,5 @@
  (libraries routes))
 
 (alias
-  (name example)
-  (deps no_http.exe))
+ (name example)
+ (deps no_http.exe))
