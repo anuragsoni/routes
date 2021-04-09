@@ -3,7 +3,6 @@
  (modules no_http)
  (libraries routes))
 
-(executable
- (name http_server)
- (modules http_server)
- (libraries routes httpaf-lwt-unix httpaf logs.fmt))
+(alias
+  (name example)
+  (deps no_http.exe))
