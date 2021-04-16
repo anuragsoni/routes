@@ -1,3 +1,12 @@
+# 0.9.0
+
+* Add a labelled function to create custom patterns (#114)
+* Add support for union operation for two routers (#115, @Chattered)
+* Use dune language 2.0 (#116)
+* Support wildcard pattern at the end of a route (#118, #129, @Lupus)
+* Add map and path prefix to route targets (#121, @Chattered)
+* Make ksprintf visible in the public api (#123, @Chattered)
+
 # 0.8.0
 
 * Improve trailing slash handling. Instead of separate `nil` and `trail` constructors, all routes end with `nil`.
