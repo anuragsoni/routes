@@ -1,3 +1,7 @@
+# 0.9.1
+
+* bucklescript: Use correct version number (0.9.1) in package.json
+
 # 0.9.0
 
 * Add a labelled function to create custom patterns (#114)
