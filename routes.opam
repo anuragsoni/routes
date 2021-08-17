@@ -11,14 +11,14 @@ homepage: "https://github.com/anuragsoni/routes"
 doc: "https://anuragsoni.github.io/routes/"
 bug-reports: "https://github.com/anuragsoni/routes/issues"
 depends: [
-  "dune" {>= "2.0"}
+  "dune" {>= "2.7"}
   "ocaml" {>= "4.05.0"}
   "alcotest" {with-test}
   "mdx" {with-test}
   "odoc" {with-doc}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
