@@ -211,8 +211,8 @@ let ksprintf' k { slash_kind; path } =
    fun k -> function
     | End -> k trail
     | Wildcard -> fun { Parts.matched; _ } -> k (List.concat [ matched; trail ])
-    | Match (w, fmt) -> aux (fun s -> k @@ w :: s) fmt
-    | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ to_ x :: rest) fmt
+    | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
+    | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ (to_ x :: rest)) fmt
   in
   aux k path
 ;;

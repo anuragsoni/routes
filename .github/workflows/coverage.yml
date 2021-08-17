@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-ml/setup-ocaml@master
+      - uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-version: 4.12.x
+          ocaml-compiler: 4.12.x
           dune-cache: true
-          opam-depext: false
+          opam-depext-flags: --with-test
       - name: Install dependencies
         run: |
           opam pin add routes.dev -n .

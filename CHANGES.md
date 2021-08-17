@@ -1,3 +1,7 @@
+# 1.0.0
+
+* First major release. No changes from 0.9.1
+
 # 0.9.1
 
 * bucklescript: Use correct version number (0.9.1) in package.json
