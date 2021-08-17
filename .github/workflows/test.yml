@@ -24,11 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup OCaml ${{ matrix.ocaml-version }}
-        uses: actions-ml/setup-ocaml@master
+        uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-version }}
           dune-cache: ${{ matrix.operating-system == 'ubuntu-latest' }}
-          opam-depext: false
+          opam-depext-flags: --with-test
       - name: Install dependencies
         run: |
           opam pin add routes.dev -n .

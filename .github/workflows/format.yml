@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-ml/setup-ocaml@master
+      - uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-version: 4.12.x
+          ocaml-compiler: 4.12.x
           dune-cache: true
-          opam-depext: false
+          opam-depext-flags: --with-test
       - name: Install dependencies
-        run: opam install dune ocamlformat.0.18.0
+        run: opam install dune ocamlformat.0.19.0
       - name: Format
         run: opam exec -- dune build @fmt --auto-promote || true
       - name: Create Pull Request
