@@ -1,3 +1,12 @@
 (executable
  (name main)
- (libraries routes bechamel-notty notty.unix bechamel))
+ (libraries routes bechamel-js bechamel-notty notty.unix bechamel))
+
+(rule
+ (targets main.json)
+ (action (with-stdout-to %{targets} (run ./main.exe json))))
+
+(rule
+ (targets main.html)
+ (mode promote)
+ (action (system "%{bin:bechamel-html} < %{dep:main.json} > %{targets}")))

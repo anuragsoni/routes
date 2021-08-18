@@ -2,7 +2,7 @@
 
 This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
-reasonable performance [See benchmark folder](https://github.com/anuragsoni/routes/tree/master/bench).
+reasonable performance [See benchmark report](https://anuragsoni.github.io/routes/bench/main.html).
 
 Users can create a list of routes, and handler function to work
 on the extracted entities using the combinators provided by
