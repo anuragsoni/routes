@@ -47,15 +47,23 @@ let img (window, results) =
   Bechamel_notty.Multiple.image_of_ols_results ~rect:window ~predictor:Measure.run results
 ;;
 
-let () =
-  List.iter
-    (fun v -> Bechamel_notty.Unit.add v (Measure.unit v))
-    Instance.[ minor_allocated; major_allocated; monotonic_clock ];
-  let window =
-    match winsize Unix.stdout with
-    | Some (w, h) -> { Bechamel_notty.w; h }
-    | None -> { Bechamel_notty.w = 80; h = 1 }
-  in
-  let results, _ = benchmark () in
-  img (window, results) |> eol |> output_image
+let () = match Sys.argv with
+  | [| _; "json" |] ->
+    let results = benchmark () in
+    let results =
+      let open Bechamel_js in
+      emit ~dst:(Channel stdout) (fun _ -> Ok ()) ~compare:String.compare ~x_label:Measure.run
+        ~y_label:(Measure.label Instance.monotonic_clock) results in
+      Rresult.R.failwith_error_msg results
+  | _ ->
+    List.iter
+      (fun v -> Bechamel_notty.Unit.add v (Measure.unit v))
+      Instance.[ minor_allocated; major_allocated; monotonic_clock ];
+    let window =
+      match winsize Unix.stdout with
+      | Some (w, h) -> { Bechamel_notty.w; h }
+      | None -> { Bechamel_notty.w = 80; h = 1 }
+    in
+    let results, _ = benchmark () in
+    img (window, results) |> eol |> output_image
 ;;

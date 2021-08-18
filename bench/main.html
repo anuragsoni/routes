@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-simple-slider"></script>
+  <script src="https://unpkg.com/simple-statistics@7.0.2/dist/simple-statistics.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
+  <link href="style.css" rel="stylesheet" type="text/css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
+  <style>
+    *{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+    width: 100%;
+    height: 100%;
+    font-family:Helvetica Neue,metric,sans-serif;
+    text-rendering: optimizeLegibility;
+}
+
+.center{
+    width: 500px;
+    margin:auto
+}
+
+text{
+    font-family: metric,sans-serif;
+}
+
+.ml {
+    text-align: left
+}
+
+svg {
+    overflow: hidden;
+    margin: auto
+}
+
+.axis line, .axis path{
+    stroke: #2E3532;
+    stroke-width:1px;
+}
+
+.axisTitle, .axis text{
+    fill: #2E3532;
+    font-size:12px;
+}
+
+.background {
+    fill: #FBFBFB;
+    stroke: #2E3532;
+}
+
+.axisTitle, .chartTitle{
+    text-anchor: middle
+}
+
+
+.ytitle {
+    text-anchor: middle;
+    transform: rotate(90deg)
+}
+
+.warningtext{
+    text-anchor: center;
+    fill: #F06449;
+}
+
+.regLine {
+    stroke: #F06449;
+    stroke-width:2px;
+    opacity:0.7
+}
+
+.circle {
+    fill: #4ECDC4;
+    stroke: #292f36;
+    stroke-width:0.3px
+}
+
+table {
+    margin:auto;
+    text-align:left;
+    border-spacing: 15px 5px;
+    border: 1px solid #2E3532
+}
+
+th {
+    text-align: center;
+    color:#F06449
+}
+
+
+tr {
+    fill: #2E3532;
+    font-size:10px
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: auto;
+  background-color: #F06449;
+  color: #FFFFFF;
+  text-align: center;
+  border-radius: 10px;
+  padding: 0 5px 0 5px;
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.bar {
+    fill: #4ECDC4;
+    stroke:#292f36;
+}
+.bar:hover {
+    fill: #F06449;
+    stroke:#292f36;
+    stroke-width:1px;
+}
+
+.radio {
+    margin: auto;
+    width : 200px;
+}
+
+.wrapper {
+    display: grid;
+    margin: 50px 50px 50px 50px;
+    gap: 10px 20px;
+    grid-auto-rows: minmax(20px, auto);
+    text-align: center;
+    place-items: center;
+}
+
+.mainTitle, .summarizeTitle {
+    height:30px;
+    width: auto;
+    border-radius: 2px;
+    padding: 0 45px 0 45px;
+    border-style: solid;
+    border-width:1px;
+    box-shadow: 2px 2px 1px rgba(0,0,0,0.1);
+    color:  #2E3532;
+    background: #FBFBFB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.slidecontainer{
+    width: 50%;
+}
+
+  </style>
+</head>
+<body>
+
+  <script type="text/javascript">
+    // structure of JSON
+// { xLabel: string,
+//   yLabel: string,
+//   series: [ tests ] }
+//
+// tests := { name: string,
+//            description: { start : int, sampling: float, stabilize: bool,
+//                           quota: float, limit: int, instances: [string],
+//                           samples: int, time : float}
+//            dataset: [ point ],
+//            kde : [ v: float ] (optional)
+//            result: { estimate: float, r_square: float (optional) } }
+//
+// point := { x : double,
+//            y : double }
+//
+// xLabel and yLabel are the same for any tests
+window.onload = function () {
+
+const wsvg = 600;
+const hsvg = 400;
+const wslider = 200;
+const hslider = 50;
+const margin = {left:50,right:50,top:20,bottom:50};
+const dotSize = 1.5;
+const innerW = wsvg-(margin.left+margin.right);
+const innerH = hsvg-(margin.top+margin.bottom);
+
+const marginbar = {left:150,right:150,top:50,bottom:50};
+const wbar = 900;
+const innerWbar = wbar-(marginbar.left+marginbar.right);
+
+const SQRT_2PI = Math.sqrt(2 * Math.PI);
+
+// Main function : place containers and call plot functions.
+function render(inputs) {
+    inputs.series.forEach(
+	function(serie) {
+	    serie.dataset.forEach(
+		function(d) {
+		    d.x = +d.x;
+		    d.y = +d.y;
+		});}
+    );
+
+    // First step : check if there is no kde/histogram data at all in
+    // the benchmarks, in which case, we want to reduce our layout to
+    // one column.
+    let nonempty_kde = false;
+    inputs.series.forEach(function (serie) {
+	if ('kde' in serie) {
+	    nonempty_kde = nonempty_kde || true;} });
+    const nb_col = nonempty_kde ? 2 : 1;
+
+    // ************************************************ //
+    //              Layout of the page                  //
+    // ************************************************ //
+    // + a summarize bar graph on top
+    // + one section for each benchmark which includes
+    //     * 1 title
+    //     * 1 linear regression graph and its title and information table
+    //     * if kde data are available a histogram/kde graph with its control panel.
+    //
+    // If none of the benchmarks has kde data, the layout is the same
+    // but with only one column (no hist/kde graphs).
+    //
+    //
+    //              c1:        c2:
+    //
+    // r1:            *title*
+    //           ___________________
+    // r2:      |   summarize bar   |
+    //          |___________________|
+    //
+    // r3:           *title-1*
+    //
+    // r4:        *title*   *radio*
+    //           _______     _______
+    // r5:      | lr-1  |   | kde-1 |
+    //          |_______|   |_______|
+    //
+    // r6:      *infos-1*   *slider-1*
+    // ..
+    // r(4i+3):       *title-i*
+    //
+    // r(4i+4):  *title*     *radio*
+    //           _______     _______
+    // r(4i+5): | lr-i  |   | kde-i |
+    //          |_______|   |_______|
+    //
+    // r(4i+6): *infos-i*   *slider-i*
+    //
+    // etc ..
+
+      const main = d3.select("body")
+	  .append("div")
+	    .attr("class", "wrapper")
+	    .style("grid-template-columns", (nonempty_kde ? "repeat(2,"+wsvg+"px)" : "900px"))
+	    .attr("id", "main");
+
+    // ************************************************ //
+    //              Summarize bar graph                 //
+    // ************************************************ //
+
+    // Title
+    main.append("div")
+   	  .style("grid-row", "1")
+      	.style("grid-column", "1 / "+(nb_col+1))
+  	  .attr("class", "summarizeTitle")
+  	.text("Benchmarks summary");
+
+    // Bar graph
+    let bar_container = main
+	.append("div")
+   	  .style("grid-row", "2")
+      	  .style("grid-column", "1 / "+(nb_col+1))
+	  .attr("id", "bar");
+    plot_summarize_bar_graph(bar_container, inputs);
+
+
+    // ************************************************ //
+    //              Layout for lr/kde graphs            //
+    // ************************************************ //
+
+    // Benchmark titles
+    const titles = main
+	  .selectAll(".mainTitle")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+	    .attr("id", (data, i) => "title-"+i)
+   	    .style("grid-row", (data,i) =>""+(4*i+3))
+      	    .style("grid-column", "1 / "+(nb_col+1))
+  	    .attr("class","mainTitle")
+	  .append("text")
+  	    .attr("x", wsvg)
+  	    .attr("y", margin.top-10)
+            .text((data, i) => "#"+data.name);
+
+    // Linear regression graph titles
+    const titles_lr = main
+	  .selectAll("#title_lr")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+            .attr("id",  "title_lr")
+   	    .style("grid-row", (data,i) =>""+(4*i+4))
+   	    .style("grid-column", "1")
+	  .append("text")
+  	    .attr("class","chartTitle")
+  	    .text("Linear regression");
+
+    // Containers for linear regression graphs
+    const lr_graphs = main
+	  .selectAll(".lr")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+            .attr("class", "lr")
+	    .attr("id", (data, i) => "linearRegression-"+i)
+   	    .style("grid-row", (data,i) =>""+(4*i+5))
+   	  .style("grid-column", "1");
+
+    // Containers for linear regression info tables
+    const lr_info = main
+	  .selectAll(".lr-info")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+            .attr("class", "lr-info")
+	    .attr("id", (data, i) => "lr-info-"+i)
+   	    .style("grid-row", (data,i) =>""+(4*i+6))
+            .style("grid-column", "1");
+
+    let radio_div, kde_graphs, kde_controler;
+    if (nonempty_kde) {
+	// Containers for radio buttons to choose between histogram/kde plots
+	radio_div = main
+	      .selectAll(".radio_div")
+	      .data(inputs.series)
+	      .enter()
+	      .append("div")
+              .attr("class",  "radio")
+	      .attr("id", (d, i) => "radio_div"+i)
+   	      .style("grid-row", (data,i) =>""+(4*i+4))
+   	      .style("grid-column", "2");
+
+	// Containers for kde/hist graph
+	kde_graphs = main
+	      .selectAll(".kde")
+	      .data(inputs.series)
+	      .enter()
+	      .append("div")
+              .attr("class", "kde")
+	      .attr("id", (data, i) => "histKde-"+i)
+   	      .style("grid-row", (data,i) =>""+(4*i+5))
+   	      .style("grid-column", "2");
+
+	// Containers for kde/hist controlers
+	kde_controler = main
+	      .selectAll(".kde-controler")
+	      .data(inputs.series)
+	      .enter()
+	      .append("div")
+              .attr("class", "kde-controler")
+	      .attr("id", (data, i) => "kde-controler-"+i)
+   	      .style("grid-row", (data,i) =>""+(4*i+6))
+              .style("grid-column", "2");
+    }
+
+    // ************************************************ //
+    //          Linear regression graph                 //
+    // ************************************************ //
+    lr_graphs.each( function(serie, i) {
+	//Curves for each input
+	const xMin = 0;
+	const xMax = d3.max(serie.dataset, d => d.x);
+	const yMin = 0;
+	const yMax = d3.max(serie.dataset, d => d.y);
+
+	// Define x axis
+	const xScale = d3.scaleLinear()
+  	      .domain([xMin,xMax])
+  	      .range([0,innerW])
+  	      .nice();
+	const xAxis = d3.axisBottom()
+  	      .scale(xScale)
+  	      .ticks(8, "s");
+	// "s" = number format such as 1000 -> 1k
+
+	// Define y axis
+	const yScale = d3.scaleLinear()
+  	      .domain([yMin,yMax])
+  	      .range([innerH,0])
+  	      .nice();
+	const yAxis = d3.axisLeft()
+  	      .scale(yScale)
+  	      .ticks(8, "s");
+
+	// Svg
+  	const plot = d3.select(this)
+	    .append("svg")
+  	      .attr("width",wsvg)
+  	      .attr("height",hsvg);
+	// Color background
+	plot.append("rect")
+  	    .attr("x",margin.left)
+  	    .attr("y",margin.top)
+  	    .attr("width",innerW)
+  	    .attr("height",innerH)
+  	    .attr("class","background axis");
+	// Plot axis
+	plot.append("g")
+  	    .attr("transform",
+	 	  "translate("+margin.left+","
+	 	  +(hsvg-margin.bottom)+")")
+	    .attr("class", "axis")
+  	    .call(xAxis);
+	plot.append("g")
+  	    .attr("transform",
+	  	  "translate("+margin.left+","
+		  +margin.top+")")
+	    .attr("class", "axis")
+  	    .call(yAxis);
+	// Print axis titles
+	plot.append("text")
+	    .attr("class", "axisTitle")
+	    .attr("x", wsvg/2)
+	    .attr("y", hsvg-10)
+	    .text(inputs.xLabel);
+	plot.append("text")
+	    .attr("class", "axisTitle ytitle")
+	    .attr("transform-origin", 0, hsvg/2)
+	    .attr("x", 0)
+	    .attr("y", hsvg/2)
+	    .text(inputs.yLabel);
+
+	// Plot data
+	plot.append("g")
+	    .attr("transform",
+		  "translate("+margin.left+","
+		  +margin.top+")")
+  	    .selectAll("circle")
+  	    .data(serie.dataset)
+  	    .enter()
+  	    .append("circle")
+	    .attr("class", "circle")
+  	    .attr("r", dotSize)
+  	    .attr("cx", d => xScale(d.x))
+  	    .attr("cy", d => yScale(d.y));
+
+	// Plot linear regression line
+
+	const xVals = serie.dataset.map((e,j) => e.x);
+	const yVals = serie.dataset.map((e,j) => e.y);
+	const pairs = [];
+	xVals.forEach((d,i) => pairs.push([xVals[i],yVals[i]]));
+	const linReg = ss.linearRegression(pairs);
+	const linRegLine = ss.linearRegressionLine(linReg);
+	let line = plot
+	    .append("line")
+    	      .attr("transform","translate("+margin.left+","+margin.top+")")
+    	      .attr("class","regLine")
+    	      .attr("x1",xScale(xMin))
+    	      .attr("x2",xScale(xMin))
+    	      .attr("y1",yScale(linRegLine(xMin)))
+    	      .attr("y2",yScale(linRegLine(xMin)));
+	line.transition().duration(1000).delay(2000)
+    	      .attr("x2",xScale(xMax))
+    	      .attr("y2",yScale(linRegLine(xMax)));
+
+	// Add text boxes
+	//const meanX = ss.mean(xVals).toFixed(0);
+	//const meanY = ss.mean(yVals).toFixed(2);
+	//const varX = ss.sampleVariance(xVals).toFixed(0);
+	//const varY = ss.sampleVariance(yVals).toFixed(1);
+	//const corCoeff = ss.sampleCorrelation(xVals,yVals).toFixed(3);
+
+	const lr_results = [
+	    ["Linear regression line", "y = "+linReg.b.toFixed(2)+" + "+linReg.m.toFixed(3)+"x"],
+	    ["Coefficient", serie.result.estimate],
+	    ["R²", serie.result.r_square]
+	];
+
+	const sampling_to_string = sampling =>
+              (Number.isInteger(sampling) ?  "`Linear "+sampling+"" : "`Geometric "+sampling+"");
+
+	const format = v  => d3.format("s")(v);
+
+	const param_benchmarks = [
+	    ["LR sampling (sampling)", sampling_to_string(serie.description.sampling)],
+	    ["Start (start)", serie.description.start],
+	    ["Benchmark runtime (time / quota)",
+	     format(serie.description.time) + " / " + format(serie.description.quota)],
+	    ["Number of runs (samples)", serie.description.samples + " / " + serie.description.limit],
+	    ["Stabilized GC (stabilize)", serie.description.stabilize]
+	];
+
+	const table = d3.select("#lr-info-"+i)
+	      .append("table");
+
+	table.append("thead")
+	    .append("tr")
+	    .append("th")
+	    .attr("colspan", 2)
+	    .attr("scope", "col")
+	    .text("Linear regression results");
+
+	table.append("tbody")
+	    .selectAll("tr")
+	    .data(lr_results)
+	    .enter()
+	    .append("tr")
+	    .selectAll("td")
+	    .data(d => d)
+	    .enter()
+	    .append("td")
+	    .text(d=>d);
+
+	table.append("thead")
+	    .append("tr")
+	    .append("th")
+	    .attr("class", "tooltip")
+	    .attr("colspan", 2)
+	    .attr("scope", "col")
+	    .text("Benchmarks parameters")
+	    .append("span")
+	    .attr("class","tooltiptext")
+	    .text("See [Benchmarks.stats]");
+
+	table.append("tbody")
+	    .selectAll("tr")
+	    .data(param_benchmarks)
+	    .enter()
+	    .append("tr")
+	    .selectAll("td")
+	    .data(d => d)
+	    .enter()
+	    .append("td")
+	    .text(d=>d);
+
+    });
+
+    // ************************************************ //
+    //         Histogram and kde graphs                 //
+    // ************************************************ //
+    if (nonempty_kde) {
+        kde_graphs.each(function (serie, i) {
+
+	    // Svg for histogram and kde graphs
+	    let pdfgraph = d3.select(this)
+		.append("svg")
+		.attr("id", "pdfgraph")
+		.attr("width", wsvg)
+		.attr("height", hsvg)
+		.append("g")
+		.attr("transform", "translate("+margin.left+","+margin.top+")");
+
+	    // If there is no kde field in the data [serie], some note
+	    // is written in the svg window.
+	    if (!('kde' in serie)) {
+		pdfgraph.append("text")
+		    .attr("x", (margin.left+margin.right+wsvg)/2)
+		    .attr("y", (margin.top+margin.bottom+hsvg)/2)
+		    .attr("class", "warning")
+		    .text("No available data");
+	    } else if (d3.max(serie.kde) == d3.min(serie.kde)) {
+		pdfgraph.append("text")
+		    .attr("x", wsvg/2)
+		    .attr("y", hsvg/2)
+		    .attr("class", "warningtext")
+		    .text("All data have same value.");
+	    } else {
+		const data = serie.kde;
+		//Some default values
+		const min_slider = (d3.max(data)-d3.min(data))/data.length;
+		const max_slider = (d3.max(data)-d3.min(data))/30;
+		let vslider = min_slider;
+
+		//Radio buttons
+		const form = d3.select("#radio_div"+i)
+		      .append("form");
+
+		form.append("input")
+		    .attr("type", "radio")
+		    .attr("name", "graph")
+		    .attr("value", "hist"+i)
+		    .attr("name", "graph")
+		    .attr("checked", "checked")
+		    .on("change", () => plot_chosen_graph(d3.select(this), "hist"));
+		form.append("label")
+		    .attr("for", "hist"+i)
+		    .text("Histogram");
+		form.append("input")
+		    .attr("type", "radio")
+		    .attr("value", "kde"+i)
+		    .attr("name", "graph")
+		    .on("change", () => plot_chosen_graph(d3.select(this), "kde"));
+		form.append("label")
+		    .attr("for", "kde"+i)
+		    .text("KDE");
+
+		//axis
+		const min = d3.min(data),
+		      max = d3.max(data);
+		const minX = d3.max([0, min-max_slider]),
+		      maxX = max+max_slider;
+
+		//X axis is the same for both graphs (histogram and kde)
+		const xscale = d3.scaleLinear()
+		      .range([0, innerW])
+		      .domain([minX, maxX])
+		      .nice();
+		const xAxis = d3.axisBottom()
+		      .scale(xscale)
+		      .ticks(8, "s");
+
+		//Y axis has a different domain value between both graphs.
+		//So yscale.domain() is defined individually for each plot.
+		const yscale = d3.scaleLinear()
+		      .range([0, innerH])
+		      .nice();
+		const yAxis = d3.axisLeft()
+		      .scale(yscale)
+		      .ticks(8, "s");
+
+		//x value for kde graph
+		const n = 1000;
+		const x = Array(n);
+		const xmin = d3.min(xscale.domain()),
+		      xmax = d3.max(xscale.domain());
+		for (let i=0; i<n; i++) { x[i] = xmin + i*(xmax-xmin)/n; }
+
+		//Compute kde function for min bandwidth value to determine to determine
+		//the max value of Y axis. Only happens one time when loading the webpage.
+		const kde = kernelDensityEstimation(data, min_slider);
+		const v = new Array(n);
+		for (let i=0; i<n;i++){ v[i] = kde(x[i]);}
+		const maxYkde = d3.max(v),
+		      maxYhist = d3.max(histogram(data, max_slider, min, max));
+
+		//background
+		pdfgraph
+		    .append("rect")
+  		    .attr("x", 0)
+  		    .attr("y", 0)
+  		    .attr("width", innerW)
+  		    .attr("height", innerH)
+  		    .attr("class","background axis");
+
+		// x Axis
+		const gxAxis = pdfgraph
+	              .append("g")
+	              .attr("transform","translate(0"+","+innerH+")")
+	              .attr("class", "axis")
+	              .call(xAxis);
+
+		// y Axis
+		const gyAxis = pdfgraph
+	              .append("g")
+	              .attr("class", "axis")
+	              .call(yAxis);
+
+		// X Axis title
+		pdfgraph.append("text")
+		    .attr("class", "axisTitle")
+		    .attr("x", innerW/2)
+		    .attr("y", innerH+40)
+		    .text("Estimated "+inputs.yLabel);
+
+		plot_chosen_graph(d3.select(this), "hist");
+
+		function plot_chosen_graph(container, choice) {
+
+
+		    container.selectAll(".bar").remove();
+		    container.select(".mypath").remove();
+		    container.select(".ytitle").remove();
+
+		    // Erasing control panels if it exists and initializing it
+		    const control_container = d3.select("#kde-controler-"+i);
+		    const slider = control_container.select("#slider-"+i);
+		    const slidertitle = control_container.select("#slidertitle-"+i);
+		    if (!slider.empty())  {
+			slider.remove();
+		    }
+		    if (!slidertitle.empty())  {
+			slidertitle.remove();
+		    }
+
+		    //Hist part
+		    if (choice=="hist") {
+			// Defined yAxis
+			yscale.domain([maxYhist, 0]).nice();
+			yAxis.scale(yscale);
+			gyAxis.call(yAxis);
+
+			// y Axis title
+			pdfgraph.append("text")
+			    .attr("transform-origin", "10 "+(innerH/2))
+			    .attr("class", "axisTitle ytitle")
+			    .attr("x", 10)
+			    .attr("y", innerH/2)
+			    .text("Count");
+
+			const barwidth = vslider;
+
+			const update_hist =
+			      plot_histogram(pdfgraph, data, barwidth, xscale, yscale);
+
+			//slider
+			control_container
+			    .insert("p")
+			    .attr("align", "center")
+			    .attr("id", "slidertitle-"+i)
+			    .text("Barwidth");
+
+			control_container
+			    .insert("svg")
+			    .attr("width", wsvg)
+			    .attr("height", hslider)
+			    .attr("id", "slider-"+i)
+			    .append("g")
+			    .attr("transform", "translate("+(wsvg-wslider)/2+",10)")
+			    .call(d3
+				  .sliderBottom()
+				  .min(min_slider)
+				  .max(max_slider)
+				  .width(wslider)
+				  .ticks(5, "s")
+				  .default(vslider)
+				  .fill("red")
+				  .on("onchange", (value) => {
+				      if (value > 0) {
+					  vslider=value;
+					  update_hist(vslider);}}));
+		    } else {
+			//Defined yAxis
+			yscale.domain([maxYkde, 0]).nice();
+			yAxis.scale(yscale);
+			gyAxis.call(yAxis);
+
+			// y Axis title
+			pdfgraph.append("text")
+			    .attr("transform-origin", "10 "+(innerH/2))
+			    .attr("class", "axisTitle ytitle")
+			    .attr("x", +10)
+			    .attr("y", innerH/2)
+			    .text("Density");
+
+			const bandwidth = vslider;
+			const update_kde = plot_kde(pdfgraph, data, bandwidth, xscale, yscale, x);
+
+			//slider
+			control_container.insert("p")
+			    .attr("align", "center")
+			    .attr("id", "slidertitle-"+i)
+			    .text("Bandwidth");
+
+			control_container.insert("svg")
+			    .attr("width", wsvg)
+			    .attr("height", hslider)
+			    .attr("id", "slider-"+i)
+			    .append("g")
+			    .attr("transform", "translate("+(wsvg-wslider)/2+",10)")
+			    .call(d3
+				  .sliderBottom()
+				  .min(min_slider)
+				  .max(max_slider)
+				  .width(wslider)
+				  .ticks(5, "s")
+				  .default(vslider)
+				  .fill("red")
+				  .on("onchange", (value) =>
+				      {if (value > 0) { vslider=value; update_kde(vslider);}}));
+		    }; // end else
+		}; // end function
+	    }; //end else (available kde data)
+	}); //end function // end each
+    }; //end if
+
+
+
+function plot_summarize_bar_graph(container, inputs) {
+
+    const hbar = d3.min([60*inputs.series.length, hsvg]);
+    const innerHbar = hbar - marginbar.top - marginbar.bottom;
+
+    const xb = d3.scaleLinear()
+	  .range([0, innerWbar])
+	  .domain([0, d3.max(inputs.series, serie => serie.result.estimate)])
+	  .nice();
+    const yb = d3.scaleBand()
+	  .range([0, innerHbar])
+	  .padding(0.2)
+	  .domain(inputs.series.map(serie => serie.name));
+    const xbAxis = d3.axisBottom()
+	  .scale(xb)
+	  .ticks(8, "s");
+    const ybAxis = d3.axisLeft()
+	  .scale(yb);
+
+    const bargraph =
+	container.append("svg")
+	.attr("width", wbar)
+	.attr("height", hbar);
+
+    // background
+    bargraph.append("rect")
+  	.attr("x", marginbar.left)
+  	.attr("y", marginbar.top)
+  	.attr("width", innerWbar)
+  	.attr("height", innerHbar)
+  	.attr("class", "background axis");
+    // x Axis
+    bargraph.append("g")
+	.attr("transform","translate("+marginbar.left+","+(hbar-marginbar.bottom)+")")
+	.attr("class", "axis")
+	.call(xbAxis);
+    // x axis title
+    bargraph.append("text")
+	.attr("class", "axisTitle")
+	.attr("x", wbar/2)
+	.attr("y", hbar-10)
+	.text("Estimated "+inputs.yLabel);
+    // y Axis
+    bargraph.append("g")
+	.attr("transform","translate("+marginbar.left+","+marginbar.bottom+")")
+	.attr("class", "axis")
+	.call(ybAxis);
+
+    // Bargraph
+    bargraph.append("g")
+	.attr("transform","translate("+marginbar.left+","+marginbar.top+")")
+	.selectAll(".bar")
+   	.data(inputs.series)
+	.enter()
+	.append("rect")
+	.attr("class", "bar")
+	.attr("y", serie => yb(serie.name))
+	.attr("height", yb.bandwidth)
+	.attr("x", serie => 0)
+	.attr("width", serie => xb(serie.result.estimate))
+	.attr("fill", "#4ECDC4")
+	.on("mouseover", function (serie) {
+	    // Specify where to put label of text
+	    bargraph.append("text")
+		.attr("class", "axisTitle")
+		.attr("id", "tt")
+		.attr("x", wbar-200)
+		.attr("y", marginbar.top-10)
+		.text("Value: "+d3.format(".4s")(serie.result.estimate));
+	})
+        .on("mouseout", function (serie) {
+	    // Select text by id and then remove
+	    d3.selectAll("#tt").transition().duration("50").remove();
+	});
+
+};
+
+// [histrogram (data, barwidth, min, max)] computes histogram
+// values as follows:
+// - a value [v] of [data] contributes to the bar between [u] and
+// [u+barwidth] if u <= v < u+barwidth
+// - the [i]th bar is between [min+i*barwidth] and [min+(i+1)*barwidth]
+// - [max] is used only to determine the number of bars. It MUST be greater
+// than [d3.max(data)]
+function histogram(data, barwidth, min, max) {
+    const nbar = Math.floor((max-min)/barwidth)+1;
+    let hist = new Array(nbar);
+    for (let i=0; i<nbar; i++) {
+	hist[i]=0;
+    }
+
+    data.forEach(function(v) {
+	const ind = Math.floor((v-min)/barwidth);
+	hist[ind] ++;
+    });
+
+    let n = data.length;
+    for (let i=0; i<nbar; i++) {
+	hist[i] = hist[i];
+    }
+
+    return hist;
+}
+
+// [plot_histogram(container, data, bandwidth, xscale, yscale)]
+// draws the histogram computes with
+// [histogram(data, barwidth, d3.min(data), d3.max(data)]
+// in the html element [container].
+//
+// Axis are already defined on [container], using [xscale] and [yscale].
+//
+// In addition, this function returns the update function
+// that redraw the bar if called with a new barwidth.
+function plot_histogram(container, data, barwidth, xscale, yscale) {
+    const min = d3.min(data),
+	  max = d3.max(data);
+    const hist = histogram(data, barwidth, min, max);
+    const sample_nb = data.length;
+
+    const print_value = function (v) {
+	container.append("text")
+	    .attr("class", "axisTitle")
+	    .attr("id", "tt2")
+	    .attr("x", wsvg-170)
+	    .attr("y", 20)
+	    .text("Value: "+d3.format("d")(v)+" / "+d3.format("d")(sample_nb));};
+
+    const rects = container
+	  .selectAll(".bar")
+   	  .data(hist)
+	  .enter();
+
+    rects.append("rect")
+	.attr("class", "bar")
+	.attr("x", (v, i) => xscale(i*barwidth+min))
+	.attr("width", (v, i) => xscale(barwidth)-xscale(0))
+	.attr("y", (v, i) => yscale(v))
+	.attr("height", (v, i) => innerH-yscale(v))
+	.on("mouseover", print_value)
+        .on("mouseout", () => d3.selectAll("#tt2").transition().duration("50").remove());
+
+    function update_hist(nbarwidth) {
+	//compute new histograph values
+	const nhist = histogram(data, nbarwidth, min, max);
+
+	const rects = container
+	      .selectAll(".bar")
+   	      .data(nhist);
+
+	rects.exit().remove();
+
+	rects.enter().append("rect").attr("class", "bar")
+	    .merge(rects)
+	    .attr("x", (v, i) => xscale(i*nbarwidth+min))
+	    .attr("width", (v, i) => xscale(nbarwidth)-xscale(0))
+	    .attr("y", (v, i) => yscale(v))
+	    .attr("height", (v, i) => innerH-yscale(v))
+	    .on("mouseover", print_value)
+            .on("mouseout", () => d3.selectAll("#tt2").transition().duration("50").remove());
+    }
+    return update_hist;
+};
+
+// [kernelDensityEstimation(data, bandwith] returns the function x -> kde(x)
+//    for [data]. The kernel function used is a gaussian.
+function kernelDensityEstimation(X, bandwidth) {
+    //gaussian constante
+    const a = 1/(2*bandwidth*bandwidth);
+    const b = bandwidth * SQRT_2PI;
+    const gaussianKernel =
+	  function (x) {
+	      return Math.exp(-a * x * x) / b;
+	  };
+
+    return function (x) {
+        let i = 0;
+        let sum = 0;
+        for (i = 0; i < X.length; i++) {
+	    sum += gaussianKernel(x - X[i])/X.length;
+        }
+	return sum ;
+    };
+}
+
+// [plot_kde(container, data, bandwidth, xscale, yscale, x)] draws
+// the kde function computes with [kde(data, bandwidth)]
+// for the abscisse values defined by [x], in the html element
+// [container].
+//
+// Axis are already defined on [container], using [xscale] and
+// [yscale].
+//
+// In addition, this function returns the update function that
+// redraw the curve if called with a new bandwidth.
+function plot_kde(container, data, bandwidth, xscale, yscale, x) {
+    const n = x.length;
+    const kde = kernelDensityEstimation(data, bandwidth);
+    const density = new Array(n);
+
+    for (let i=0; i<n;i++){
+	let tmp = x[i] ;
+	density[i] = [tmp, kde(tmp)];
+    }
+
+    const graph = container
+	  .append('g')
+	  .append("path")
+	  .attr("class", "mypath")
+	  .datum(density)
+	  .attr("fill", "#4ECDC4")
+	  .attr("opacity", ".8")
+	  .attr("stroke", "#292F36")
+	  .attr("stroke-width", 1)
+	  .attr("stroke-linejoin", "round")
+	  .attr("d",
+		d3.line()
+		.curve(d3.curveBasis)
+		.x(d => xscale(d[0]))
+		.y(d => yscale(d[1])));
+
+    function update_kde(nbandwidth) {
+	let kde = kernelDensityEstimation(data, nbandwidth);
+
+	for (let i=0; i<n;i++){
+	    density[i][1] = kde(density[i][0]);
+	}
+
+	graph.datum(density)
+	    .transition()
+	    .duration(50)
+	    .attr("d",
+		  d3.line()
+		  .curve(d3.curveBasis)
+		  .x(d => xscale(d[0]))
+		  .y(d => yscale(d[1])));
+    };
+
+    return update_kde;
+};
+
+};
+
+
+var contents = null;
+contents = {"xLabel":"run","yLabel":"monotonic-clock","series":[{"name":"Routes bench/Parse.com/Parse 1 param","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":750,"time":501148684},"dataset":[{"x":1,"y":1167},{"x":2,"y":519},{"x":3,"y":508},{"x":4,"y":609},{"x":5,"y":757},{"x":6,"y":911},{"x":7,"y":982},{"x":8,"y":1100},{"x":9,"y":1223},{"x":10,"y":1348},{"x":11,"y":1496},{"x":12,"y":1624},{"x":13,"y":1721},{"x":14,"y":1847},{"x":15,"y":1971},{"x":16,"y":2110},{"x":17,"y":2227},{"x":18,"y":2376},{"x":19,"y":2444},{"x":20,"y":2690},{"x":21,"y":2860},{"x":22,"y":2831},{"x":23,"y":2951},{"x":24,"y":3072},{"x":25,"y":3212},{"x":26,"y":3372},{"x":27,"y":3459},{"x":28,"y":3554},{"x":29,"y":3737},{"x":30,"y":3944},{"x":31,"y":3968},{"x":32,"y":4124},{"x":33,"y":4227},{"x":34,"y":4342},{"x":35,"y":4449},{"x":36,"y":4651},{"x":37,"y":4749},{"x":38,"y":4806},{"x":39,"y":4961},{"x":40,"y":5072},{"x":41,"y":5190},{"x":42,"y":5346},{"x":43,"y":5582},{"x":44,"y":5584},{"x":45,"y":5697},{"x":46,"y":5797},{"x":47,"y":6031},{"x":48,"y":6046},{"x":49,"y":6220},{"x":50,"y":6323},{"x":51,"y":6440},{"x":52,"y":6532},{"x":53,"y":6714},{"x":54,"y":6863},{"x":55,"y":6929},{"x":56,"y":7069},{"x":57,"y":7161},{"x":58,"y":7356},{"x":59,"y":7392},{"x":60,"y":7581},{"x":61,"y":7836},{"x":62,"y":7765},{"x":63,"y":7955},{"x":64,"y":8077},{"x":65,"y":8154},{"x":66,"y":8442},{"x":67,"y":8404},{"x":68,"y":8558},{"x":69,"y":8599},{"x":70,"y":8860},{"x":71,"y":9117},{"x":72,"y":9224},{"x":73,"y":9171},{"x":74,"y":9342},{"x":75,"y":9419},{"x":76,"y":9556},{"x":77,"y":9956},{"x":78,"y":10172},{"x":79,"y":9966},{"x":80,"y":10000},{"x":81,"y":10346},{"x":82,"y":10240},{"x":83,"y":10366},{"x":84,"y":10493},{"x":85,"y":10792},{"x":86,"y":10876},{"x":87,"y":10827},{"x":88,"y":11035},{"x":89,"y":11319},{"x":90,"y":11271},{"x":91,"y":11440},{"x":92,"y":11588},{"x":93,"y":11648},{"x":94,"y":11799},{"x":95,"y":11930},{"x":96,"y":11981},{"x":97,"y":13022},{"x":98,"y":12181},{"x":99,"y":12337},{"x":100,"y":12524},{"x":101,"y":12554},{"x":102,"y":12711},{"x":103,"y":12874},{"x":104,"y":12966},{"x":105,"y":13075},{"x":106,"y":13248},{"x":107,"y":13381},{"x":108,"y":13453},{"x":109,"y":13598},{"x":110,"y":13683},{"x":111,"y":22512},{"x":112,"y":37119},{"x":113,"y":15842},{"x":114,"y":15905},{"x":115,"y":16061},{"x":116,"y":16266},{"x":117,"y":28443},{"x":118,"y":14753},{"x":119,"y":15119},{"x":120,"y":15990},{"x":121,"y":15121},{"x":122,"y":15294},{"x":123,"y":15463},{"x":124,"y":15451},{"x":125,"y":15709},{"x":126,"y":15793},{"x":127,"y":15871},{"x":128,"y":16240},{"x":129,"y":16139},{"x":130,"y":16299},{"x":131,"y":16388},{"x":132,"y":16532},{"x":133,"y":16630},{"x":134,"y":16805},{"x":135,"y":16916},{"x":136,"y":17033},{"x":137,"y":17075},{"x":138,"y":17144},{"x":139,"y":18520},{"x":140,"y":17474},{"x":141,"y":17588},{"x":142,"y":17674},{"x":143,"y":17733},{"x":144,"y":17936},{"x":145,"y":18024},{"x":146,"y":18301},{"x":147,"y":18303},{"x":148,"y":20201},{"x":149,"y":56589},{"x":150,"y":20867},{"x":151,"y":21018},{"x":152,"y":21169},{"x":153,"y":21296},{"x":154,"y":33802},{"x":155,"y":21043},{"x":156,"y":19478},{"x":157,"y":19505},{"x":158,"y":19584},{"x":159,"y":19744},{"x":160,"y":20044},{"x":161,"y":28002},{"x":162,"y":20086},{"x":163,"y":20307},{"x":164,"y":20357},{"x":165,"y":20674},{"x":166,"y":20655},{"x":167,"y":20747},{"x":168,"y":20939},{"x":169,"y":21065},{"x":170,"y":22037},{"x":171,"y":21459},{"x":172,"y":21560},{"x":173,"y":21543},{"x":174,"y":21611},{"x":175,"y":21774},{"x":176,"y":21824},{"x":177,"y":21992},{"x":178,"y":22131},{"x":179,"y":22204},{"x":180,"y":22458},{"x":181,"y":22564},{"x":182,"y":22691},{"x":183,"y":22669},{"x":184,"y":23672},{"x":185,"y":23021},{"x":186,"y":22924},{"x":187,"y":23203},{"x":188,"y":23490},{"x":189,"y":23398},{"x":190,"y":23583},{"x":191,"y":23653},{"x":192,"y":23726},{"x":193,"y":23931},{"x":194,"y":24023},{"x":195,"y":24176},{"x":196,"y":24266},{"x":197,"y":25143},{"x":198,"y":24614},{"x":199,"y":24735},{"x":200,"y":24813},{"x":202,"y":25105},{"x":204,"y":25343},{"x":206,"y":25729},{"x":208,"y":33401},{"x":210,"y":26081},{"x":212,"y":26516},{"x":214,"y":26734},{"x":216,"y":26851},{"x":218,"y":28507},{"x":220,"y":27345},{"x":222,"y":27642},{"x":224,"y":27893},{"x":226,"y":27854},{"x":228,"y":28322},{"x":230,"y":28464},{"x":232,"y":28831},{"x":234,"y":29009},{"x":236,"y":29271},{"x":238,"y":30159},{"x":240,"y":29796},{"x":242,"y":30072},{"x":244,"y":30455},{"x":246,"y":30616},{"x":248,"y":30811},{"x":250,"y":31090},{"x":252,"y":31365},{"x":254,"y":31583},{"x":256,"y":31735},{"x":258,"y":32261},{"x":260,"y":32387},{"x":262,"y":32511},{"x":264,"y":32782},{"x":266,"y":33031},{"x":268,"y":33239},{"x":270,"y":33537},{"x":272,"y":41391},{"x":274,"y":41386},{"x":276,"y":34085},{"x":278,"y":42255},{"x":280,"y":68688},{"x":282,"y":38934},{"x":284,"y":39342},{"x":286,"y":39603},{"x":288,"y":40012},{"x":290,"y":40082},{"x":292,"y":40158},{"x":294,"y":41943},{"x":296,"y":41563},{"x":298,"y":42301},{"x":300,"y":42091},{"x":303,"y":41812},{"x":306,"y":45337},{"x":309,"y":66642},{"x":312,"y":43902},{"x":315,"y":105563},{"x":318,"y":82966},{"x":321,"y":81990},{"x":324,"y":48058},{"x":327,"y":59069},{"x":330,"y":41265},{"x":333,"y":73066},{"x":336,"y":112504},{"x":339,"y":77067},{"x":342,"y":66874},{"x":345,"y":65029},{"x":348,"y":67891},{"x":351,"y":200525},{"x":354,"y":97994},{"x":357,"y":56073},{"x":360,"y":77953},{"x":363,"y":68223},{"x":366,"y":65873},{"x":369,"y":63188},{"x":372,"y":59659},{"x":375,"y":66817},{"x":378,"y":68734},{"x":381,"y":56467},{"x":384,"y":61992},{"x":387,"y":84299},{"x":390,"y":48659},{"x":393,"y":49655},{"x":396,"y":49388},{"x":399,"y":58637},{"x":402,"y":49924},{"x":406,"y":50449},{"x":410,"y":50749},{"x":414,"y":51338},{"x":418,"y":51836},{"x":422,"y":52963},{"x":426,"y":52961},{"x":430,"y":53249},{"x":434,"y":53777},{"x":438,"y":54362},{"x":442,"y":55761},{"x":446,"y":55299},{"x":450,"y":55863},{"x":454,"y":56275},{"x":458,"y":56980},{"x":462,"y":57650},{"x":466,"y":58875},{"x":470,"y":67188},{"x":474,"y":86703},{"x":478,"y":77283},{"x":482,"y":59794},{"x":486,"y":61444},{"x":490,"y":60780},{"x":494,"y":61398},{"x":498,"y":61724},{"x":502,"y":62329},{"x":507,"y":63609},{"x":512,"y":63386},{"x":517,"y":63721},{"x":522,"y":64610},{"x":527,"y":65137},{"x":532,"y":66723},{"x":537,"y":101656},{"x":542,"y":85809},{"x":547,"y":67722},{"x":552,"y":70245},{"x":557,"y":68955},{"x":562,"y":69352},{"x":567,"y":70185},{"x":572,"y":71141},{"x":577,"y":72303},{"x":582,"y":71987},{"x":587,"y":72707},{"x":592,"y":75102},{"x":597,"y":134965},{"x":602,"y":121846},{"x":608,"y":92852},{"x":614,"y":76037},{"x":620,"y":112489},{"x":626,"y":77245},{"x":632,"y":77782},{"x":638,"y":79223},{"x":644,"y":82484},{"x":650,"y":80647},{"x":656,"y":81505},{"x":662,"y":91920},{"x":668,"y":126522},{"x":674,"y":83928},{"x":680,"y":84668},{"x":686,"y":86023},{"x":692,"y":85974},{"x":698,"y":86551},{"x":704,"y":87260},{"x":711,"y":88600},{"x":718,"y":89238},{"x":725,"y":90092},{"x":732,"y":130643},{"x":739,"y":105110},{"x":746,"y":92499},{"x":753,"y":93634},{"x":760,"y":96608},{"x":767,"y":95137},{"x":774,"y":95881},{"x":781,"y":97525},{"x":788,"y":97760},{"x":795,"y":98721},{"x":802,"y":144567},{"x":810,"y":113652},{"x":818,"y":101637},{"x":826,"y":103229},{"x":834,"y":103168},{"x":842,"y":104317},{"x":850,"y":105534},{"x":858,"y":106020},{"x":866,"y":177216},{"x":874,"y":125208},{"x":882,"y":109225},{"x":890,"y":110508},{"x":898,"y":110569},{"x":906,"y":111450},{"x":915,"y":113555},{"x":924,"y":114077},{"x":933,"y":122931},{"x":942,"y":205029},{"x":951,"y":163760},{"x":960,"y":156544},{"x":969,"y":136198},{"x":978,"y":121679},{"x":987,"y":122615},{"x":996,"y":174910},{"x":1005,"y":125026},{"x":1015,"y":125155},{"x":1025,"y":126683},{"x":1035,"y":128843},{"x":1045,"y":128924},{"x":1055,"y":131452},{"x":1065,"y":150063},{"x":1075,"y":131778},{"x":1085,"y":135043},{"x":1095,"y":135443},{"x":1105,"y":138225},{"x":1116,"y":138549},{"x":1127,"y":139821},{"x":1138,"y":189240},{"x":1149,"y":162082},{"x":1160,"y":143660},{"x":1171,"y":145500},{"x":1182,"y":146469},{"x":1193,"y":148126},{"x":1204,"y":157793},{"x":1216,"y":151921},{"x":1228,"y":152254},{"x":1240,"y":153931},{"x":1252,"y":154726},{"x":1264,"y":156672},{"x":1276,"y":157645},{"x":1288,"y":228400},{"x":1300,"y":213094},{"x":1313,"y":230137},{"x":1326,"y":228240},{"x":1339,"y":205705},{"x":1352,"y":235507},{"x":1365,"y":203532},{"x":1378,"y":174676},{"x":1391,"y":201795},{"x":1404,"y":310016},{"x":1418,"y":199271},{"x":1432,"y":180183},{"x":1446,"y":180481},{"x":1460,"y":191261},{"x":1474,"y":228269},{"x":1488,"y":184862},{"x":1502,"y":186498},{"x":1517,"y":187604},{"x":1532,"y":199088},{"x":1547,"y":271702},{"x":1562,"y":202773},{"x":1577,"y":202264},{"x":1592,"y":196787},{"x":1607,"y":199774},{"x":1623,"y":200392},{"x":1639,"y":314563},{"x":1655,"y":262066},{"x":1671,"y":209222},{"x":1687,"y":226947},{"x":1703,"y":220845},{"x":1720,"y":213284},{"x":1737,"y":215702},{"x":1754,"y":216750},{"x":1771,"y":220403},{"x":1788,"y":284316},{"x":1805,"y":223626},{"x":1823,"y":227305},{"x":1841,"y":228578},{"x":1859,"y":239041},{"x":1877,"y":232629},{"x":1895,"y":235746},{"x":1913,"y":237841},{"x":1932,"y":247958},{"x":1951,"y":241808},{"x":1970,"y":244039},{"x":1989,"y":262272},{"x":2008,"y":299826},{"x":2028,"y":251925},{"x":2048,"y":252985},{"x":2068,"y":263185},{"x":2088,"y":259269},{"x":2108,"y":261423},{"x":2129,"y":264149},{"x":2150,"y":273893},{"x":2171,"y":269614},{"x":2192,"y":272895},{"x":2213,"y":274350},{"x":2235,"y":328048},{"x":2257,"y":279293},{"x":2279,"y":282805},{"x":2301,"y":412265},{"x":2324,"y":290628},{"x":2347,"y":294752},{"x":2370,"y":399050},{"x":2393,"y":374236},{"x":2416,"y":423645},{"x":2440,"y":304455},{"x":2464,"y":321136},{"x":2488,"y":353632},{"x":2512,"y":338241},{"x":2537,"y":377759},{"x":2562,"y":447700},{"x":2587,"y":385336},{"x":2612,"y":388524},{"x":2638,"y":349085},{"x":2664,"y":359518},{"x":2690,"y":341275},{"x":2716,"y":337378},{"x":2743,"y":340937},{"x":2770,"y":394252},{"x":2797,"y":346676},{"x":2824,"y":380496},{"x":2852,"y":387007},{"x":2880,"y":358540},{"x":2908,"y":418087},{"x":2937,"y":365092},{"x":2966,"y":367238},{"x":2995,"y":378768},{"x":3024,"y":389293},{"x":3054,"y":378432},{"x":3084,"y":502145},{"x":3114,"y":421993},{"x":3145,"y":426893},{"x":3176,"y":392875},{"x":3207,"y":397241},{"x":3239,"y":447986},{"x":3271,"y":435242},{"x":3303,"y":417006},{"x":3336,"y":413034},{"x":3369,"y":425572},{"x":3402,"y":421359},{"x":3436,"y":445440},{"x":3470,"y":435898},{"x":3504,"y":435214},{"x":3539,"y":491046},{"x":3574,"y":443133},{"x":3609,"y":455804},{"x":3645,"y":451334},{"x":3681,"y":510086},{"x":3717,"y":461242},{"x":3754,"y":538985},{"x":3791,"y":559346},{"x":3828,"y":615244},{"x":3866,"y":480652},{"x":3904,"y":492396},{"x":3943,"y":489320},{"x":3982,"y":546984},{"x":4021,"y":542050},{"x":4061,"y":521634},{"x":4101,"y":516916},{"x":4142,"y":514650},{"x":4183,"y":526130},{"x":4224,"y":538644},{"x":4266,"y":592435},{"x":4308,"y":532720},{"x":4351,"y":601217},{"x":4394,"y":563847},{"x":4437,"y":550352},{"x":4481,"y":591918},{"x":4525,"y":574938},{"x":4570,"y":669828},{"x":4615,"y":594727},{"x":4661,"y":645182},{"x":4707,"y":583321},{"x":4754,"y":598125},{"x":4801,"y":602322},{"x":4849,"y":601769},{"x":4897,"y":700851},{"x":4945,"y":637695},{"x":4994,"y":618954},{"x":5043,"y":734506},{"x":5093,"y":660806},{"x":5143,"y":638543},{"x":5194,"y":649240},{"x":5245,"y":729648},{"x":5297,"y":657133},{"x":5349,"y":822300},{"x":5402,"y":691279},{"x":5456,"y":731530},{"x":5510,"y":682736},{"x":5565,"y":708478},{"x":5620,"y":704949},{"x":5676,"y":710264},{"x":5732,"y":709191},{"x":5789,"y":740376},{"x":5846,"y":798081},{"x":5904,"y":792535},{"x":5963,"y":759314},{"x":6022,"y":814414},{"x":6082,"y":940570},{"x":6142,"y":850165},{"x":6203,"y":779998},{"x":6265,"y":973013},{"x":6327,"y":887969},{"x":6390,"y":814493},{"x":6453,"y":823876},{"x":6517,"y":816639},{"x":6582,"y":823124},{"x":6647,"y":880530},{"x":6713,"y":892000},{"x":6780,"y":868336},{"x":6847,"y":1009361},{"x":6915,"y":865438},{"x":6984,"y":893771},{"x":7053,"y":957013},{"x":7123,"y":909388},{"x":7194,"y":973393},{"x":7265,"y":955441},{"x":7337,"y":1021924},{"x":7410,"y":970354},{"x":7484,"y":965832},{"x":7558,"y":1230964},{"x":7633,"y":1016521},{"x":7709,"y":982581},{"x":7786,"y":973790},{"x":7863,"y":1044137},{"x":7941,"y":1038368},{"x":8020,"y":1064083},{"x":8100,"y":1063282},{"x":8181,"y":1034419},{"x":8262,"y":1237980},{"x":8344,"y":1148416},{"x":8427,"y":1142735},{"x":8511,"y":1118417},{"x":8596,"y":1072748},{"x":8681,"y":1101959},{"x":8767,"y":1318318},{"x":8854,"y":1189920},{"x":8942,"y":1176793},{"x":9031,"y":1306617},{"x":9121,"y":1198509},{"x":9212,"y":1153326},{"x":9304,"y":1166756},{"x":9397,"y":1191708},{"x":9490,"y":1220306},{"x":9584,"y":1216612},{"x":9679,"y":1255335},{"x":9775,"y":1474362},{"x":9872,"y":1322186},{"x":9970,"y":1505294},{"x":10069,"y":1260194},{"x":10169,"y":1277310},{"x":10270,"y":1341963},{"x":10372,"y":1306582},{"x":10475,"y":1350084},{"x":10579,"y":1471384},{"x":10684,"y":1443815},{"x":10790,"y":1373833},{"x":10897,"y":1390818},{"x":11005,"y":1444839},{"x":11115,"y":1485331},{"x":11226,"y":1711645},{"x":11338,"y":1524579},{"x":11451,"y":1619282},{"x":11565,"y":1443601},{"x":11680,"y":1519724},{"x":11796,"y":1615153},{"x":11913,"y":2513788},{"x":12032,"y":1714976},{"x":12152,"y":1588600},{"x":12273,"y":1653457},{"x":12395,"y":1785263},{"x":12518,"y":1623551},{"x":12643,"y":1805291},{"x":12769,"y":1645891},{"x":12896,"y":1733421},{"x":13024,"y":1625711},{"x":13154,"y":1755707},{"x":13285,"y":1714652},{"x":13417,"y":1880796},{"x":13551,"y":1706031},{"x":13686,"y":1912643},{"x":13822,"y":1780729},{"x":13960,"y":1779142},{"x":14099,"y":1830255},{"x":14239,"y":1972257},{"x":14381,"y":1866486},{"x":14524,"y":1904117},{"x":14669,"y":1937899},{"x":14815,"y":1994086},{"x":14963,"y":2122947},{"x":15112,"y":1966615},{"x":15263,"y":2138048},{"x":15415,"y":2019694},{"x":15569,"y":2079978},{"x":15724,"y":2044341},{"x":15881,"y":2130897},{"x":16039,"y":2168335},{"x":16199,"y":2153574},{"x":16360,"y":2245075},{"x":16523,"y":2187728},{"x":16688,"y":2098015},{"x":16854,"y":2240132},{"x":17022,"y":2287642},{"x":17192,"y":2341831},{"x":17363,"y":2455332},{"x":17536,"y":2239582},{"x":17711,"y":2387064},{"x":17888,"y":2497578},{"x":18066,"y":2293593},{"x":18246,"y":2417806},{"x":18428,"y":2394839},{"x":18612,"y":2972211},{"x":18798,"y":2366977},{"x":18985,"y":2521962},{"x":19174,"y":2636284},{"x":19365,"y":2641327},{"x":19558,"y":2492207},{"x":19753,"y":2718529},{"x":19950,"y":2728603},{"x":20149,"y":2695210},{"x":20350,"y":2572043},{"x":20553,"y":2764787},{"x":20758,"y":2860729},{"x":20965,"y":2915558},{"x":21174,"y":2771734},{"x":21385,"y":2862125},{"x":21598,"y":2945481},{"x":21813,"y":2802003},{"x":22031,"y":3004381},{"x":22251,"y":3190245},{"x":22473,"y":2846705},{"x":22697,"y":2897993},{"x":22923,"y":3214840},{"x":23152,"y":3096531},{"x":23383,"y":3114784},{"x":23616,"y":3321433},{"x":23852,"y":3210987},{"x":24090,"y":3140769},{"x":24330,"y":3175038},{"x":24573,"y":3399573},{"x":24818,"y":3358083},{"x":25066,"y":3246508},{"x":25316,"y":3449424},{"x":25569,"y":3316437},{"x":25824,"y":3459150},{"x":26082,"y":3559464},{"x":26342,"y":3378227},{"x":26605,"y":3538964},{"x":26871,"y":3696523},{"x":27139,"y":3631867},{"x":27410,"y":3726208},{"x":27684,"y":4278569},{"x":27960,"y":3578097},{"x":28239,"y":3829519},{"x":28521,"y":3832409},{"x":28806,"y":3940582},{"x":29094,"y":3851701},{"x":29384,"y":4025133},{"x":29677,"y":3998793},{"x":29973,"y":3846750},{"x":30272,"y":4168006},{"x":30574,"y":4042220},{"x":30879,"y":4241362},{"x":31187,"y":4161114},{"x":31498,"y":4120245},{"x":31812,"y":4380971},{"x":32130,"y":4255001},{"x":32451,"y":4418765},{"x":32775,"y":4399579},{"x":33102,"y":4443078},{"x":33433,"y":4513626},{"x":33767,"y":4518759},{"x":34104,"y":4730271},{"x":34445,"y":4574111},{"x":34789,"y":4765851},{"x":35136,"y":4608843},{"x":35487,"y":4892850},{"x":35841,"y":5073400},{"x":36199,"y":4973237},{"x":36560,"y":4717038}],"kde":[505,274,234,232,232,234,248,239,232,233,235,230,232,230,252,233,233,232,233,235,234,232,232,231,232,230,248,258,233,238,234,229,231,231,229,231,230,230,244,231,232,247,232,245,236,231,233,245,250,236,235,247,236,237,247,233,231,230,231,232,231,234,234,234,232,232,246,234,232,235,236,233,234,233,236,234,232,233,245,231,247,232,245,233,233,233,229,234,231,237,233,232,234,254,232,228,229,232,234,246,229,232,230,228,231,230,229,231,233,226,243,230,228,229,232,233,228,231,230,231,230,231,233,234,242,256,233,235,245,230,234,231,231,231,244,232,234,233,243,233,233,236,239,235,236,247,234,234,232,231,247,231,229,245,232,235,235,230,231,234,233,234,232,233,244,236,232,233,233,246,230,241,239,245,234,234,230,232,234,232,234,230,233,237,238,230,232,236,243,230,232,228,230,231,232,233,232,232,232,231,233,232,232,241,230,228,234,244,232,231,232,230,232,233,234,232,233,243,231,231,233,230,231,232,235,237,234,232,232,233,231,232,233,242,231,230,242,232,231,229,246,231,232,233,232,241,227,232,232,231,233,233,232,250,235,231,240,227,231,231,241,229,231,258,261,229,230,230,232,231,232,229,230,229,229,230,228,241,229,228,228,241,235,228,232,235,232,231,248,229,230,230,230,227,230,243,226,248,236,231,229,241,229,231,248,231,234,230,240,230,303,325,361,7480,467,236,237,231,248,231,233,248,233,249,235,244,239,235,229,240,235,231,228,242,231,230,245,235,233,233,232,233,238,233,232,240,231,231,240,235,231,233,227,244,231,231,230,229,232,235,232,231,233,231,236,233,245,236,245,229,237,234,233,229,231,243,231,231,232,237,241,233,232,249,234,246,237,235,230,236,231,234,232,231,26099,292,274,255,257,257,254,270,261,256,250,270,251,250,269,253,255,251,253,270,251,267,252,255,250,267,250,254,252,265,261,252,257,259,256,253,253,253,252,253,252,254,267,252,266,252,257,254,265,262,255,253,257,252,250,260,263,268,255,255,253,256,267,258,254,260,263,252,260,251,254,257,254,254,257,254,250,252,263,255,254,253,253,253,256,254,255,272,271,253,262,251,267,261,256,251,251,261,248,254,267,256,269,258,272,270,273,252,252,275,253,252,258,265,253,255,253,253,253,266,251,266,252,13222,240,239,232,247,241,232,233,247,233,229,247,232,229,227,230,231,231,231,232,232,263,248,230,243,242,228,235,271,234,238,231,243,232,230,230,231,231,232,240,245,227,229,241,229,231,244,227,226,231,229,232,242,230,230,227,242,233,228,228,239,229,241,231,226,244,228,229,241,244,226,229,227,255,231,231,231,241,229,243,229,230,230,226,248,231,231,235,231,235,231,235,231,230,230,232,234,230,245,232,244,229,228,254,264,235,235,229,231,255,241,227,229,243,231,229,228,230,230,245,231,230,232,229,232,245,245,229,238,233,233,229,229,246,235,243,229,230,232,244,229,242,232,229,258,229,227,236,249,232,235,233,234,234,246,234,231,232,244,231,233,232,242,238,232,234,251,229,243,234,243,237,245,233,234,237,237,232,235,241,257,233,247,231,244,239,232,231,248,230,231,233,232,234,233,234,243,249,239,233,230,249,230,231,235,232,232,237,230,231,230,235,234,232,231,231,234,244,233,232,234,234,232,238,244,243,243,235,231,230,231,232,230,243,231,245,234,233,234,245,228,228,237,231,230,234,233,242,232,232,230,231,244,231,232,229,234,248,234,229,242,274,254,229,239,231,232,240,237,244,232,230,245,231,232,230,234,243,233,230,239,245,235,242,233,233,238,236,233,231,229,230,230,229,230,241,228,230,228,246,231,230,240,240,230,235,231,231,230,257,240,229,229,228,226,230,231,230,239,230,247,237,231,231,236,242,229,231,234,239,240,248,232,235,230,231,231,232,232,231,239,236,230,247,232,233,233,236,233,233,231,246,231,230,247,234,263,249,232,235,228,229,235,232,232,237,231,229,244,230,230,246,231,236,230,239,243,230,244,231,228,236,231,229,242,232,230,231,232,241,232,235,233,244,236,234,230,243,235,230,251,246,231,251,233,246,231,247,232,230,231,232,245,230,232,233,250,234,232,239,242,231,237,231,241,249,230,231,231,244,230,229,228,231,236,241,229,229,258,253,230,237,228,230,240,232,232,234,232,230,252,240,230,233,238,232,231,237,243,233,236,232,241,237,230,229,231,251,247,230,233,232,243,236,231,232,238,232,234,235,230,231,234],"result":{"estimate":134.6130268712643,"r_square":0.9967101290272501}},{"name":"Routes bench/Parse.com/Parse 2 params","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":723,"time":503186865},"dataset":[{"x":1,"y":2684},{"x":2,"y":777},{"x":3,"y":690},{"x":4,"y":866},{"x":5,"y":1025},{"x":6,"y":1251},{"x":7,"y":1402},{"x":8,"y":1562},{"x":9,"y":1766},{"x":10,"y":1973},{"x":11,"y":2192},{"x":12,"y":2445},{"x":13,"y":2467},{"x":14,"y":2625},{"x":15,"y":2874},{"x":16,"y":3181},{"x":17,"y":3182},{"x":18,"y":16975},{"x":19,"y":3228},{"x":20,"y":3364},{"x":21,"y":3539},{"x":22,"y":3852},{"x":23,"y":3906},{"x":24,"y":4073},{"x":25,"y":4074},{"x":26,"y":4757},{"x":27,"y":4617},{"x":28,"y":23669},{"x":29,"y":5794},{"x":30,"y":5470},{"x":31,"y":5870},{"x":32,"y":5860},{"x":33,"y":6055},{"x":34,"y":6491},{"x":35,"y":6508},{"x":36,"y":6801},{"x":37,"y":6817},{"x":38,"y":6985},{"x":39,"y":7269},{"x":40,"y":7457},{"x":41,"y":7494},{"x":42,"y":7847},{"x":43,"y":7751},{"x":44,"y":7982},{"x":45,"y":22083},{"x":46,"y":7803},{"x":47,"y":7763},{"x":48,"y":8218},{"x":49,"y":8010},{"x":50,"y":8111},{"x":51,"y":8405},{"x":52,"y":8897},{"x":53,"y":8865},{"x":54,"y":8876},{"x":55,"y":9186},{"x":56,"y":9255},{"x":57,"y":9345},{"x":58,"y":9460},{"x":59,"y":9897},{"x":60,"y":9841},{"x":61,"y":10185},{"x":62,"y":10588},{"x":63,"y":10516},{"x":64,"y":12461},{"x":65,"y":10800},{"x":66,"y":11010},{"x":67,"y":34675},{"x":68,"y":11479},{"x":69,"y":11536},{"x":70,"y":11634},{"x":71,"y":11582},{"x":72,"y":12324},{"x":73,"y":12186},{"x":74,"y":12058},{"x":75,"y":12420},{"x":76,"y":12571},{"x":77,"y":12658},{"x":78,"y":13203},{"x":79,"y":13601},{"x":80,"y":22448},{"x":81,"y":13191},{"x":82,"y":13569},{"x":83,"y":13728},{"x":84,"y":13882},{"x":85,"y":13903},{"x":86,"y":16078},{"x":87,"y":14200},{"x":88,"y":14276},{"x":89,"y":14442},{"x":90,"y":14616},{"x":91,"y":14832},{"x":92,"y":14928},{"x":93,"y":15191},{"x":94,"y":15350},{"x":95,"y":15552},{"x":96,"y":15469},{"x":97,"y":15964},{"x":98,"y":16116},{"x":99,"y":16094},{"x":100,"y":16323},{"x":101,"y":16370},{"x":102,"y":16876},{"x":103,"y":16752},{"x":104,"y":16781},{"x":105,"y":16964},{"x":106,"y":18824},{"x":107,"y":17506},{"x":108,"y":17841},{"x":109,"y":17778},{"x":110,"y":18007},{"x":111,"y":18385},{"x":112,"y":18260},{"x":113,"y":18572},{"x":114,"y":18425},{"x":115,"y":19040},{"x":116,"y":18938},{"x":117,"y":18887},{"x":118,"y":19061},{"x":119,"y":19422},{"x":120,"y":19308},{"x":121,"y":19537},{"x":122,"y":19782},{"x":123,"y":21055},{"x":124,"y":19931},{"x":125,"y":19979},{"x":126,"y":20085},{"x":127,"y":20380},{"x":128,"y":20409},{"x":129,"y":20635},{"x":130,"y":20745},{"x":131,"y":20961},{"x":132,"y":21197},{"x":133,"y":21290},{"x":134,"y":21495},{"x":135,"y":29508},{"x":136,"y":22027},{"x":137,"y":23184},{"x":138,"y":22090},{"x":139,"y":22384},{"x":140,"y":22502},{"x":141,"y":22700},{"x":142,"y":22817},{"x":143,"y":23035},{"x":144,"y":23115},{"x":145,"y":23275},{"x":146,"y":23492},{"x":147,"y":23703},{"x":148,"y":23874},{"x":149,"y":23953},{"x":150,"y":24982},{"x":151,"y":24243},{"x":152,"y":24297},{"x":153,"y":24567},{"x":154,"y":24660},{"x":155,"y":24869},{"x":156,"y":24943},{"x":157,"y":25052},{"x":158,"y":25317},{"x":159,"y":25500},{"x":160,"y":25505},{"x":161,"y":25851},{"x":162,"y":25981},{"x":163,"y":26379},{"x":164,"y":26427},{"x":165,"y":26461},{"x":166,"y":26693},{"x":167,"y":26739},{"x":168,"y":27021},{"x":169,"y":27230},{"x":170,"y":27285},{"x":171,"y":27438},{"x":172,"y":27569},{"x":173,"y":27766},{"x":174,"y":35928},{"x":175,"y":28107},{"x":176,"y":28243},{"x":177,"y":28546},{"x":178,"y":28637},{"x":179,"y":28885},{"x":180,"y":28911},{"x":181,"y":29114},{"x":182,"y":29391},{"x":183,"y":29427},{"x":184,"y":29525},{"x":185,"y":31324},{"x":186,"y":29982},{"x":187,"y":29999},{"x":188,"y":30161},{"x":189,"y":30165},{"x":190,"y":30419},{"x":191,"y":30476},{"x":192,"y":30656},{"x":193,"y":30890},{"x":194,"y":31242},{"x":195,"y":31769},{"x":196,"y":31209},{"x":197,"y":31638},{"x":198,"y":31549},{"x":199,"y":31640},{"x":200,"y":31885},{"x":202,"y":32118},{"x":204,"y":32784},{"x":206,"y":33127},{"x":208,"y":34424},{"x":210,"y":40840},{"x":212,"y":33763},{"x":214,"y":34216},{"x":216,"y":34433},{"x":218,"y":34906},{"x":220,"y":35298},{"x":222,"y":35561},{"x":224,"y":35865},{"x":226,"y":37489},{"x":228,"y":36527},{"x":230,"y":37003},{"x":232,"y":37229},{"x":234,"y":37474},{"x":236,"y":37865},{"x":238,"y":38249},{"x":240,"y":38257},{"x":242,"y":39537},{"x":244,"y":39013},{"x":246,"y":39226},{"x":248,"y":39602},{"x":250,"y":39923},{"x":252,"y":42002},{"x":254,"y":42296},{"x":256,"y":58061},{"x":258,"y":41970},{"x":260,"y":51010},{"x":262,"y":70425},{"x":264,"y":47418},{"x":266,"y":58265},{"x":268,"y":42878},{"x":270,"y":43183},{"x":272,"y":45180},{"x":274,"y":44100},{"x":276,"y":44204},{"x":278,"y":44766},{"x":280,"y":44791},{"x":282,"y":45123},{"x":284,"y":45488},{"x":286,"y":46737},{"x":288,"y":46283},{"x":290,"y":46432},{"x":292,"y":46739},{"x":294,"y":46938},{"x":296,"y":47417},{"x":298,"y":47570},{"x":300,"y":56243},{"x":303,"y":48865},{"x":306,"y":49185},{"x":309,"y":49390},{"x":312,"y":50056},{"x":315,"y":50380},{"x":318,"y":51763},{"x":321,"y":51402},{"x":324,"y":51851},{"x":327,"y":52159},{"x":330,"y":52648},{"x":333,"y":53052},{"x":336,"y":54796},{"x":339,"y":53836},{"x":342,"y":54442},{"x":345,"y":54832},{"x":348,"y":55327},{"x":351,"y":57544},{"x":354,"y":56486},{"x":357,"y":65533},{"x":360,"y":57820},{"x":363,"y":58137},{"x":366,"y":58700},{"x":369,"y":61401},{"x":372,"y":59431},{"x":375,"y":59996},{"x":378,"y":75192},{"x":381,"y":62346},{"x":384,"y":63391},{"x":387,"y":63284},{"x":390,"y":63629},{"x":393,"y":64016},{"x":396,"y":64752},{"x":399,"y":66153},{"x":402,"y":96333},{"x":406,"y":83622},{"x":410,"y":66871},{"x":414,"y":68712},{"x":418,"y":68278},{"x":422,"y":68658},{"x":426,"y":69652},{"x":430,"y":70175},{"x":434,"y":72093},{"x":438,"y":71261},{"x":442,"y":71722},{"x":446,"y":72544},{"x":450,"y":73871},{"x":454,"y":126085},{"x":458,"y":93461},{"x":462,"y":75243},{"x":466,"y":77055},{"x":470,"y":76979},{"x":474,"y":77503},{"x":478,"y":78183},{"x":482,"y":79739},{"x":486,"y":79497},{"x":490,"y":80053},{"x":494,"y":80498},{"x":498,"y":81859},{"x":502,"y":90035},{"x":507,"y":90724},{"x":512,"y":165761},{"x":517,"y":93313},{"x":522,"y":134288},{"x":527,"y":85749},{"x":532,"y":122901},{"x":537,"y":89114},{"x":542,"y":88431},{"x":547,"y":128051},{"x":552,"y":109291},{"x":557,"y":90736},{"x":562,"y":104092},{"x":567,"y":92855},{"x":572,"y":94228},{"x":577,"y":94530},{"x":582,"y":107822},{"x":587,"y":94326},{"x":592,"y":94812},{"x":597,"y":150702},{"x":602,"y":111810},{"x":608,"y":96709},{"x":614,"y":98176},{"x":620,"y":99930},{"x":626,"y":99609},{"x":632,"y":100604},{"x":638,"y":102382},{"x":644,"y":102398},{"x":650,"y":111924},{"x":656,"y":119636},{"x":662,"y":105327},{"x":668,"y":106970},{"x":674,"y":108475},{"x":680,"y":108993},{"x":686,"y":110083},{"x":692,"y":111338},{"x":698,"y":111186},{"x":704,"y":124265},{"x":711,"y":115117},{"x":718,"y":114733},{"x":725,"y":115926},{"x":732,"y":117686},{"x":739,"y":132836},{"x":746,"y":121862},{"x":753,"y":122454},{"x":760,"y":164738},{"x":767,"y":140785},{"x":774,"y":127476},{"x":781,"y":130455},{"x":788,"y":128270},{"x":795,"y":129766},{"x":802,"y":131348},{"x":810,"y":173091},{"x":818,"y":149056},{"x":826,"y":167663},{"x":834,"y":154303},{"x":842,"y":195209},{"x":850,"y":210227},{"x":858,"y":185078},{"x":866,"y":188378},{"x":874,"y":168947},{"x":882,"y":144525},{"x":890,"y":147319},{"x":898,"y":179085},{"x":906,"y":163846},{"x":915,"y":150764},{"x":924,"y":152296},{"x":933,"y":151864},{"x":942,"y":153641},{"x":951,"y":164164},{"x":960,"y":204220},{"x":969,"y":157865},{"x":978,"y":205564},{"x":987,"y":182763},{"x":996,"y":164537},{"x":1005,"y":163322},{"x":1015,"y":166299},{"x":1025,"y":267382},{"x":1035,"y":210405},{"x":1045,"y":184468},{"x":1055,"y":173724},{"x":1065,"y":193516},{"x":1075,"y":225668},{"x":1085,"y":193411},{"x":1095,"y":190072},{"x":1105,"y":178043},{"x":1116,"y":178124},{"x":1127,"y":187877},{"x":1138,"y":181164},{"x":1149,"y":183383},{"x":1160,"y":186206},{"x":1171,"y":186861},{"x":1182,"y":189141},{"x":1193,"y":197728},{"x":1204,"y":193651},{"x":1216,"y":195713},{"x":1228,"y":195614},{"x":1240,"y":197866},{"x":1252,"y":208192},{"x":1264,"y":201105},{"x":1276,"y":204794},{"x":1288,"y":208753},{"x":1300,"y":228612},{"x":1313,"y":209725},{"x":1326,"y":213027},{"x":1339,"y":214401},{"x":1352,"y":215534},{"x":1365,"y":268937},{"x":1378,"y":242210},{"x":1391,"y":231086},{"x":1404,"y":235143},{"x":1418,"y":244836},{"x":1432,"y":249511},{"x":1446,"y":235830},{"x":1460,"y":237742},{"x":1474,"y":249420},{"x":1488,"y":242076},{"x":1502,"y":273392},{"x":1517,"y":261846},{"x":1532,"y":307426},{"x":1547,"y":252267},{"x":1562,"y":254709},{"x":1577,"y":266497},{"x":1592,"y":357023},{"x":1607,"y":275370},{"x":1623,"y":268726},{"x":1639,"y":261986},{"x":1655,"y":265765},{"x":1671,"y":265915},{"x":1687,"y":313266},{"x":1703,"y":326719},{"x":1720,"y":276889},{"x":1737,"y":327061},{"x":1754,"y":354212},{"x":1771,"y":316786},{"x":1788,"y":425926},{"x":1805,"y":315395},{"x":1823,"y":308694},{"x":1841,"y":343924},{"x":1859,"y":351708},{"x":1877,"y":317270},{"x":1895,"y":377596},{"x":1913,"y":305922},{"x":1932,"y":338842},{"x":1951,"y":416892},{"x":1970,"y":390894},{"x":1989,"y":384679},{"x":2008,"y":320602},{"x":2028,"y":340325},{"x":2048,"y":357850},{"x":2068,"y":370060},{"x":2088,"y":362376},{"x":2108,"y":337549},{"x":2129,"y":497670},{"x":2150,"y":345468},{"x":2171,"y":398780},{"x":2192,"y":383987},{"x":2213,"y":353152},{"x":2235,"y":367046},{"x":2257,"y":361069},{"x":2279,"y":363300},{"x":2301,"y":376018},{"x":2324,"y":371202},{"x":2347,"y":383253},{"x":2370,"y":378036},{"x":2393,"y":399824},{"x":2416,"y":393645},{"x":2440,"y":391860},{"x":2464,"y":440289},{"x":2488,"y":426473},{"x":2512,"y":427504},{"x":2537,"y":432030},{"x":2562,"y":444315},{"x":2587,"y":476923},{"x":2612,"y":427511},{"x":2638,"y":502643},{"x":2664,"y":442086},{"x":2690,"y":723296},{"x":2716,"y":626008},{"x":2743,"y":439092},{"x":2770,"y":462614},{"x":2797,"y":447631},{"x":2824,"y":501030},{"x":2852,"y":472674},{"x":2880,"y":467641},{"x":2908,"y":466384},{"x":2937,"y":474235},{"x":2966,"y":488747},{"x":2995,"y":495378},{"x":3024,"y":493465},{"x":3054,"y":549425},{"x":3084,"y":518875},{"x":3114,"y":517103},{"x":3145,"y":512547},{"x":3176,"y":527901},{"x":3207,"y":577881},{"x":3239,"y":582566},{"x":3271,"y":666767},{"x":3303,"y":560707},{"x":3336,"y":549231},{"x":3369,"y":584108},{"x":3402,"y":557063},{"x":3436,"y":575955},{"x":3470,"y":573969},{"x":3504,"y":570384},{"x":3539,"y":599598},{"x":3574,"y":581288},{"x":3609,"y":708151},{"x":3645,"y":757526},{"x":3681,"y":623289},{"x":3717,"y":688217},{"x":3754,"y":690172},{"x":3791,"y":691214},{"x":3828,"y":864269},{"x":3866,"y":746361},{"x":3904,"y":632286},{"x":3943,"y":651503},{"x":3982,"y":637282},{"x":4021,"y":722801},{"x":4061,"y":656750},{"x":4101,"y":677752},{"x":4142,"y":731238},{"x":4183,"y":760569},{"x":4224,"y":739498},{"x":4266,"y":695676},{"x":4308,"y":772208},{"x":4351,"y":910703},{"x":4394,"y":804724},{"x":4437,"y":862447},{"x":4481,"y":723081},{"x":4525,"y":825875},{"x":4570,"y":822578},{"x":4615,"y":752428},{"x":4661,"y":753817},{"x":4707,"y":775869},{"x":4754,"y":821508},{"x":4801,"y":804423},{"x":4849,"y":815398},{"x":4897,"y":876693},{"x":4945,"y":986912},{"x":4994,"y":821838},{"x":5043,"y":828953},{"x":5093,"y":900137},{"x":5143,"y":848126},{"x":5194,"y":852502},{"x":5245,"y":892089},{"x":5297,"y":908393},{"x":5349,"y":860561},{"x":5402,"y":892098},{"x":5456,"y":976783},{"x":5510,"y":1298480},{"x":5565,"y":920207},{"x":5620,"y":903232},{"x":5676,"y":912296},{"x":5732,"y":921415},{"x":5789,"y":1022698},{"x":5846,"y":1019925},{"x":5904,"y":1004886},{"x":5963,"y":984112},{"x":6022,"y":1076968},{"x":6082,"y":1192731},{"x":6142,"y":1027511},{"x":6203,"y":1108853},{"x":6265,"y":1071011},{"x":6327,"y":1074674},{"x":6390,"y":1128105},{"x":6453,"y":1400263},{"x":6517,"y":1188556},{"x":6582,"y":1127545},{"x":6647,"y":1332472},{"x":6713,"y":1099530},{"x":6780,"y":1133819},{"x":6847,"y":1143157},{"x":6915,"y":1170951},{"x":6984,"y":1272139},{"x":7053,"y":1148488},{"x":7123,"y":1234759},{"x":7194,"y":1350605},{"x":7265,"y":1237330},{"x":7337,"y":1322477},{"x":7410,"y":1352773},{"x":7484,"y":1333040},{"x":7558,"y":1273430},{"x":7633,"y":1304436},{"x":7709,"y":1481936},{"x":7786,"y":1391432},{"x":7863,"y":1263180},{"x":7941,"y":1432641},{"x":8020,"y":1375959},{"x":8100,"y":1369838},{"x":8181,"y":1439309},{"x":8262,"y":1569389},{"x":8344,"y":1594092},{"x":8427,"y":1413590},{"x":8511,"y":1384765},{"x":8596,"y":1401768},{"x":8681,"y":1548250},{"x":8767,"y":1514457},{"x":8854,"y":1721459},{"x":8942,"y":1529734},{"x":9031,"y":1462466},{"x":9121,"y":1587594},{"x":9212,"y":1799875},{"x":9304,"y":1655701},{"x":9397,"y":1768098},{"x":9490,"y":1532336},{"x":9584,"y":1718679},{"x":9679,"y":1593984},{"x":9775,"y":1611009},{"x":9872,"y":1739992},{"x":9970,"y":1926566},{"x":10069,"y":1670056},{"x":10169,"y":1866217},{"x":10270,"y":1724175},{"x":10372,"y":1725220},{"x":10475,"y":1880813},{"x":10579,"y":1874078},{"x":10684,"y":1864161},{"x":10790,"y":1828638},{"x":10897,"y":1881526},{"x":11005,"y":1868809},{"x":11115,"y":2380972},{"x":11226,"y":1813171},{"x":11338,"y":1874082},{"x":11451,"y":2051115},{"x":11565,"y":1962617},{"x":11680,"y":2142344},{"x":11796,"y":1942778},{"x":11913,"y":1997536},{"x":12032,"y":2269300},{"x":12152,"y":2124016},{"x":12273,"y":2255182},{"x":12395,"y":2056131},{"x":12518,"y":2091417},{"x":12643,"y":2185610},{"x":12769,"y":2313400},{"x":12896,"y":2176289},{"x":13024,"y":2329613},{"x":13154,"y":2263739},{"x":13285,"y":2326498},{"x":13417,"y":2479957},{"x":13551,"y":2192255},{"x":13686,"y":2393860},{"x":13822,"y":2331684},{"x":13960,"y":2684711},{"x":14099,"y":2287784},{"x":14239,"y":2413987},{"x":14381,"y":2517113},{"x":14524,"y":2579931},{"x":14669,"y":2443509},{"x":14815,"y":2664521},{"x":14963,"y":3059127},{"x":15112,"y":2781121},{"x":15263,"y":2482498},{"x":15415,"y":2586126},{"x":15569,"y":2567794},{"x":15724,"y":2794580},{"x":15881,"y":2958359},{"x":16039,"y":2624130},{"x":16199,"y":2933074},{"x":16360,"y":2792053},{"x":16523,"y":2797448},{"x":16688,"y":2852581},{"x":16854,"y":3260730},{"x":17022,"y":2837150},{"x":17192,"y":2930064},{"x":17363,"y":3132111},{"x":17536,"y":2967700},{"x":17711,"y":3341118},{"x":17888,"y":3200025},{"x":18066,"y":2972967},{"x":18246,"y":3117694},{"x":18428,"y":3340311},{"x":18612,"y":3336918},{"x":18798,"y":3134428},{"x":18985,"y":3435127},{"x":19174,"y":3192835},{"x":19365,"y":3367810},{"x":19558,"y":3621506},{"x":19753,"y":3325113},{"x":19950,"y":3336174},{"x":20149,"y":3637491},{"x":20350,"y":3509711},{"x":20553,"y":3803307},{"x":20758,"y":3596837},{"x":20965,"y":3483267},{"x":21174,"y":3560777},{"x":21385,"y":3801962},{"x":21598,"y":3865042},{"x":21813,"y":3953986},{"x":22031,"y":3807440},{"x":22251,"y":3783742},{"x":22473,"y":4097006},{"x":22697,"y":3720561},{"x":22923,"y":4368940},{"x":23152,"y":3893823},{"x":23383,"y":4258596},{"x":23616,"y":4156849},{"x":23852,"y":4000439},{"x":24090,"y":4336140},{"x":24330,"y":4283697},{"x":24573,"y":4078847},{"x":24818,"y":4381472},{"x":25066,"y":4391321},{"x":25316,"y":4732676},{"x":25569,"y":4417787},{"x":25824,"y":6325623},{"x":26082,"y":4737648},{"x":26342,"y":4860929},{"x":26605,"y":4433760},{"x":26871,"y":4653354},{"x":27139,"y":4954331},{"x":27410,"y":4890887},{"x":27684,"y":4819430},{"x":27960,"y":5979715}],"kde":[565,295,293,302,271,273,267,266,281,271,269,271,273,270,271,269,283,271,273,270,267,267,271,271,269,263,296,274,275,276,280,277,272,272,270,287,274,272,268,268,268,269,266,267,270,270,283,264,269,289,267,269,266,269,272,267,266,264,269,273,266,278,281,272,263,264,271,267,263,269,267,271,265,280,269,274,271,270,283,268,275,269,265,271,266,272,296,313,274,274,270,270,270,273,275,269,270,275,278,271,271,268,275,272,273,279,283,273,281,270,277,270,277,274,287,286,285,274,273,273,285,285,270,270,269,267,271,270,274,267,269,267,270,271,267,268,264,266,275,298,273,270,274,279,266,270,269,267,274,273,272,280,268,270,269,271,267,269,270,284,268,269,268,278,271,269,270,280,269,269,270,278,270,271,281,273,266,266,278,265,267,267,267,269,272,270,268,267,270,274,272,293,269,271,269,273,269,271,278,269,270,274,268,269,283,268,268,278,283,282,268,264,267,274,264,266,270,266,268,269,264,271,266,267,269,278,265,264,283,265,264,269,268,268,268,279,271,270,264,301,266,270,292,292,266,271,283,268,267,282,267,267,282,268,270,269,282,267,265,275,273,268,271,267,271,269,269,269,276,270,267,283,280,275,285,283,272,270,273,275,272,284,273,275,288,283,271,270,268,271,272,266,285,270,269,267,281,273,280,271,271,269,281,271,271,271,278,269,268,265,281,271,267,267,272,265,273,283,286,276,267,267,267,280,280,266,268,272,263,264,281,279,270,284,272,282,267,263,283,272,270,291,277,269,267,279,266,282,269,282,296,267,290,273,269,297,285,268,266,280,273,266,263,269,283,270,278,286,269,269,267,268,279,277,288,272,273,271,274,270,274,273,268,270,278,289,282,284,272,269,285,272,271,270,266,266,268,273,271,291,288,270,268,273,279,267,270,272,278,268,270,284,274,269,272,290,270,269,268,279,269,282,267,270,268,279,271,274,271,277,272,280,270,273,270,277,266,267,267,269,263,268,281,267,268,266,268,268,268,267,269,267,265,270,271,284,281,267,279,288,274,270,271,283,269,282,279,268,265,267,277,267,273,269,282,270,270,272,269,281,265,270,267,270,269,277,268,266,305,270,269,270,275,285,270,270,271,271,285,272,269,268,269,283,272,268,286,285,275,357,381,489,7599,298,300,272,275,283,268,276,266,267,266,264,269,270,270,268,268,271,268,282,268,269,275,266,269,292,268,271,270,276,267,273,262,260,270,276,271,279,265,287,287,267,265,272,280,264,285,274,270,287,271,273,323,269,283,269,279,274,272,274,274,269,268,287,267,271,269,272,268,272,279,268,266,269,286,268,270,274,271,271,272,269,267,280,271,268,269,269,280,271,282,271,262,295,270,271,270,280,282,269,275,271,280,273,281,271,273,265,271,270,278,267,269,269,296,277,269,285,271,272,283,284,271,271,282,269,280,310,270,277,280,267,279,271,266,287,270,265,272,271,270,271,269,287,270,272,270,266,267,266,266,273,268,283,268,274,268,268,284,284,267,271,270,283,275,267,269,271,279,271,291,271,282,265,269,282,270,288,270,265,267,273,268,267,271,284,278,112715,365,273,270,274,271,278,299,286,274,272,272,269,267,268,295,266,266,269,283,291,265,264,278,270,268,272,280,269,273,266,277,289,265,272,274,267,272,269,268,268,269,270,283,274,267,283,269,266,277,289,270,277,286,266,281,274,281,273,272,276,275,269,271,272,273,283,272,283,273,269,265,284,269,271,276,285,271,280,284,269,287,268,279,271,269,278,269,270,282,270,272,271,272,267,270,281,272,270,272,269,277,321,269,275,292,278,280,268,266,277,280,269,273,292,271,282,268,280,265,262,271,268,269,267,266,263,266,272,270,274,283,267,282,271,269,293,268,269,279,269,286,271,272,267,271,275,269,271,269,272,269,267,275,271,271,277,272,271,274,271,267,276,271,267,276,263,267,291,261,272,267,273,267,286,270,268,279,266,283,270,269,291,272,267,276,280,265,273,268,281,281,267,265,318,267,268,276,271,267,280,270,267,277,276,265,266,267,266,282,268,293,290,269,276,277,269,296,289,268,288,264,287,277,293,279,268,281,263,272,268,269,270,270,273,289,288,275,269,267,284,273,267,268,285,270,279,268,279,286,268,274,291,282,272,265,265,277,265,267,269,268,279,276,269,293,269,268,271,290,272,267,275,271,269,293,269,271,272,272,270,269,282,268,285,283,270,270,293,268,279,272,286,273,269,274,279,269,293,293,268],"result":{"estimate":177.4077696612262,"r_square":0.9919160217117682}},{"name":"Routes bench/Parse.com/Parse static","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":777,"time":503623680},"dataset":[{"x":1,"y":913},{"x":2,"y":510},{"x":3,"y":423},{"x":4,"y":485},{"x":5,"y":573},{"x":6,"y":678},{"x":7,"y":749},{"x":8,"y":856},{"x":9,"y":947},{"x":10,"y":1046},{"x":11,"y":1123},{"x":12,"y":1228},{"x":13,"y":1298},{"x":14,"y":1462},{"x":15,"y":1521},{"x":16,"y":1593},{"x":17,"y":1684},{"x":18,"y":1806},{"x":19,"y":1894},{"x":20,"y":2071},{"x":21,"y":2079},{"x":22,"y":2138},{"x":23,"y":2315},{"x":24,"y":2356},{"x":25,"y":2456},{"x":26,"y":2521},{"x":27,"y":2646},{"x":28,"y":2725},{"x":29,"y":2808},{"x":30,"y":2948},{"x":31,"y":2989},{"x":32,"y":3071},{"x":33,"y":3243},{"x":34,"y":3387},{"x":35,"y":3364},{"x":36,"y":3447},{"x":37,"y":3565},{"x":38,"y":3653},{"x":39,"y":3737},{"x":40,"y":3989},{"x":41,"y":3902},{"x":42,"y":4094},{"x":43,"y":4091},{"x":44,"y":4187},{"x":45,"y":4292},{"x":46,"y":4382},{"x":47,"y":4498},{"x":48,"y":4691},{"x":49,"y":4721},{"x":50,"y":4773},{"x":51,"y":4885},{"x":52,"y":4964},{"x":53,"y":5111},{"x":54,"y":5177},{"x":55,"y":5255},{"x":56,"y":5395},{"x":57,"y":5456},{"x":58,"y":5531},{"x":59,"y":5623},{"x":60,"y":5823},{"x":61,"y":5850},{"x":62,"y":5927},{"x":63,"y":5989},{"x":64,"y":6123},{"x":65,"y":6321},{"x":66,"y":6447},{"x":67,"y":6330},{"x":68,"y":6435},{"x":69,"y":6575},{"x":70,"y":6668},{"x":71,"y":6768},{"x":72,"y":6789},{"x":73,"y":6994},{"x":74,"y":7111},{"x":75,"y":7116},{"x":76,"y":7180},{"x":77,"y":7299},{"x":78,"y":7377},{"x":79,"y":7544},{"x":80,"y":7744},{"x":81,"y":7811},{"x":82,"y":7841},{"x":83,"y":7984},{"x":84,"y":7980},{"x":85,"y":8108},{"x":86,"y":8375},{"x":87,"y":8300},{"x":88,"y":8427},{"x":89,"y":8531},{"x":90,"y":8666},{"x":91,"y":8667},{"x":92,"y":8649},{"x":93,"y":8858},{"x":94,"y":9014},{"x":95,"y":9113},{"x":96,"y":11966},{"x":97,"y":9353},{"x":98,"y":9619},{"x":99,"y":26525},{"x":100,"y":9552},{"x":101,"y":9600},{"x":102,"y":9836},{"x":103,"y":9907},{"x":104,"y":9728},{"x":105,"y":10059},{"x":106,"y":9974},{"x":107,"y":10092},{"x":108,"y":11653},{"x":109,"y":10319},{"x":110,"y":10386},{"x":111,"y":10489},{"x":112,"y":10658},{"x":113,"y":10759},{"x":114,"y":10988},{"x":115,"y":10963},{"x":116,"y":10937},{"x":117,"y":11265},{"x":118,"y":11112},{"x":119,"y":47043},{"x":120,"y":12596},{"x":121,"y":12820},{"x":122,"y":12933},{"x":123,"y":13054},{"x":124,"y":24704},{"x":125,"y":11823},{"x":126,"y":11949},{"x":127,"y":12066},{"x":128,"y":12162},{"x":129,"y":12329},{"x":130,"y":12388},{"x":131,"y":12536},{"x":132,"y":12766},{"x":133,"y":13419},{"x":134,"y":12883},{"x":135,"y":12889},{"x":136,"y":13071},{"x":137,"y":13046},{"x":138,"y":13279},{"x":139,"y":13216},{"x":140,"y":13427},{"x":141,"y":13382},{"x":142,"y":13572},{"x":143,"y":13541},{"x":144,"y":13830},{"x":145,"y":13782},{"x":146,"y":13914},{"x":147,"y":13892},{"x":148,"y":14105},{"x":149,"y":14370},{"x":150,"y":14231},{"x":151,"y":14506},{"x":152,"y":14398},{"x":153,"y":14558},{"x":154,"y":15366},{"x":155,"y":14496},{"x":156,"y":14582},{"x":157,"y":14750},{"x":158,"y":14953},{"x":159,"y":15090},{"x":160,"y":15175},{"x":161,"y":15234},{"x":162,"y":15241},{"x":163,"y":15402},{"x":164,"y":15466},{"x":165,"y":15497},{"x":166,"y":15551},{"x":167,"y":15801},{"x":168,"y":15856},{"x":169,"y":16022},{"x":170,"y":16040},{"x":171,"y":16148},{"x":172,"y":17231},{"x":173,"y":16371},{"x":174,"y":16393},{"x":175,"y":16507},{"x":176,"y":16607},{"x":177,"y":16691},{"x":178,"y":16774},{"x":179,"y":16875},{"x":180,"y":16921},{"x":181,"y":17084},{"x":182,"y":45627},{"x":183,"y":19010},{"x":184,"y":19397},{"x":185,"y":19537},{"x":186,"y":19585},{"x":187,"y":19734},{"x":188,"y":19769},{"x":189,"y":20710},{"x":190,"y":20204},{"x":191,"y":32272},{"x":192,"y":18029},{"x":193,"y":36258},{"x":194,"y":20406},{"x":195,"y":33168},{"x":196,"y":18336},{"x":197,"y":18704},{"x":198,"y":18638},{"x":199,"y":18685},{"x":200,"y":18914},{"x":202,"y":18920},{"x":204,"y":19357},{"x":206,"y":19407},{"x":208,"y":20317},{"x":210,"y":19701},{"x":212,"y":19874},{"x":214,"y":20070},{"x":216,"y":20273},{"x":218,"y":20441},{"x":220,"y":20696},{"x":222,"y":20787},{"x":224,"y":21348},{"x":226,"y":21086},{"x":228,"y":21210},{"x":230,"y":21454},{"x":232,"y":21732},{"x":234,"y":21890},{"x":236,"y":22722},{"x":238,"y":22402},{"x":240,"y":22462},{"x":242,"y":22516},{"x":244,"y":22748},{"x":246,"y":22913},{"x":248,"y":23098},{"x":250,"y":23271},{"x":252,"y":23530},{"x":254,"y":23764},{"x":256,"y":50157},{"x":258,"y":39890},{"x":260,"y":25409},{"x":262,"y":24567},{"x":264,"y":24815},{"x":266,"y":25230},{"x":268,"y":25322},{"x":270,"y":25528},{"x":272,"y":25884},{"x":274,"y":25903},{"x":276,"y":26089},{"x":278,"y":26310},{"x":280,"y":26386},{"x":282,"y":27262},{"x":284,"y":26481},{"x":286,"y":26729},{"x":288,"y":26977},{"x":290,"y":27248},{"x":292,"y":27356},{"x":294,"y":27605},{"x":296,"y":27709},{"x":298,"y":27938},{"x":300,"y":28053},{"x":303,"y":28737},{"x":306,"y":28481},{"x":309,"y":28980},{"x":312,"y":29226},{"x":315,"y":29401},{"x":318,"y":29670},{"x":321,"y":29953},{"x":324,"y":30174},{"x":327,"y":30598},{"x":330,"y":30854},{"x":333,"y":32184},{"x":336,"y":70067},{"x":339,"y":31618},{"x":342,"y":31904},{"x":345,"y":32260},{"x":348,"y":32582},{"x":351,"y":33184},{"x":354,"y":33454},{"x":357,"y":33607},{"x":360,"y":34390},{"x":363,"y":34185},{"x":366,"y":34497},{"x":369,"y":34796},{"x":372,"y":34941},{"x":375,"y":35525},{"x":378,"y":35754},{"x":381,"y":35915},{"x":384,"y":36899},{"x":387,"y":36479},{"x":390,"y":36780},{"x":393,"y":36996},{"x":396,"y":37219},{"x":399,"y":39239},{"x":402,"y":54777},{"x":406,"y":38891},{"x":410,"y":38218},{"x":414,"y":38639},{"x":418,"y":44845},{"x":422,"y":39446},{"x":426,"y":39864},{"x":430,"y":40192},{"x":434,"y":40548},{"x":438,"y":54364},{"x":442,"y":42884},{"x":446,"y":43881},{"x":450,"y":44202},{"x":454,"y":44769},{"x":458,"y":45217},{"x":462,"y":46452},{"x":466,"y":45539},{"x":470,"y":45670},{"x":474,"y":46131},{"x":478,"y":46516},{"x":482,"y":46932},{"x":486,"y":47272},{"x":490,"y":48058},{"x":494,"y":48093},{"x":498,"y":48555},{"x":502,"y":87311},{"x":507,"y":49367},{"x":512,"y":50013},{"x":517,"y":50669},{"x":522,"y":63278},{"x":527,"y":50210},{"x":532,"y":50756},{"x":537,"y":51258},{"x":542,"y":52234},{"x":547,"y":52665},{"x":552,"y":52543},{"x":557,"y":53425},{"x":562,"y":54000},{"x":567,"y":54561},{"x":572,"y":55475},{"x":577,"y":54977},{"x":582,"y":55783},{"x":587,"y":56359},{"x":592,"y":86860},{"x":597,"y":71202},{"x":602,"y":58037},{"x":608,"y":58584},{"x":614,"y":59125},{"x":620,"y":59762},{"x":626,"y":61078},{"x":632,"y":60394},{"x":638,"y":60917},{"x":644,"y":61621},{"x":650,"y":61895},{"x":656,"y":62873},{"x":662,"y":62963},{"x":668,"y":63598},{"x":674,"y":64216},{"x":680,"y":96022},{"x":686,"y":100191},{"x":692,"y":82975},{"x":698,"y":66532},{"x":704,"y":67408},{"x":711,"y":70518},{"x":718,"y":89202},{"x":725,"y":69703},{"x":732,"y":70592},{"x":739,"y":71300},{"x":746,"y":71112},{"x":753,"y":71702},{"x":760,"y":73170},{"x":767,"y":127910},{"x":774,"y":73942},{"x":781,"y":74526},{"x":788,"y":75046},{"x":795,"y":76554},{"x":802,"y":76468},{"x":810,"y":77293},{"x":818,"y":78022},{"x":826,"y":78881},{"x":834,"y":79394},{"x":842,"y":80085},{"x":850,"y":81478},{"x":858,"y":123300},{"x":866,"y":82360},{"x":874,"y":83631},{"x":882,"y":85133},{"x":890,"y":84837},{"x":898,"y":85728},{"x":906,"y":114434},{"x":915,"y":87006},{"x":924,"y":87811},{"x":933,"y":89360},{"x":942,"y":125461},{"x":951,"y":99311},{"x":960,"y":101427},{"x":969,"y":111494},{"x":978,"y":95590},{"x":987,"y":151571},{"x":996,"y":108561},{"x":1005,"y":113416},{"x":1015,"y":122361},{"x":1025,"y":155712},{"x":1035,"y":157588},{"x":1045,"y":113832},{"x":1055,"y":130168},{"x":1065,"y":125376},{"x":1075,"y":128846},{"x":1085,"y":392117},{"x":1095,"y":197884},{"x":1105,"y":106837},{"x":1116,"y":113301},{"x":1127,"y":106119},{"x":1138,"y":135344},{"x":1149,"y":107294},{"x":1160,"y":108462},{"x":1171,"y":109920},{"x":1182,"y":109956},{"x":1193,"y":112739},{"x":1204,"y":140377},{"x":1216,"y":157084},{"x":1228,"y":131948},{"x":1240,"y":115684},{"x":1252,"y":118695},{"x":1264,"y":119342},{"x":1276,"y":120082},{"x":1288,"y":119628},{"x":1300,"y":159325},{"x":1313,"y":123544},{"x":1326,"y":123813},{"x":1339,"y":126796},{"x":1352,"y":177291},{"x":1365,"y":127943},{"x":1378,"y":129761},{"x":1391,"y":131006},{"x":1404,"y":144762},{"x":1418,"y":132163},{"x":1432,"y":134562},{"x":1446,"y":152575},{"x":1460,"y":137412},{"x":1474,"y":137495},{"x":1488,"y":154761},{"x":1502,"y":143005},{"x":1517,"y":144508},{"x":1532,"y":158745},{"x":1547,"y":203294},{"x":1562,"y":148799},{"x":1577,"y":151141},{"x":1592,"y":151600},{"x":1607,"y":153843},{"x":1623,"y":154095},{"x":1639,"y":202073},{"x":1655,"y":159435},{"x":1671,"y":183449},{"x":1687,"y":224586},{"x":1703,"y":163316},{"x":1720,"y":191539},{"x":1737,"y":182410},{"x":1754,"y":179929},{"x":1771,"y":194554},{"x":1788,"y":231769},{"x":1805,"y":203639},{"x":1823,"y":237721},{"x":1841,"y":173136},{"x":1859,"y":181333},{"x":1877,"y":212367},{"x":1895,"y":179282},{"x":1913,"y":211409},{"x":1932,"y":239660},{"x":1951,"y":221160},{"x":1970,"y":251804},{"x":1989,"y":226021},{"x":2008,"y":322782},{"x":2028,"y":348350},{"x":2048,"y":411956},{"x":2068,"y":261384},{"x":2088,"y":279339},{"x":2108,"y":242448},{"x":2129,"y":274716},{"x":2150,"y":243367},{"x":2171,"y":245439},{"x":2192,"y":259548},{"x":2213,"y":245644},{"x":2235,"y":249012},{"x":2257,"y":250011},{"x":2279,"y":258852},{"x":2301,"y":252588},{"x":2324,"y":257103},{"x":2347,"y":312776},{"x":2370,"y":312974},{"x":2393,"y":323806},{"x":2416,"y":417788},{"x":2440,"y":315909},{"x":2464,"y":285722},{"x":2488,"y":271702},{"x":2512,"y":296588},{"x":2537,"y":259028},{"x":2562,"y":246246},{"x":2587,"y":246042},{"x":2612,"y":255636},{"x":2638,"y":251567},{"x":2664,"y":325821},{"x":2690,"y":270897},{"x":2716,"y":309847},{"x":2743,"y":302820},{"x":2770,"y":264833},{"x":2797,"y":291603},{"x":2824,"y":269518},{"x":2852,"y":290914},{"x":2880,"y":276599},{"x":2908,"y":271072},{"x":2937,"y":281067},{"x":2966,"y":276806},{"x":2995,"y":321195},{"x":3024,"y":322248},{"x":3054,"y":317764},{"x":3084,"y":320821},{"x":3114,"y":330481},{"x":3145,"y":335497},{"x":3176,"y":353270},{"x":3207,"y":345637},{"x":3239,"y":346609},{"x":3271,"y":345348},{"x":3303,"y":352898},{"x":3336,"y":348264},{"x":3369,"y":355391},{"x":3402,"y":365513},{"x":3436,"y":358419},{"x":3470,"y":372171},{"x":3504,"y":366991},{"x":3539,"y":395559},{"x":3574,"y":385946},{"x":3609,"y":376116},{"x":3645,"y":382295},{"x":3681,"y":391047},{"x":3717,"y":388119},{"x":3754,"y":397181},{"x":3791,"y":395988},{"x":3828,"y":402188},{"x":3866,"y":422715},{"x":3904,"y":468232},{"x":3943,"y":400487},{"x":3982,"y":379351},{"x":4021,"y":388111},{"x":4061,"y":387560},{"x":4101,"y":390191},{"x":4142,"y":401132},{"x":4183,"y":399288},{"x":4224,"y":442458},{"x":4266,"y":420883},{"x":4308,"y":416822},{"x":4351,"y":551527},{"x":4394,"y":411502},{"x":4437,"y":461234},{"x":4481,"y":418119},{"x":4525,"y":499780},{"x":4570,"y":426460},{"x":4615,"y":492228},{"x":4661,"y":472224},{"x":4707,"y":515858},{"x":4754,"y":445066},{"x":4801,"y":453722},{"x":4849,"y":452887},{"x":4897,"y":463501},{"x":4945,"y":464294},{"x":4994,"y":475295},{"x":5043,"y":474103},{"x":5093,"y":534268},{"x":5143,"y":482927},{"x":5194,"y":525794},{"x":5245,"y":527728},{"x":5297,"y":551655},{"x":5349,"y":510454},{"x":5402,"y":557638},{"x":5456,"y":517988},{"x":5510,"y":763570},{"x":5565,"y":618427},{"x":5620,"y":595779},{"x":5676,"y":531455},{"x":5732,"y":541918},{"x":5789,"y":583796},{"x":5846,"y":588606},{"x":5904,"y":605057},{"x":5963,"y":570999},{"x":6022,"y":578840},{"x":6082,"y":584908},{"x":6142,"y":586087},{"x":6203,"y":635143},{"x":6265,"y":613450},{"x":6327,"y":639561},{"x":6390,"y":654025},{"x":6453,"y":613764},{"x":6517,"y":672818},{"x":6582,"y":746218},{"x":6647,"y":829234},{"x":6713,"y":655851},{"x":6780,"y":689884},{"x":6847,"y":696778},{"x":6915,"y":664905},{"x":6984,"y":669761},{"x":7053,"y":696494},{"x":7123,"y":883535},{"x":7194,"y":724825},{"x":7265,"y":698238},{"x":7337,"y":739807},{"x":7410,"y":770960},{"x":7484,"y":799891},{"x":7558,"y":853022},{"x":7633,"y":735188},{"x":7709,"y":752792},{"x":7786,"y":807359},{"x":7863,"y":822582},{"x":7941,"y":822394},{"x":8020,"y":772240},{"x":8100,"y":772905},{"x":8181,"y":853515},{"x":8262,"y":835888},{"x":8344,"y":838851},{"x":8427,"y":877244},{"x":8511,"y":895143},{"x":8596,"y":856479},{"x":8681,"y":830802},{"x":8767,"y":995266},{"x":8854,"y":847175},{"x":8942,"y":875820},{"x":9031,"y":891628},{"x":9121,"y":938672},{"x":9212,"y":885754},{"x":9304,"y":945884},{"x":9397,"y":983685},{"x":9490,"y":1024397},{"x":9584,"y":953099},{"x":9679,"y":949092},{"x":9775,"y":1016410},{"x":9872,"y":1015880},{"x":9970,"y":997957},{"x":10069,"y":965434},{"x":10169,"y":1052157},{"x":10270,"y":1030176},{"x":10372,"y":1178997},{"x":10475,"y":1107308},{"x":10579,"y":1075711},{"x":10684,"y":1050427},{"x":10790,"y":1058531},{"x":10897,"y":1124267},{"x":11005,"y":1120326},{"x":11115,"y":1087520},{"x":11226,"y":1166992},{"x":11338,"y":1174468},{"x":11451,"y":1339314},{"x":11565,"y":1137817},{"x":11680,"y":1186379},{"x":11796,"y":1358946},{"x":11913,"y":1260842},{"x":12032,"y":1232176},{"x":12152,"y":1166778},{"x":12273,"y":1257416},{"x":12395,"y":1290421},{"x":12518,"y":1222760},{"x":12643,"y":1280692},{"x":12769,"y":1290792},{"x":12896,"y":1288013},{"x":13024,"y":1311608},{"x":13154,"y":1319677},{"x":13285,"y":1381121},{"x":13417,"y":1369372},{"x":13551,"y":1457436},{"x":13686,"y":1416163},{"x":13822,"y":1397909},{"x":13960,"y":1397607},{"x":14099,"y":1441787},{"x":14239,"y":1437311},{"x":14381,"y":1511263},{"x":14524,"y":1426635},{"x":14669,"y":1595650},{"x":14815,"y":1505696},{"x":14963,"y":1486141},{"x":15112,"y":1606602},{"x":15263,"y":1683309},{"x":15415,"y":1529408},{"x":15569,"y":1548731},{"x":15724,"y":1578656},{"x":15881,"y":1611182},{"x":16039,"y":1643140},{"x":16199,"y":1688480},{"x":16360,"y":1617710},{"x":16523,"y":1627113},{"x":16688,"y":1684865},{"x":16854,"y":1817086},{"x":17022,"y":1633038},{"x":17192,"y":1831388},{"x":17363,"y":1733075},{"x":17536,"y":1840228},{"x":17711,"y":1799505},{"x":17888,"y":1771533},{"x":18066,"y":1868290},{"x":18246,"y":1930181},{"x":18428,"y":1971881},{"x":18612,"y":1840523},{"x":18798,"y":1845534},{"x":18985,"y":1892820},{"x":19174,"y":1980878},{"x":19365,"y":2047010},{"x":19558,"y":1926527},{"x":19753,"y":2018781},{"x":19950,"y":2152254},{"x":20149,"y":2146181},{"x":20350,"y":1953155},{"x":20553,"y":2274878},{"x":20758,"y":2117311},{"x":20965,"y":2388650},{"x":21174,"y":2254499},{"x":21385,"y":2471713},{"x":21598,"y":2471737},{"x":21813,"y":2318327},{"x":22031,"y":2603650},{"x":22251,"y":2336498},{"x":22473,"y":2388006},{"x":22697,"y":2418440},{"x":22923,"y":2401973},{"x":23152,"y":2431133},{"x":23383,"y":2308019},{"x":23616,"y":2414241},{"x":23852,"y":2424526},{"x":24090,"y":2300913},{"x":24330,"y":2356979},{"x":24573,"y":2523967},{"x":24818,"y":2765267},{"x":25066,"y":2489444},{"x":25316,"y":2503225},{"x":25569,"y":2636645},{"x":25824,"y":2714333},{"x":26082,"y":2568464},{"x":26342,"y":2781136},{"x":26605,"y":2698032},{"x":26871,"y":2937022},{"x":27139,"y":2743133},{"x":27410,"y":2805879},{"x":27684,"y":2885308},{"x":27960,"y":2930073},{"x":28239,"y":2849614},{"x":28521,"y":2886023},{"x":28806,"y":2909682},{"x":29094,"y":2894854},{"x":29384,"y":2973711},{"x":29677,"y":3325637},{"x":29973,"y":2969699},{"x":30272,"y":3042789},{"x":30574,"y":3196862},{"x":30879,"y":3073233},{"x":31187,"y":3271402},{"x":31498,"y":3202073},{"x":31812,"y":3220675},{"x":32130,"y":3289923},{"x":32451,"y":3377497},{"x":32775,"y":3569475},{"x":33102,"y":4306077},{"x":33433,"y":3631467},{"x":33767,"y":3292711},{"x":34104,"y":3515844},{"x":34445,"y":3863148},{"x":34789,"y":3433742},{"x":35136,"y":3535354},{"x":35487,"y":3582649},{"x":35841,"y":3704848},{"x":36199,"y":3807609},{"x":36560,"y":3600231},{"x":36925,"y":3755248},{"x":37294,"y":3832577},{"x":37666,"y":3926746},{"x":38042,"y":3857932},{"x":38422,"y":3917954},{"x":38806,"y":3966738},{"x":39194,"y":4135300},{"x":39585,"y":4014336},{"x":39980,"y":4113944},{"x":40379,"y":4056244},{"x":40782,"y":4203520},{"x":41189,"y":4226890},{"x":41600,"y":4230639},{"x":42016,"y":4359358},{"x":42436,"y":4278971},{"x":42860,"y":4351285},{"x":43288,"y":4407432},{"x":43720,"y":4401244},{"x":44157,"y":4662520},{"x":44598,"y":4820293},{"x":45043,"y":4778010},{"x":45493,"y":4910145},{"x":45947,"y":4954362},{"x":46406,"y":4464573},{"x":46870,"y":4784277},{"x":47338,"y":4978538},{"x":47811,"y":4814438}],"kde":[444,205,199,220,210,195,207,193,207,213,193,193,194,195,197,196,193,208,192,198,196,195,193,193,195,196,199,205,194,193,198,198,194,194,194,197,206,194,207,194,208,194,198,192,196,194,198,205,195,192,194,191,195,196,194,203,192,195,193,191,196,195,205,194,195,192,205,193,194,194,205,192,192,198,197,197,197,194,195,206,193,195,192,195,199,208,198,194,198,196,216,202,197,199,195,195,193,207,199,198,195,211,194,197,197,195,194,207,197,195,199,195,196,196,192,195,197,211,196,192,196,201,197,197,192,194,211,198,213,197,207,231,194,196,195,195,198,199,196,206,199,195,195,193,195,194,192,196,193,195,196,194,197,195,199,197,193,210,206,197,195,197,193,194,197,195,191,192,210,194,194,193,192,193,205,194,192,193,193,191,205,194,194,195,195,206,198,197,194,197,198,209,196,198,213,196,210,195,197,199,195,198,198,193,196,206,198,197,192,195,194,194,194,194,193,196,192,195,198,193,208,192,196,195,210,196,195,198,197,197,196,198,196,205,190,193,192,204,193,204,193,193,195,195,199,213,196,195,192,193,195,195,193,194,205,193,194,191,193,232,194,198,196,194,195,198,198,193,208,197,195,194,209,197,195,196,193,197,195,209,198,196,207,196,197,197,195,209,193,208,212,199,198,198,196,206,195,195,212,195,194,196,211,196,192,211,199,196,199,195,198,196,198,197,208,196,195,194,196,206,191,194,200,212,197,197,210,197,194,196,206,194,202,197,193,206,196,198,195,210,212,196,192,208,193,195,202,195,194,210,199,192,191,211,194,199,202,204,191,207,195,194,194,193,195,193,198,198,206,193,200,198,195,196,205,195,202,195,195,191,195,196,197,198,206,208,200,195,197,195,196,206,196,217,215,204,211,192,193,205,207,210,196,200,200,196,197,214,206,200,230,212,195,205,202,195,198,193,196,197,197,196,200,210,195,198,212,202,193,194,200,194,195,196,193,203,198,196,196,197,210,194,194,195,193,199,199,199,209,194,202,194,193,193,192,193,193,217,197,197,200,211,197,197,194,194,196,202,195,195,192,196,194,199,203,195,194,204,207,192,221,208,195,191,205,196,194,201,198,198,199,196,192,203,201,199,195,192,202,212,198,196,210,210,213,197,194,207,195,196,197,197,195,209,201,201,220,196,196,197,191,222,192,193,205,195,195,198,196,196,194,206,194,196,193,194,195,195,198,194,204,210,197,195,199,209,195,200,197,200,194,217,193,196,195,209,196,194,204,196,196,197,208,193,196,198,208,196,201,205,194,196,193,195,194,200,207,193,200,238,224,198,193,198,197,220,240,206,210,197,210,200,198,196,206,211,196,198,197,197,197,197,213,196,198,226,196,196,198,195,195,204,201,199,198,209,198,209,197,195,193,195,214,197,211,198,198,196,197,195,195,196,200,210,200,198,196,199,196,201,206,195,199,195,193,193,192,194,210,206,198,197,210,197,199,195,199,200,197,200,247,195,197,198,194,199,212,206,193,210,195,191,202,207,193,196,202,198,198,203,199,195,199,199,198,199,202,198,199,198,197,196,196,195,197,195,202,212,195,208,196,205,198,204,193,194,198,196,197,195,194,196,199,204,198,194,220,194,192,196,194,195,195,203,198,209,205,194,196,198,212,200,209,205,196,198,197,197,198,208,197,224,197,203,199,196,216,203,195,198,208,197,210,195,196,196,198,192,196,199,199,199,194,193,195,206,195,197,193,192,200,200,196,194,196,208,195,201,193,197,201,197,196,192,209,198,198,214,211,197,199,194,197,199,202,222,208,205,193,195,194,196,196,198,193,194,196,199,209,194,197,194,195,205,203,193,196,196,206,195,196,197,196,198,203,195,195,196,195,197,200,196,204,208,202,195,197,197,197,196,196,213,198,197,227,195,196,215,200,196,192,211,195,198,197,194,194,210,200,196,196,204,193,194,197,197,195,199,209,197,197,204,198,212,227,204,197,196,204,193,197,195,195,194,198,195,196,195,203,201,196,194,206,197,199,198,196,197,202,197,211,197,197,198,197,203,200,197,206,196,207,195,196,200,195,209,201,197,198,196,194,201,205,193,196,204,197,197,205,196,199,199,196,196,195,218,197,194,194,193,195,195,201,208,195,195,195,211,199,195,218,197,211,196,198,197,210,198,200,201,193,194,200,215,196,218,210,200,198,214,202,197,211,196,195,194,193,195,193,220,197,193,194,193,194,198,202,210,196,216,198,203,196,214,198,197,199,212,211,202],"result":{"estimate":103.3658093948674,"r_square":0.9968698242782259}},{"name":"Routes bench/Static bench","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":188,"time":530538602},"dataset":[{"x":1,"y":31086},{"x":2,"y":56562},{"x":3,"y":81423},{"x":4,"y":146099},{"x":5,"y":184188},{"x":6,"y":254905},{"x":7,"y":258196},{"x":8,"y":304014},{"x":9,"y":237755},{"x":10,"y":835161},{"x":11,"y":446154},{"x":12,"y":379668},{"x":13,"y":340876},{"x":14,"y":366086},{"x":15,"y":449501},{"x":16,"y":420890},{"x":17,"y":542208},{"x":18,"y":569076},{"x":19,"y":571615},{"x":20,"y":605647},{"x":21,"y":585708},{"x":22,"y":685129},{"x":23,"y":646616},{"x":24,"y":662162},{"x":25,"y":794191},{"x":26,"y":771226},{"x":27,"y":795577},{"x":28,"y":792734},{"x":29,"y":948309},{"x":30,"y":916625},{"x":31,"y":978646},{"x":32,"y":944515},{"x":33,"y":902699},{"x":34,"y":1003379},{"x":35,"y":924339},{"x":36,"y":985053},{"x":37,"y":987770},{"x":38,"y":1216962},{"x":39,"y":1127587},{"x":40,"y":1111302},{"x":41,"y":1237070},{"x":42,"y":1274464},{"x":43,"y":1722460},{"x":44,"y":1333761},{"x":45,"y":1283953},{"x":46,"y":1286594},{"x":47,"y":1403542},{"x":48,"y":1372055},{"x":49,"y":1317814},{"x":50,"y":1470402},{"x":51,"y":1402840},{"x":52,"y":1412712},{"x":53,"y":1460418},{"x":54,"y":1627739},{"x":55,"y":2066807},{"x":56,"y":1560289},{"x":57,"y":1537395},{"x":58,"y":1619905},{"x":59,"y":1558810},{"x":60,"y":1680782},{"x":61,"y":1724989},{"x":62,"y":1707014},{"x":63,"y":1735332},{"x":64,"y":1961941},{"x":65,"y":1816655},{"x":66,"y":2050098},{"x":67,"y":2079543},{"x":68,"y":1903714},{"x":69,"y":1943680},{"x":70,"y":1873994},{"x":71,"y":1983018},{"x":72,"y":2179028},{"x":73,"y":2086623},{"x":74,"y":2067020},{"x":75,"y":2055942},{"x":76,"y":2186631},{"x":77,"y":2127314},{"x":78,"y":2148388},{"x":79,"y":2137022},{"x":80,"y":2384105},{"x":81,"y":2257376},{"x":82,"y":2205403},{"x":83,"y":2283308},{"x":84,"y":2303010},{"x":85,"y":2374149},{"x":86,"y":2335258},{"x":87,"y":2465318},{"x":88,"y":2393774},{"x":89,"y":2544886},{"x":90,"y":2443016},{"x":91,"y":2473838},{"x":92,"y":2542815},{"x":93,"y":2684806},{"x":94,"y":2775553},{"x":95,"y":2579226},{"x":96,"y":2663400},{"x":97,"y":2708720},{"x":98,"y":2701904},{"x":99,"y":2659194},{"x":100,"y":2982275},{"x":101,"y":2778594},{"x":102,"y":2791249},{"x":103,"y":2787078},{"x":104,"y":2951997},{"x":105,"y":2873881},{"x":106,"y":3085029},{"x":107,"y":2961421},{"x":108,"y":2973527},{"x":109,"y":2971778},{"x":110,"y":3153986},{"x":111,"y":3407255},{"x":112,"y":3026757},{"x":113,"y":3067335},{"x":114,"y":3186746},{"x":115,"y":3179311},{"x":116,"y":3190637},{"x":117,"y":3427183},{"x":118,"y":3159130},{"x":119,"y":3279881},{"x":120,"y":3510507},{"x":121,"y":3302657},{"x":122,"y":3374391},{"x":123,"y":3496422},{"x":124,"y":3404138},{"x":125,"y":3415419},{"x":126,"y":3599968},{"x":127,"y":3534847},{"x":128,"y":3555344},{"x":129,"y":3535198},{"x":130,"y":3511320},{"x":131,"y":3587527},{"x":132,"y":3629230},{"x":133,"y":3734649},{"x":134,"y":3713520},{"x":135,"y":3614138},{"x":136,"y":3932379},{"x":137,"y":3840934},{"x":138,"y":3720102},{"x":139,"y":3800357},{"x":140,"y":4044095},{"x":141,"y":3908879},{"x":142,"y":3927615},{"x":143,"y":3940143},{"x":144,"y":3993922},{"x":145,"y":4559971},{"x":146,"y":4009473},{"x":147,"y":4756861},{"x":148,"y":4545657},{"x":149,"y":4363510},{"x":150,"y":3990444},{"x":151,"y":4253128},{"x":152,"y":4416551},{"x":153,"y":4221536},{"x":154,"y":4322258},{"x":155,"y":4221931},{"x":156,"y":4540132},{"x":157,"y":4291842},{"x":158,"y":4538365},{"x":159,"y":4337722},{"x":160,"y":4559480},{"x":161,"y":4485571},{"x":162,"y":4465791},{"x":163,"y":4993442},{"x":164,"y":4506530},{"x":165,"y":4639936},{"x":166,"y":4596625},{"x":167,"y":4781565},{"x":168,"y":4595785},{"x":169,"y":4605541},{"x":170,"y":4814316},{"x":171,"y":5177578},{"x":172,"y":4629970},{"x":173,"y":4837189},{"x":174,"y":4829075},{"x":175,"y":4886785},{"x":176,"y":4891093},{"x":177,"y":5103673},{"x":178,"y":4798015},{"x":179,"y":5083820},{"x":180,"y":4775131},{"x":181,"y":5180241},{"x":182,"y":4909982},{"x":183,"y":5139940},{"x":184,"y":5107870},{"x":185,"y":5205849},{"x":186,"y":5075631},{"x":187,"y":5365392},{"x":188,"y":5251933}],"kde":[26657,26391,28101,37500,26367,26100,26068,40569,26197,26320,26276,26138,26257,26392,26268,26392,26243,26288,26179,26179,26070,26330,26119,86797,266824,27798,27522,26954,26782,45571,29362,29452,42218,26238,26340,26289,26410,26219,26265,26254,26041,26027,28769,26202,26225,26253,26175,66778,26387,26552,26299,26312,26272,26226,26187,26114,26322,26334,26168,26307,33964,26267,26259,26227,26171,26215,26197,26196,26302,26275,26200,26143,26286,26187,26357,26217,26291,26167,27720,26173,26225,26043,54678,40083,31843,26219,26266,26224,26413,26221,26191,26153,26339,26118,26242,26217,30131,26128,26069,26082,26001,26178,26225,26337,26271,26276,26363,26276,26321,26183,26221,26155,26309,26115,27003,50374,36205,29260,29177,29322,29298,40525,26190,46992,40480,26298,26028,26178,26175,27910,37657,27343,26451,26320,26280,26242,26157,25995,26166,26285,26150,26287,26111,26297,26226,26303,26169,26300,26117,29557,26354,33188,39069,26217,26326,26124,26320,26207,26301,26255,26257,26352,26293,26418,26234,26214,26372,32892,26280,26261,26190,26161,26142,26145,26338,26366,26235,26297,26327,26209,26299,26245,26081,26080,26165,27858,26166,34126,26508,25979,26162,26282,26308,26303,26361,26290,26277,26352,26111,26293,26174,26342,26268,31351,26239,26367,26306,26275,26137,26226,26226,26306,26248,26279,26236,26206,26157,26263,26044,26223,33924,26434,26244,26277,67069,26124,26159,26258,26181,26230,26297,26356,26224,26180,26153,26210,26162,26255,39043,26253,26220,26193,26294,26096,26114,26214,26454,26201,26386,26193,26344,26054,26402,26128,26265,26168,28065,26398,32510,26447,26184,26446,26394,26344,26410,26236,26378,26277,26267,26113,26206,26275,26159,26218,30839,27961,37450,26411,26170,26142,26207,26252,26349,26174,26267,26161,26277,26255,26205,25981,26066,26127,27750,26289,32843,39761,26462,26444,26144,26259,26258,26379,26334,26158,26144,26204,26200,26127,26331,26302,28976,26235,46079,34849,41527,71095,29293,29250,41230,26434,26210,26387,26629,26469,26218,59321,29602,34444,29505,45522,92351,68132,30043,69797,26551,26300,26259,26421,26225,26330,26249,26434,26212,26250,26249,33531,26191,26252,26206,26165,26128,26206,26227,26280,52838,40494,26198,26351,26160,26303,26034,26176,26185,28664,26221,26458,26362,26190,26382,26339,26331,26250,26165,26227,26279,26322,26150,26271,26241,26193,26386,32348,26218,26272,26315,26201,26048,26210,26345,54568,29500,29416,41098,26308,26231,26136,26290,26026,26009,27507,26198,26373,26233,26226,26319,26498,26198,26297,26301,26235,26247,29082,41840,26473,26288,26285,28546,26360,26230,26220,26117,26117,26253,26352,113926,26805,26388,26257,26335,26214,26348,26238,26069,26126,30242,26288,26265,26229,26198,26204,26240,26233,26268,26328,26245,26402,26248,26014,26264,26225,26092,26319,35452,26466,26336,26312,26194,26241,26185,33082,26329,26249,26229,50657,29425,60962,29559,29282,29259,29144,41724,26293,26487,47397,40255,26247,26324,26314,26209,26204,26219,26334,26332,26181,26311,26161,26227,26222,32164,26445,32898,72114,29330,40451,26316,26342,26243,26307,26344,26555,26272,26313,26299,26441,26354,28036,26394,26238,26271,26248,26265,26344,26214,26334,26331,26417,26328,26306,26197,26357,26282,26344,26324,28339,32945,26326,26096,26153,26208,26079,26265,26304,26235,26399,26226,26175,26192,26324,26067,26151,26079,32030,26152,26151,28180,37116,26433,26113,26203,26223,26179,26285,26226,26224,26108,26245,26164,26109,26315,33221,63945,29644,40504,26084,26124,26056,26178,26309,26248,26461,26184,26185,26151,26299,26147,26153,26209,27695,26326,26216,26313,26294,26376,26297,26387,26226,26384,26273,26277,26150,26322,26150,26156,26101,26201,70346,26224,26256,26092,26207,26084,26218,26414,26279,26341,26255,26409,26394,26373,26169,26216,26140,28656,26188,26320,26103,26213,26220,26245,26237,26173,26266,26283,26310,26259,26232,26228,26211,26027,26309,45748,26514,26267,26236,26210,26147,26191,26284,26384,26178,26402,26171,26081,26005,26232,26102,26154,26121,29772,26181,26302,26273,26123,26252,26233,26304,26230,26277,26368,26329,26227,26088,26196,26143,26151,26228,71891,26523,26116,26250,26192,26128,26102,26354,26376,26203,26305,26267,26334,26211,26277,26056,26245,26120,27574,26180,26193,26054,26160,26228,26224,26341,26182,26199,26361,26276,26281,26121,26245,26163,26337,35491,61468,26247,38467,26339,26112,26141,26243,26227,26252,26309,26200,26229,26356,26208,26197,26182,26172,28377,26110,26334,26255,26087,26072,26231,26246,26139,26106,26136,26278,26178,26194,26097,26214,26047,51521,48864,26365,26175,26234,26110,26252,26180,26204,26407,26221,26345,26119,26347,26142,26259,26235,26188,26031,29561,26252,26172,26209,26201,26205,26136,26199,26220,26302,26390,26260,26202,26110,26222,26188,32450,26336,30892,26296,26184,26090,26073,26112,26182,26299,26384,26268,26191,26415,26221,26318,26138,26283,25991,26139,26870,65843,65619,26219,26223,26293,26321,26155,26176,26208,26308,26251,26223,26175,26269,25862,26124,27929,26386,26194,26071,26186,26081,26226,26207,26268,26165,50049,29328,29220,29206,29170,29197,36346,29358,43322,26271,26212,26142,26140,26141,26017,26158,26129,26270,26221,26267,26194,26183,26092,26203,26062,26226,36286,40616,26828,26198,26131,26135,26122,26045,26256,26181,26340,26174,26242,26215,26176,26099,26050,33080,27834,26175,26226,26180,26163,26057,26281,26276,26177,26213,26224,26400,26105,26017,26085,26066,26220,26185,29811,26145,26247,26196,26277,26129,26274,26295,26327,26402,26298,26377,26324,26238,26200,26300,63785,37045,29584,29278,29319,29215,29310,29794,29543,29432,29557,29572,29464,31937,29442,30009,29734,43120,50331,45618,43290,29650,26426,26267,26261,26363,27755,26432,26444,32753,29481,52131,33112,30491,32118,33850,37909,40573,28171,31886,30158,29163,31943,28624,28310,29949,28658,27843,30386,27891,27829,29184,28254,27730,30662,36757,30135,27847,29953,32945,28570,29906,39978,28317,27683,30864,29646,27848,28249,29847,28264,28193,28458,30712,30593,27615,27275,27523,27414,26816,27235,26531,56117,28181,44838,26339,26152,26182,26035,26217,26482,29228,26366,26202,26208,32622,26354,26234,26219,26404,26449,26217,26365,26448],"result":{"estimate":28090.7038547985,"r_square":0.9919603408236692}}]}
+
+
+if (contents == null)
+    d3.json("outputs.json", render);
+else
+    render(contents);
+}
+
+  </script>
+
+</body>
+</html>
