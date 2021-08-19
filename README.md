@@ -176,8 +176,8 @@ val trail : unit -> int Routes.route = <fun>
 - : int option = Some 5
 ```
 
-More example of library usage can be seen in the [examples](./example) folder,
-and as part of the [test](./test/routing_test.ml) definition.
+More example of library usage can be seen in the [examples](https://github.com/anuragsoni/routes/tree/main/example) folder,
+and as part of the [test](https://github.com/anuragsoni/routes/blob/main/test/routing_test.ml) definition.
 
 ## Installation
 
