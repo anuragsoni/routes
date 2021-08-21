@@ -11,14 +11,14 @@ homepage: "https://github.com/anuragsoni/routes"
 doc: "https://anuragsoni.github.io/routes/"
 bug-reports: "https://github.com/anuragsoni/routes/issues"
 depends: [
-  "dune" {>= "2.7"}
+  "dune" {>= "2.9"}
   "ocaml" {>= "4.05.0"}
   "alcotest" {with-test}
   "mdx" {with-test}
   "odoc" {with-doc}
 ]
 build: [
-  ["dune" "subst"] {dev}
+  ["dune" "subst" "--root" "."] {dev}
   [
     "dune"
     "build"
@@ -26,9 +26,12 @@ build: [
     name
     "-j"
     jobs
+    "--promote-install-files"
+    "false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
+  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/anuragsoni/routes.git"
