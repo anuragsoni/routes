@@ -39,5 +39,4 @@ jobs:
       - name: Run doctest
         if: runner.os == 'Linux'
         run: |
-          opam exec -- dune build @doctest
           opam exec -- dune build @example

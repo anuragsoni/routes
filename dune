@@ -1,9 +1,3 @@
-(rule
- (alias doctest)
- (deps
-  (package routes)
-  (:x README.md))
- (action
-  (progn
-   (run ocaml-mdx test %{x})
-   (diff? %{x} %{x}.corrected))))
+(mdx
+ (files README.md)
+ (packages routes))

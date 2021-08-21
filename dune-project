@@ -2,6 +2,8 @@
 
 (name routes)
 
+(using mdx 0.1)
+
 (generate_opam_files true)
 
 (source
