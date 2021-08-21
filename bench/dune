@@ -4,9 +4,13 @@
 
 (rule
  (targets main.json)
- (action (with-stdout-to %{targets} (run ./main.exe json))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./main.exe json))))
 
 (rule
  (targets main.html)
  (mode promote)
- (action (system "%{bin:bechamel-html} < %{dep:main.json} > %{targets}")))
+ (action
+  (system "%{bin:bechamel-html} < %{dep:main.json} > %{targets}")))
