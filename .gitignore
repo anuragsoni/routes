@@ -1,8 +1,4 @@
 _build
-_esy
-*.merlin
 *.install
 _opam
 _coverage
-node_modules
-lib
