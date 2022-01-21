@@ -16,8 +16,6 @@
     OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. *)
 
-open Bechamel
-
 let urls =
   [ "/"
   ; "/cmd.html"
@@ -219,8 +217,11 @@ let router =
        urls)
 ;;
 
-let bench_routes router targets =
-  Staged.stage @@ fun () -> ignore (List.map (fun u -> match' ~target:u router) targets)
+let bench_routes router targets = List.map (fun u -> match' ~target:u router) targets
+
+let bench =
+  let open Core_bench in
+  Bench.Test.create ~name:"Static Bench" (fun () -> bench_routes router urls)
 ;;
 
-let bench = Test.make ~name:"Static bench" @@ bench_routes router urls
+let benches = [ bench ]

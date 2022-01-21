@@ -1,7 +1,6 @@
 (** // Copyright 2013 Julien Schmidt. All rights reserved. // Use of this source code is
     governed by a BSD-style license that can be found // in the httprouter.LICENSE file. *)
 
-open Bechamel
 open Routes
 
 let routes =
@@ -50,14 +49,20 @@ let routes =
   one_of (List.concat [ object_routes; user_routes; role_routes; misc; inst_routes ])
 ;;
 
-let test_routes path = Staged.stage @@ fun () -> ignore (match' ~target:path routes)
+open Core_bench
 
-let bench =
-  Test.make_grouped
-    ~name:"Parse.com"
-    Test.
-      [ make ~name:"Parse static" @@ test_routes "/1/users"
-      ; make ~name:"Parse 1 param" @@ test_routes "/1/classes/ocaml"
-      ; make ~name:"Parse 2 params" @@ test_routes "/1/classes/ocaml/121"
-      ]
+let bench_static =
+  Bench.Test.create ~name:"Parse static" (fun () -> match' ~target:"/1/users" routes)
 ;;
+
+let bench_one_param =
+  Bench.Test.create ~name:"Parse 1 param" (fun () ->
+      match' ~target:"/1/classes/ocaml" routes)
+;;
+
+let bench_two_param =
+  Bench.Test.create ~name:"Parse 2 param" (fun () ->
+      match' ~target:"/1/classes/ocaml/121" routes)
+;;
+
+let benches = [ bench_static; bench_one_param; bench_two_param ]
