@@ -25,11 +25,11 @@ We will start by setting up the toplevel by asking it to load routes.
 We will start by defining a few simple routes that don't need to extract any path parameter.
 
 ```ocaml
-# (* A simple route that matches the empty path segments. *)
+# (* A simple route that matches the empty path segments. *);;
 # let root () = Routes.empty;;
 val root : unit -> ('a, 'a) Routes.target = <fun>
 
-# (* We can combine multiple segments using `/` *)
+# (* We can combine multiple segments using `/` *);;
 # let users () = Routes.(s "users" / s "get" /? nil);;
 val users : unit -> ('a, 'a) Routes.target = <fun>
 ```
@@ -140,7 +140,7 @@ val routes : string Routes.router = <abstr>
 # Routes.match' routes ~target:(Routes.sprintf (sum ()) 45 11);;
 - : string option = Some "56"
 
-# (* This route fails to match because of the final trailing slash. *)
+# (* This route fails to match because of the final trailing slash. *);;
 # Routes.match' routes ~target:"/sum/1/2/";;
 - : string option = None
 ```
