@@ -1,5 +1,5 @@
-; (mdx
-;  (files README.md)
-;  (enabled_if
-;   (= %{os_type} Unix))
-;  (packages routes))
+(mdx
+ (files README.md)
+ (enabled_if
+  (= %{os_type} Unix))
+ (packages routes))
