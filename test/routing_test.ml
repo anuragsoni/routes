@@ -12,10 +12,10 @@ let ensure_string_match ~target router =
   let open Routes in
   match match' ~target router with
   | Routes.NotFound -> print_endline "No route matched"
-  | FullMatch r -> printf "Exact match with result = %s" r
+  | FullMatch r -> printf "Exact match with result = %s\n" r
   | Match { with_trailing_slash; result } ->
     printf
-      "Not exact match, but found a match %s a trailing slash with result = %s"
+      "Not exact match, but found a match %s a trailing slash with result = %s\n"
       (if with_trailing_slash then "with" else "without")
       result
 ;;
@@ -243,3 +243,118 @@ let%expect_test "match routes with a common prefix" =
       ("Not exact match, but found a match without a trailing slash with result = one"))
      ("Matches first overlapping path param" ("Exact match with result = one"))) |}]
 ;;
+
+let%expect_test "test route patterns" =
+  let open Routes in
+  let r1 = s "foo" / s "bar" /? nil in
+  let r2 = s "foo" / int / bool /? nil in
+  let r3 = s "foo" / str / bool //? nil in
+  let r4 = s "baz" /? wildcard in
+  let r5 = (s "hello" / s "world" /? nil) @--> "Route" in
+  let results =
+    [ "empty", Caml.Format.asprintf "%a" pp_target empty
+    ; "foo_bar", Caml.Format.asprintf "%a" pp_target r1
+    ; "foo_int_bool", Caml.Format.asprintf "%a" pp_target r2
+    ; "sprintf foo_int_bool", sprintf r2 12 true
+    ; "foo_string_bool", Caml.Format.asprintf "%a" pp_target r3
+    ; "sprintf_string_bool", sprintf r3 "hello" false
+    ; "wildcard", Caml.Format.asprintf "%a" pp_target r4
+    ; "pretty_print_route", Caml.Format.asprintf "%a" pp_route r5
+    ]
+  in
+  printf !"%{sexp: (string * string) list}\n" results;
+  [%expect
+    {|
+    ((empty /) (foo_bar /foo/bar) (foo_int_bool /foo/:int/:bool)
+     ("sprintf foo_int_bool" /foo/12/true) (foo_string_bool /foo/:string/:bool/)
+     (sprintf_string_bool /foo/hello/false/) (wildcard /baz/:wildcard)
+     (pretty_print_route /hello/world)) |}]
+;;
+
+type shape =
+  | Circle
+  | Square
+
+let shape_of_string = function
+  | "Circle" | "circle" -> Some Circle
+  | "Square" | "square" -> Some Square
+  | _ -> None
+;;
+
+let shape_to_string = function
+  | Circle -> "circle"
+  | Square -> "square"
+;;
+
+let%expect_test "test custom pattern" =
+  let open Routes in
+  let shape = pattern shape_to_string shape_of_string ":shape" in
+  let shape' = custom ~serialize:shape_to_string ~parse:shape_of_string ~label:":shape" in
+  let r1 () =
+    (s "foo" / int / s "shape" / shape' /? nil)
+    @--> fun c shape -> Printf.sprintf "%d - %s" c (shape_to_string shape)
+  in
+  let r2 () = s "shape" / shape / s "create" /? nil in
+  let router = one_of [ r1 () ] in
+  let results =
+    [ ( "can match a custom pattern"
+      , ensure_string_match' ~target:"/foo/12/shape/Circle" router )
+    ; ( "Invalid shape does not match"
+      , ensure_string_match' ~target:"/foo/12/shape/rectangle" router )
+    ; "pretty print custom pattern", Some (Caml.Format.asprintf "%a" pp_route (r1 ()))
+    ; "serialize route with custom pattern", Some (sprintf (r2 ()) Square)
+    ]
+  in
+  printf !"%{sexp: (string * string option) list}\n" results;
+  [%expect
+    {|
+    (("can match a custom pattern" ("Exact match with result = 12 - circle"))
+     ("Invalid shape does not match" ())
+     ("pretty print custom pattern" (/foo/:int/shape/:shape))
+     ("serialize route with custom pattern" (/shape/square/create))) |}]
+;;
+
+let%expect_test "route matcher discards query params" =
+  let open Routes in
+  let routes = one_of [ ((s "foo" / str /? nil) @--> fun x -> x); empty @--> "root" ] in
+  ensure_string_match ~target:"/foo/hello?baz=bar" routes;
+  ensure_string_match ~target:"?baz=bar" routes;
+  [%expect {|
+    Exact match with result = hello
+    Exact match with result = root |}]
+;;
+
+let%expect_test "test prefixing targets" =
+  let open Routes in
+  let add_route path1 path2 handler (routes1, routes2) =
+    let routes1 =
+      routes1
+      |> add_route ((path1 / path2 /? nil) @--> handler)
+      |> add_route ((path1 / path2 //? nil) @--> handler)
+    in
+    let routes2 =
+      routes2
+      |> add_route ((path1 /~ (path2 /? nil)) @--> handler)
+      |> add_route ((path1 /~ (path2 //? nil)) @--> handler)
+    in
+    routes1, routes2
+  in
+  let check_target (routes1, routes2) target =
+    let left = ensure_string_match' ~target routes1 in
+    let right = ensure_string_match' ~target routes2 in
+    printf
+      "Router1 and Router2 provide the same result = %b\n"
+      (Option.equal String.equal left right)
+  in
+  let routes =
+    (one_of [], one_of [])
+    |> add_route (s "foo") (s "bar") "10"
+    |> add_route (s "foo") int (fun n -> Int.to_string_hum n)
+  in
+  check_target routes "foo/bar";
+  check_target routes "foo/bar/10";
+  check_target routes "foo/10";
+  [%expect {|
+    Router1 and Router2 provide the same result = true
+    Router1 and Router2 provide the same result = true
+    Router1 and Router2 provide the same result = true |}]
