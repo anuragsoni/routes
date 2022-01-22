@@ -4,33 +4,31 @@ open! Stdio
 let ensure_empty ~target ~msg router =
   let open Routes in
   match match' ~target router with
-  | Routes.NotFound -> printf "%s\n" msg
+  | Routes.NoMatch -> printf "%s\n" msg
   | _ -> assert false
 ;;
 
 let ensure_string_match ~target router =
   let open Routes in
   match match' ~target router with
-  | Routes.NotFound -> printf "%s\n" "No route matched"
+  | Routes.NoMatch -> printf "%s\n" "No route matched"
   | FullMatch r -> printf "Exact match with result = %s\n" r
-  | Match { with_trailing_slash; result } ->
+  | MatchWithoutTrailingSlash r ->
     printf
-      "Not exact match, but found a match %s a trailing slash with result = %s\n"
-      (if with_trailing_slash then "with" else "without")
-      result
+      "Not exact match, but found a match without a trailing slash with result = %s\n"
+      r
 ;;
 
 let ensure_string_match' ~target router =
   let open Routes in
   match match' ~target router with
-  | Routes.NotFound -> None
+  | Routes.NoMatch -> None
   | FullMatch r -> Some (Printf.sprintf "Exact match with result = %s" r)
-  | Match { with_trailing_slash; result } ->
+  | MatchWithoutTrailingSlash r ->
     Some
       (Printf.sprintf
-         "Not exact match, but found a match %s a trailing slash with result = %s"
-         (if with_trailing_slash then "with" else "without")
-         result)
+         "Not exact match, but found a match without a trailing slash with result = %s"
+         r)
 ;;
 
 let%expect_test "test no match" =
@@ -76,7 +74,8 @@ let%expect_test "test union of routers" =
       List.map targets ~f:(fun target -> ensure_string_match' router2 ~target)
     in
     let equal = List.equal (Option.equal String.equal) left right in
-    printf "%s\n"
+    printf
+      "%s\n"
       (if equal
       then Printf.sprintf "Union law %d - %b" nb equal
       else Printf.sprintf "Union law %d - %b" nb equal)
@@ -117,14 +116,14 @@ let%expect_test "test map" =
       ~f:Int.to_string
       (match match' (one_of [ route ]) ~target:"foo/5" with
       | FullMatch x -> Some x
-      | Match { result; _ } -> Some result
-      | NotFound -> None)
+      | MatchWithoutTrailingSlash r -> Some r
+      | NoMatch -> None)
   in
   let route_map =
     match match' (one_of [ map Int.to_string route ]) ~target:"foo/5" with
     | Routes.FullMatch x -> Some x
-    | Match { result; _ } -> Some result
-    | NotFound -> None
+    | MatchWithoutTrailingSlash r -> Some r
+    | NoMatch -> None
   in
   printf
     "Routes.map f === Monad.map on the result of the route match = %b\n"
@@ -140,7 +139,7 @@ let%expect_test "test extractors" =
       ; ((s "numbers" / int / int64 / int32 /? nil)
         @--> fun a b c -> Printf.sprintf "%d-%Ld-%ld" a b c)
       ; ((s "bar" /? wildcard) @--> fun a -> Routes.Parts.wildcard_match a)
-      ; ((s "baz" / int / s "and" //? wildcard)
+      ; ((s "baz" / int / s "and" /? wildcard)
         @--> fun a b -> Printf.sprintf "%d-%s" a (Routes.Parts.wildcard_match b))
       ]
   in
@@ -162,7 +161,7 @@ let%expect_test "test extractors" =
 
 let%expect_test "test leading slash is discarded" =
   let open Routes in
-  let router = one_of [ (s "foo" /? nil) @--> "foo"; empty @--> "empty" ] in
+  let router = one_of [ (s "foo" /? nil) @--> "foo"; nil @--> "empty" ] in
   let results =
     [ ensure_string_match' ~target:"foo" router
     ; ensure_string_match' ~target:"/foo" router
@@ -181,7 +180,7 @@ let%expect_test "verify that first parsed route matches" =
   let open Routes in
   let routes =
     one_of
-      [ empty @--> "empty"
+      [ nil @--> "empty"
       ; (s "foo" / int /? nil) @--> Int.to_string_hum
       ; (s "foo" / str /? nil) @--> String.uppercase
       ; (s "foo" / bool /? nil) @--> Bool.to_string
@@ -189,7 +188,7 @@ let%expect_test "verify that first parsed route matches" =
   in
   let routes' =
     one_of
-      [ empty @--> "empty"
+      [ nil @--> "empty"
       ; ((s "foo" / str /? nil) @--> fun s -> Int.to_string_hum (String.length s))
       ; (s "foo" / int /? nil) @--> Int.to_string_hum
       ; (s "foo" / bool /? nil) @--> Bool.to_string
@@ -219,9 +218,8 @@ let%expect_test "match routes with a common prefix" =
   let open Routes in
   let routes =
     one_of
-      [ empty @--> "root"
+      [ nil @--> "root"
       ; (s "foo" / s "bar" /? nil) @--> "one"
-      ; (s "foo" / s "bar" //? nil) @--> "trail"
       ; (s "foo" /? nil) @--> "two"
       ]
   in
@@ -248,11 +246,11 @@ let%expect_test "test route patterns" =
   let open Routes in
   let r1 = s "foo" / s "bar" /? nil in
   let r2 = s "foo" / int / bool /? nil in
-  let r3 = s "foo" / str / bool //? nil in
+  let r3 = s "foo" / str / bool /? nil in
   let r4 = s "baz" /? wildcard in
   let r5 = (s "hello" / s "world" /? nil) @--> "Route" in
   let results =
-    [ "empty", Caml.Format.asprintf "%a" pp_target empty
+    [ "empty", Caml.Format.asprintf "%a" pp_target nil
     ; "foo_bar", Caml.Format.asprintf "%a" pp_target r1
     ; "foo_int_bool", Caml.Format.asprintf "%a" pp_target r2
     ; "sprintf foo_int_bool", sprintf r2 12 true
@@ -266,8 +264,8 @@ let%expect_test "test route patterns" =
   [%expect
     {|
     ((empty /) (foo_bar /foo/bar) (foo_int_bool /foo/:int/:bool)
-     ("sprintf foo_int_bool" /foo/12/true) (foo_string_bool /foo/:string/:bool/)
-     (sprintf_string_bool /foo/hello/false/) (wildcard /baz/:wildcard)
+     ("sprintf foo_int_bool" /foo/12/true) (foo_string_bool /foo/:string/:bool)
+     (sprintf_string_bool /foo/hello/false) (wildcard /baz/:wildcard)
      (pretty_print_route /hello/world)) |}]
 ;;
 
@@ -316,7 +314,7 @@ let%expect_test "test custom pattern" =
 
 let%expect_test "route matcher discards query params" =
   let open Routes in
-  let routes = one_of [ ((s "foo" / str /? nil) @--> fun x -> x); empty @--> "root" ] in
+  let routes = one_of [ ((s "foo" / str /? nil) @--> fun x -> x); nil @--> "root" ] in
   ensure_string_match ~target:"/foo/hello?baz=bar" routes;
   ensure_string_match ~target:"?baz=bar" routes;
   [%expect {|
@@ -327,16 +325,8 @@ let%expect_test "route matcher discards query params" =
 let%expect_test "test prefixing targets" =
   let open Routes in
   let add_route path1 path2 handler (routes1, routes2) =
-    let routes1 =
-      routes1
-      |> add_route ((path1 / path2 /? nil) @--> handler)
-      |> add_route ((path1 / path2 //? nil) @--> handler)
-    in
-    let routes2 =
-      routes2
-      |> add_route ((path1 /~ (path2 /? nil)) @--> handler)
-      |> add_route ((path1 /~ (path2 //? nil)) @--> handler)
-    in
+    let routes1 = routes1 |> add_route ((path1 / path2 /? nil) @--> handler) in
+    let routes2 = routes2 |> add_route ((path1 /~ (path2 /? nil)) @--> handler) in
     routes1, routes2
   in
   let check_target (routes1, routes2) target =
@@ -354,7 +344,9 @@ let%expect_test "test prefixing targets" =
   check_target routes "foo/bar";
   check_target routes "foo/bar/10";
   check_target routes "foo/10";
-  [%expect {|
+  [%expect
+    {|
     Router1 and Router2 provide the same result = true
     Router1 and Router2 provide the same result = true
     Router1 and Router2 provide the same result = true |}]
+;;

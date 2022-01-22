@@ -26,12 +26,12 @@ We will start by defining a few simple routes that don't need to extract any pat
 
 ```ocaml
 # (* A simple route that matches the empty path segments. *);;
-# let root () = Routes.empty;;
-val root : unit -> ('a, 'a) Routes.target = <fun>
+# let root () = Routes.nil;;
+val root : unit -> ('a, 'a) Routes.path = <fun>
 
 # (* We can combine multiple segments using `/` *);;
 # let users () = Routes.(s "users" / s "get" /? nil);;
-val users : unit -> ('a, 'a) Routes.target = <fun>
+val users : unit -> ('a, 'a) Routes.path = <fun>
 ```
 
 We can use these route definitions to pretty-print into "patterns" that can potentially be used
@@ -53,7 +53,7 @@ path.
 
 ```ocaml
 # let sum () = Routes.(s "sum" / int / int /? nil);;
-val sum : unit -> (int -> int -> 'a, 'a) Routes.target = <fun>
+val sum : unit -> (int -> int -> 'a, 'a) Routes.path = <fun>
 ```
 
 Looking at the type for `sum` we can see that our route knows about our two integer path parameters.
@@ -61,7 +61,7 @@ A route can also extract parameters of different types.
 
 ```ocaml
 # let get_user () = Routes.(s "user" / str / int64 /? nil);;
-val get_user : unit -> (string -> int64 -> 'a, 'a) Routes.target = <fun>
+val get_user : unit -> (string -> int64 -> 'a, 'a) Routes.path = <fun>
 ```
 
 We can still pretty print such routes to get a human readable "pattern" that can be used to inform
@@ -142,8 +142,7 @@ val routes : string Routes.router = <abstr>
 
 # (* This route is not an exact match because of the final trailing slash. *);;
 # Routes.match' routes ~target:"/sum/1/2/";;
-- : string Routes.match_result =
-Routes.Match {Routes.with_trailing_slash = false; result = "3"}
+- : string Routes.match_result = Routes.MatchWithoutTrailingSlash "3"
 ```
 
 #### Dealing with trailing slashes
@@ -163,23 +162,21 @@ val no_trail : unit -> int Routes.route = <fun>
 - : int Routes.match_result = Routes.FullMatch 5
 
 # Routes.(match' (one_of [ no_trail () ]) ~target:"/foo/bar/hello/");;
-- : int Routes.match_result =
-Routes.Match {Routes.with_trailing_slash = false; result = 5}
+- : int Routes.match_result = Routes.MatchWithoutTrailingSlash 5
 ```
 
 To create a route that returns an exact match if there is a trailing slash, the route still needs to
 end with `nil`, but instead of `/?`, `//?` needs to be used. (note the extra slash).
 
 ```ocaml
-# let trail () = Routes.(s "foo" / s "bar" / str //? nil @--> fun msg -> String.length msg);;
+# let trail () = Routes.(s "foo" / s "bar" / str /? nil @--> fun msg -> String.length msg);;
 val trail : unit -> int Routes.route = <fun>
 
 # Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello");;
-- : int Routes.match_result =
-Routes.Match {Routes.with_trailing_slash = true; result = 5}
+- : int Routes.match_result = Routes.FullMatch 5
 
 # Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello/");;
-- : int Routes.match_result = Routes.FullMatch 5
+- : int Routes.match_result = Routes.MatchWithoutTrailingSlash 5
 ```
 
 More example of library usage can be seen in the [examples](https://github.com/anuragsoni/routes/tree/main/example) folder,

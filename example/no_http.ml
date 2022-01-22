@@ -22,9 +22,9 @@ module R = struct
 end
 
 let unwrap_result = function
-  | Routes.NotFound -> "No match"
+  | Routes.NoMatch -> "No match"
   | FullMatch r -> r
-  | Match { result; _ } -> result
+  | MatchWithoutTrailingSlash r -> r
 ;;
 
 let () =
