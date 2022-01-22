@@ -4,14 +4,14 @@ open! Stdio
 let ensure_empty ~target ~msg router =
   let open Routes in
   match match' ~target router with
-  | Routes.NotFound -> print_endline msg
+  | Routes.NotFound -> printf "%s\n" msg
   | _ -> assert false
 ;;
 
 let ensure_string_match ~target router =
   let open Routes in
   match match' ~target router with
-  | Routes.NotFound -> print_endline "No route matched"
+  | Routes.NotFound -> printf "%s\n" "No route matched"
   | FullMatch r -> printf "Exact match with result = %s\n" r
   | Match { with_trailing_slash; result } ->
     printf
@@ -76,7 +76,7 @@ let%expect_test "test union of routers" =
       List.map targets ~f:(fun target -> ensure_string_match' router2 ~target)
     in
     let equal = List.equal (Option.equal String.equal) left right in
-    print_endline
+    printf "%s\n"
       (if equal
       then Printf.sprintf "Union law %d - %b" nb equal
       else Printf.sprintf "Union law %d - %b" nb equal)
