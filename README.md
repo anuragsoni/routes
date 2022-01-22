@@ -190,12 +190,3 @@ opam install routes
 ```
 opam pin add routes git+https://github.com/anuragsoni/routes.git
 ```
-
-## Related Work
-
-The combinators are influenced by Rudi Grinberg's wonderful [blogpost](http://rgrinberg.com/posts/primitive-type-safe-routing/) about
-type safe routing done via an EDSL using GADTs + an interpreted for the DSL.
-
-Also thanks to Gabriel Radanne for feedback and for the [blog](https://drup.github.io/2016/08/02/difflists/) post showing the technique
-used in printf like functions.
-
