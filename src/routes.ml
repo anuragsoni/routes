@@ -220,28 +220,38 @@ let ksprintf' k { slash_kind; path } =
 let ksprintf k t = ksprintf' (fun x -> k ("/" ^ String.concat "/" x)) t
 let sprintf t = ksprintf (fun x -> x) t
 
+type 'a match_result =
+  | FullMatch of 'a
+  | Match of
+      { with_trailing_slash : bool
+      ; result : 'a
+      }
+  | NotFound
+
 let parse_route { slash_kind; path } handler params =
   let rec match_target
-      : type a b. (a, b) path -> a -> string list -> string list -> b option
+      : type a b. (a, b) path -> a -> string list -> string list -> b match_result
     =
    fun t f seen s ->
     match t with
     | End ->
       (match s, slash_kind with
-      | [ "" ], Trailing -> Some f
-      | [], NoSlash -> Some f
-      | _ -> None)
-    | Wildcard -> Some (f { Parts.prefix = List.rev seen; matched = s })
+      | [ "" ], Trailing -> FullMatch f
+      | [ "" ], NoSlash -> Match { result = f; with_trailing_slash = false }
+      | [], NoSlash -> FullMatch f
+      | [], Trailing -> Match { result = f; with_trailing_slash = true }
+      | _ -> NotFound)
+    | Wildcard -> FullMatch (f { Parts.prefix = List.rev seen; matched = s })
     | Match (x, fmt) ->
       (match s with
       | x' :: xs when x = x' -> match_target fmt f (x' :: seen) xs
-      | _ -> None)
+      | _ -> NotFound)
     | Conv ({ from_; _ }, fmt) ->
       (match s with
-      | [] -> None
+      | [] -> NotFound
       | x :: xs ->
         (match from_ x with
-        | None -> None
+        | None -> NotFound
         | Some x' -> match_target fmt (f x') (x :: seen) xs))
   in
   match_target path handler [] params
@@ -268,11 +278,13 @@ let add_route route routes =
 let run_routes target router =
   let routes = PatternTrie.feed_params router target in
   let rec aux = function
-    | [] -> None
+    | [] -> NotFound
     | Route (r, h, f) :: rs ->
       (match parse_route r h target with
-      | None -> aux rs
-      | Some r -> Some (f r))
+      | NotFound -> aux rs
+      | FullMatch r -> FullMatch (f r)
+      | Match { with_trailing_slash; result } ->
+        Match { with_trailing_slash; result = f result })
   in
   aux routes
 ;;

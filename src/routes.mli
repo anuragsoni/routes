@@ -189,8 +189,16 @@ val one_of : 'b route list -> 'b router
 
 val map : ('a -> 'b) -> 'a route -> 'b route
 
+type 'a match_result =
+  | FullMatch of 'a
+  | Match of
+      { with_trailing_slash : bool
+      ; result : 'a
+      }
+  | NotFound
+
 (** [match'] accepts a router and the target url to match. *)
-val match' : 'a router -> target:string -> 'a option
+val match' : 'a router -> target:string -> 'a match_result
 
 (** [ksprintf] takes a route pattern as an input and applies a continuation to the result
     of formatting the pattern into a URI path. *)
