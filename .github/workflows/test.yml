@@ -31,7 +31,11 @@ jobs:
         run: |
           opam pin add routes.dev -n .
           opam install -t . --deps-only
+      - name: Build
+        run: |
+          opam exec -- dune build @install
       - name: Run tests
+        if: runner.os == 'Linux'
         run: |
           opam exec -- dune runtest
       - name: Run doctest
