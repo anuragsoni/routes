@@ -243,25 +243,21 @@ let add_route route routes =
   PatternTrie.add patterns route routes
 ;;
 
-let run_routes target router =
-  let routes = PatternTrie.feed_params router target in
-  let rec aux = function
-    | [] -> NoMatch
-    | Route (r, h, f) :: rs ->
-      (match parse_route r h target with
-      | NoMatch -> aux rs
-      | FullMatch r -> FullMatch (f r)
-      | MatchWithTrailingSlash r -> MatchWithTrailingSlash (f r))
-  in
-  aux routes
-;;
-
 let map f (Route (r, h, g)) = Route (r, h, fun x -> f (g x))
 
-let match' routes ~target =
+let rec match_routes target = function
+  | [] -> NoMatch
+  | Route (r, h, f) :: rs ->
+    (match parse_route r h target with
+    | NoMatch -> match_routes target rs
+    | FullMatch r -> FullMatch (f r)
+    | MatchWithTrailingSlash r -> MatchWithTrailingSlash (f r))
+;;
+
+let match' router ~target =
   let target = Util.split_path target in
-  let matcher = run_routes target in
-  matcher routes
+  let routes = PatternTrie.feed_params router target in
+  match_routes target routes
 ;;
 
 let ( /~ ) m path = m path
