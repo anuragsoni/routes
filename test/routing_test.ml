@@ -13,9 +13,9 @@ let ensure_string_match ~target router =
   match match' ~target router with
   | Routes.NoMatch -> printf "%s\n" "No route matched"
   | FullMatch r -> printf "Exact match with result = %s\n" r
-  | MatchWithoutTrailingSlash r ->
+  | MatchWithTrailingSlash r ->
     printf
-      "Not exact match, but found a match without a trailing slash with result = %s\n"
+      "Not exact match, but found a matching route with a trailing slash with result = %s\n"
       r
 ;;
 
@@ -24,10 +24,11 @@ let ensure_string_match' ~target router =
   match match' ~target router with
   | Routes.NoMatch -> None
   | FullMatch r -> Some (Printf.sprintf "Exact match with result = %s" r)
-  | MatchWithoutTrailingSlash r ->
+  | MatchWithTrailingSlash r ->
     Some
       (Printf.sprintf
-         "Not exact match, but found a match without a trailing slash with result = %s"
+         "Not exact match, but found a matching route with a trailing slash with result \
+          = %s"
          r)
 ;;
 
@@ -116,13 +117,13 @@ let%expect_test "test map" =
       ~f:Int.to_string
       (match match' (one_of [ route ]) ~target:"foo/5" with
       | FullMatch x -> Some x
-      | MatchWithoutTrailingSlash r -> Some r
+      | MatchWithTrailingSlash r -> Some r
       | NoMatch -> None)
   in
   let route_map =
     match match' (one_of [ map Int.to_string route ]) ~target:"foo/5" with
     | Routes.FullMatch x -> Some x
-    | MatchWithoutTrailingSlash r -> Some r
+    | MatchWithTrailingSlash r -> Some r
     | NoMatch -> None
   in
   printf
@@ -238,7 +239,7 @@ let%expect_test "match routes with a common prefix" =
     (("Matches empty route" ("Exact match with result = root"))
      ("Matches first overlapping path param" ("Exact match with result = two"))
      ("Matches first overlapping path param"
-      ("Not exact match, but found a match without a trailing slash with result = one"))
+      ("Not exact match, but found a matching route with a trailing slash with result = one"))
      ("Matches first overlapping path param" ("Exact match with result = one"))) |}]
 ;;
 

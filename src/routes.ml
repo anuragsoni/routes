@@ -193,7 +193,7 @@ let sprintf t = ksprintf (fun x -> x) t
 
 type 'a match_result =
   | FullMatch of 'a
-  | MatchWithoutTrailingSlash of 'a
+  | MatchWithTrailingSlash of 'a
   | NoMatch
 
 let parse_route path handler params =
@@ -204,7 +204,7 @@ let parse_route path handler params =
     match t with
     | End ->
       (match s with
-      | [ "" ] -> MatchWithoutTrailingSlash f
+      | [ "" ] -> MatchWithTrailingSlash f
       | [] -> FullMatch f
       | _ -> NoMatch)
     | Wildcard -> FullMatch (f { Parts.prefix = List.rev seen; matched = s })
@@ -249,7 +249,7 @@ let run_routes target router =
       (match parse_route r h target with
       | NoMatch -> aux rs
       | FullMatch r -> FullMatch (f r)
-      | MatchWithoutTrailingSlash r -> MatchWithoutTrailingSlash (f r))
+      | MatchWithTrailingSlash r -> MatchWithTrailingSlash (f r))
   in
   aux routes
 ;;

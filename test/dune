@@ -1,5 +1,6 @@
 (library
  (name routing_test)
  (inline_tests)
- (preprocess (pps ppx_expect ppx_sexp_conv ppx_sexp_value ppx_custom_printf))
+ (preprocess
+  (pps ppx_expect ppx_sexp_conv ppx_sexp_value ppx_custom_printf))
  (libraries base stdio routes))

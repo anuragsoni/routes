@@ -142,7 +142,7 @@ val routes : string Routes.router = <abstr>
 
 # (* This route is not an exact match because of the final trailing slash. *);;
 # Routes.match' routes ~target:"/sum/1/2/";;
-- : string Routes.match_result = Routes.MatchWithoutTrailingSlash "3"
+- : string Routes.match_result = Routes.MatchWithTrailingSlash "3"
 ```
 
 #### Dealing with trailing slashes
@@ -162,7 +162,7 @@ val no_trail : unit -> int Routes.route = <fun>
 - : int Routes.match_result = Routes.FullMatch 5
 
 # Routes.(match' (one_of [ no_trail () ]) ~target:"/foo/bar/hello/");;
-- : int Routes.match_result = Routes.MatchWithoutTrailingSlash 5
+- : int Routes.match_result = Routes.MatchWithTrailingSlash 5
 ```
 
 To create a route that returns an exact match if there is a trailing slash, the route still needs to
@@ -176,7 +176,7 @@ val trail : unit -> int Routes.route = <fun>
 - : int Routes.match_result = Routes.FullMatch 5
 
 # Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello/");;
-- : int Routes.match_result = Routes.MatchWithoutTrailingSlash 5
+- : int Routes.match_result = Routes.MatchWithTrailingSlash 5
 ```
 
 More example of library usage can be seen in the [examples](https://github.com/anuragsoni/routes/tree/main/example) folder,

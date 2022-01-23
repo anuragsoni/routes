@@ -24,7 +24,7 @@ end
 let unwrap_result = function
   | Routes.NoMatch -> "No match"
   | FullMatch r -> r
-  | MatchWithoutTrailingSlash r -> r
+  | MatchWithTrailingSlash r -> r
 ;;
 
 let () =
