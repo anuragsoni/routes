@@ -5,13 +5,6 @@
 (** [path] represents a sequence of path parameter patterns that are expected in a route. *)
 type ('a, 'b) path
 
-(** [target] represents a combination of a sequence of path params, and whether that
-    sequence should consider trailing slash parameters or not. Its analogous to a URI
-    target.
-
-    @since 0.8.0 *)
-type ('a, 'b) target
-
 (** [route] is a combination of a path sequence, with a function that will be called on a
     successful match. When a path sequence matches, the patterns that are extracted are
     forwarded to said function with the types that the user defined. Note that because of
@@ -69,14 +62,9 @@ val s : string -> ('a, 'b) path -> ('a, 'b) path
 (** [wildcard] matches all remaining path segments as a string. *)
 val wildcard : (Parts.t -> 'a, 'a) path
 
-(** [nil] is used to end a sequence of path parameters. *)
+(** [nil] is used to end a sequence of path parameters. It can also be used to represent
+    an empty route that can match "/" or "". *)
 val nil : ('a, 'a) path
-
-(** [empty] is used to represent an empty route. This is useful for matching a route that
-    equals "/" or "".
-
-    @since 0.8.0 *)
-val empty : ('a, 'a) target
 
 (** [pattern] accepts two functions, one for converting a user provided type to a string
     representation, and another to potentially convert a string to the said type. With
@@ -160,25 +148,17 @@ val custom
     {[ let route () = Routes.(str / s "foo" / int /? nil) ]} *)
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
-val ( /~ ) : (('a, 'b) path -> ('c, 'd) path) -> ('a, 'b) target -> ('c, 'd) target
+val ( /~ ) : (('a, 'b) path -> ('c, 'd) path) -> ('a, 'b) path -> ('c, 'd) path
 
 (** [l /? r] is used to express the sequence of, parse l followed by parse r and then stop
     parsing. This is used at the end of the route pattern to define how a route should
     end. The right hand parameter [r] should be a pattern definition that cannot be used
-    in further chains joined by [/].
-
-    [/?] also indicates that a route needs to finish without a trailing slash. *)
-val ( /? ) : ('a -> ('b, 'c) path) -> 'a -> ('b, 'c) target
-
-(** [//?] is similar to [/?] with the difference that it is used to create a route that
-    must finish with a trailing slash.
-
-    @since 0.8.0 *)
-val ( //? ) : ('a -> ('b, 'c) path) -> 'a -> ('b, 'c) target
+    in further chains joined by [/]. *)
+val ( /? ) : ('a -> ('b, 'c) path) -> 'a -> ('b, 'c) path
 
 (** [r @--> h] is used to connect a route pattern [r] to a function [h] that gets called
     if this pattern is successfully matched.*)
-val ( @--> ) : ('a, 'b) target -> 'a -> 'b route
+val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
 
 (** [one_of] accepts a list of tuples comprised of route definitions of type ['b route]
     where 'b is the type that a successful route match will return.
@@ -189,16 +169,21 @@ val one_of : 'b route list -> 'b router
 
 val map : ('a -> 'b) -> 'a route -> 'b route
 
+type 'a match_result =
+  | FullMatch of 'a
+  | MatchWithTrailingSlash of 'a
+  | NoMatch
+
 (** [match'] accepts a router and the target url to match. *)
-val match' : 'a router -> target:string -> 'a option
+val match' : 'a router -> target:string -> 'a match_result
 
 (** [ksprintf] takes a route pattern as an input and applies a continuation to the result
     of formatting the pattern into a URI path. *)
-val ksprintf : (string -> 'b) -> ('a, 'b) target -> 'a
+val ksprintf : (string -> 'b) -> ('a, 'b) path -> 'a
 
 (** [sprintf] takes a route pattern as an input, and returns a string with the result of
     formatting the pattern into a URI path. *)
-val sprintf : ('a, string) target -> 'a
+val sprintf : ('a, string) path -> 'a
 
 (** [pp_target] can be used to pretty-print a sequence of path params. This can be useful
     to get a human readable output that indicates the kind of pattern that a route will
@@ -213,7 +198,7 @@ val sprintf : ('a, string) target -> 'a
       -: "foo/:int/add/:bool"
     ]}
     @since 0.8.0 *)
-val pp_target : Format.formatter -> ('a, 'b) target -> unit
+val pp_target : Format.formatter -> ('a, 'b) path -> unit
 
 (** [pp_route] is similar to [pp_target], except it takes a route (combination of path
     sequence and a handler) as input, instead of just a path sequence. *)

@@ -14,13 +14,8 @@ jobs:
         operating-system:
           - ubuntu-latest
         ocaml-version:
-          - 4.12.x
-          - 4.11.x
-          - 4.07.x
-          - 4.05.x
-        include:
-          - operating-system: windows-latest
-            ocaml-version: 4.12.x
+          - 4.13.x
+          - 4.08.x
     steps:
       - uses: actions/checkout@v2
       - name: Setup OCaml ${{ matrix.ocaml-version }}
@@ -36,7 +31,6 @@ jobs:
       - name: Run tests
         run: |
           opam exec -- dune runtest
-      - name: Run doctest
-        if: runner.os == 'Linux'
+      - name: Build examples
         run: |
           opam exec -- dune build @example

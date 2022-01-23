@@ -207,7 +207,7 @@ let router =
          let split = Util.split_path u |> List.map (fun q -> s q) in
          let r =
            match split with
-           | [] -> empty
+           | [] -> nil
            | [ x ] -> x /? nil
            | x :: xs ->
              let t = List.fold_left (fun acc y -> acc / y) x xs in

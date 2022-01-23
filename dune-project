@@ -23,8 +23,13 @@
   (router http))
  (depends
   (ocaml
-   (>= 4.05.0))
-  (alcotest :with-test)
+   (>= 4.08.0))
+  (base :with-test)
+  (stdio :with-test)
+  (ppx_expect :with-test)
+  (ppx_sexp_conv :with-test)
+  (ppx_sexp_value :with-test)
+  (ppx_custom_printf :with-test)
   (mdx :with-test)
   (odoc :with-doc))
  (synopsis "Typed routing for OCaml applications")

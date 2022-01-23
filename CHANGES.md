@@ -1,3 +1,15 @@
+# 2.0.0
+
+* use `ppx_expect` for tests
+
+## Breaking changes
+
+* Drop support for OCaml 4.05-4.07
+* Switch to a new model for trailing slash handling. In routes 1.0.0 users needed to be careful about using `/?` and `//?` as the former would only match routes without a trailing slash, and the latter would enforce a trailing slash.
+  - Users only need to use `/?` to end routes, and it will cover both routes ending with trailing slashes and without
+  - The type used for representing match results has more information about whether it was an exact match, or if it was a match but the input target had a trailing slash at the end.
+  - `MatchWithTrailingSlash` informs the user that the current target was considered a match, but that the target has an additional trailing slash
+
 # 1.0.0
 
 * First major release. No changes from 0.9.1
