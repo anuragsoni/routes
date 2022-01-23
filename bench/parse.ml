@@ -3,6 +3,25 @@
 
 open Routes
 
+let untyped_router =
+  let open Untyped in
+  one_of
+    [ route "/1/classes/:a" "class"
+    ; route "/1/classes" "class"
+    ; route "/1/users" "hello"
+    ; route "/1/login" "login"
+    ; route "/1/users/:name" "user"
+    ; route "/1/roles" "role"
+    ; route "/1/roles/:id" "role"
+    ; route "/1/files/:name" "file"
+    ; route "/1/events/:name" "event"
+    ; route "/1/push" "push"
+    ; route "/1/functions" "functions"
+    ; route "/1/installations" "install"
+    ; route "/1/installations/:name" "install"
+    ]
+;;
+
 let routes =
   let classes () = s "1" / s "classes" / str in
   let object_routes =
@@ -55,9 +74,19 @@ let bench_static =
   Bench.Test.create ~name:"Parse static" (fun () -> match' ~target:"/1/users" routes)
 ;;
 
+let bench_static_untyped =
+  Bench.Test.create ~name:"Parse static (Untyped)" (fun () ->
+      Untyped.match' ~target:"/1/users" untyped_router)
+;;
+
 let bench_one_param =
   Bench.Test.create ~name:"Parse 1 param" (fun () ->
       match' ~target:"/1/classes/ocaml" routes)
+;;
+
+let bench_one_param_untyped =
+  Bench.Test.create ~name:"Parse 1 param (Untyped)" (fun () ->
+      Untyped.match' ~target:"/1/classes/ocaml" untyped_router)
 ;;
 
 let bench_two_param =
@@ -65,4 +94,17 @@ let bench_two_param =
       match' ~target:"/1/classes/ocaml/121" routes)
 ;;
 
-let benches = [ bench_static; bench_one_param; bench_two_param ]
+let bench_two_param_untyped =
+  Bench.Test.create ~name:"Parse 2 param (Untyped)" (fun () ->
+      Untyped.match' ~target:"/1/classes/ocaml/121" untyped_router)
+;;
+
+let benches =
+  [ bench_static
+  ; bench_static_untyped
+  ; bench_one_param
+  ; bench_one_param_untyped
+  ; bench_two_param
+  ; bench_two_param_untyped
+  ]
+;;
