@@ -16,9 +16,6 @@ jobs:
         ocaml-version:
           - 4.13.x
           - 4.08.x
-        include:
-          - operating-system: windows-latest
-            ocaml-version: 4.13.x
     steps:
       - uses: actions/checkout@v2
       - name: Setup OCaml ${{ matrix.ocaml-version }}
@@ -31,14 +28,9 @@ jobs:
         run: |
           opam pin add routes.dev -n .
           opam install -t . --deps-only
-      - name: Build
-        run: |
-          opam exec -- dune build @install
       - name: Run tests
-        if: runner.os == 'Linux'
         run: |
           opam exec -- dune runtest
-      - name: Run doctest
-        if: runner.os == 'Linux'
+      - name: Build examples
         run: |
           opam exec -- dune build @example
