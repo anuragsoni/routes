@@ -2,6 +2,9 @@
     OCaml applications. The core library will be independent of any particular web
     framework or runtime. *)
 
+module Parts = Parts
+module Untyped = Untyped
+
 (** [path] represents a sequence of path parameter patterns that are expected in a route. *)
 type ('a, 'b) path
 
@@ -29,14 +32,6 @@ type 'b route
 (** [router] is a collection of multiple routes. It transforms a list of routes into a
     trie like structure, that is then used for matching an input target url.*)
 type 'b router
-
-module Parts : sig
-  type t
-
-  val prefix : t -> string
-  val wildcard_match : t -> string
-  val of_parts : string -> t
-end
 
 (** [int] matches a path segment if it can be successfully coerced into an integer. *)
 val int : ('a, 'b) path -> (int -> 'a, 'b) path

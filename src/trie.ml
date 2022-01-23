@@ -19,28 +19,44 @@ type 'a t = 'a node
 let empty = { parsers = []; children = KeyMap.empty; capture = None; wildcard = false }
 
 let feed_params t params =
-  let rec aux t params =
+  let rec aux t params captures =
     match t, params with
-    | { parsers = []; _ }, [] -> []
-    | { parsers = rs; _ }, [] -> rs
-    | { parsers = rs; _ }, [ "" ] -> rs
-    | { parsers = rs; wildcard; _ }, _ when wildcard -> rs
+    | { parsers = []; _ }, [] -> [], List.rev captures
+    | { parsers = rs; _ }, [] -> rs, List.rev captures
+    | { parsers = rs; _ }, [ "" ] -> rs, List.rev ("" :: captures)
+    | { parsers = rs; wildcard; _ }, _ when wildcard -> rs, List.rev captures @ params
     | { children; capture; _ }, x :: xs ->
       (match KeyMap.find_opt x children with
       | None ->
         (match capture with
-        | None -> []
-        | Some t' -> aux t' xs)
-      | Some m' -> aux m' xs)
+        | None -> [], List.rev captures
+        | Some t' -> aux t' xs (x :: captures))
+      | Some m' -> aux m' xs captures)
   in
-  aux t params
+  aux t params []
 ;;
 
-let add k v t =
+exception Ambiguous_routes of string
+
+let serialize_pattern ks =
+  ks
+  |> ListLabels.map ~f:(function
+         | Key.Match s -> s
+         | Key.Wildcard -> "*wildcard"
+         | Key.Capture -> ":capture")
+  |> String.concat "/"
+;;
+
+let add ~raise_on_ambiguous keys v t =
   let rec aux k t =
     match k, t with
-    | [], ({ parsers = x; _ } as n) -> { n with parsers = v :: x }
+    | [], ({ parsers = []; _ } as n) -> { n with parsers = [ v ] }
+    | [], ({ parsers = x; _ } as n) ->
+      if raise_on_ambiguous then raise (Ambiguous_routes (serialize_pattern keys));
+      { n with parsers = v :: x }
     | x :: r, ({ children; capture; _ } as n) ->
+      if raise_on_ambiguous && n.wildcard
+      then raise (Ambiguous_routes (serialize_pattern keys));
       (match x with
       | Key.Match w ->
         let t' =
@@ -58,9 +74,14 @@ let add k v t =
         in
         let t'' = aux r t' in
         { n with capture = Some t'' }
-      | Key.Wildcard -> { n with parsers = v :: n.parsers; wildcard = true })
+      | Key.Wildcard ->
+        if raise_on_ambiguous
+        then
+          if (not (KeyMap.is_empty n.children)) || Option.is_some n.capture
+          then raise (Ambiguous_routes (serialize_pattern keys));
+        { n with parsers = v :: n.parsers; wildcard = true })
   in
-  aux k t
+  aux keys t
 ;;
 
 let rec union t1 t2 =

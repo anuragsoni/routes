@@ -1,4 +1,6 @@
 module PatternTrie = Trie
+module Parts = Parts
+module Untyped = Untyped
 
 type 'a conv =
   { to_ : 'a -> string
@@ -7,18 +9,6 @@ type 'a conv =
   }
 
 let conv to_ from_ label = { to_; from_; label }
-
-module Parts = struct
-  type t =
-    { prefix : string list
-    ; matched : string list
-    }
-
-  let of_parts' xs = { prefix = []; matched = xs }
-  let of_parts x = of_parts' @@ Util.split_path x
-  let wildcard_match t = String.concat "/" ("" :: t.matched)
-  let prefix t = String.concat "/" ("" :: t.prefix)
-end
 
 type ('a, 'b) path =
   | End : ('a, 'a) path
@@ -72,7 +62,7 @@ let ksprintf' k path =
   let rec aux : type a b. (string list -> b) -> (a, b) path -> a =
    fun k -> function
     | End -> k []
-    | Wildcard -> fun { Parts.matched; _ } -> k (List.concat [ matched; [] ])
+    | Wildcard -> fun parts -> k (List.concat [ Parts.matched parts; [] ])
     | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
     | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ (to_ x :: rest)) fmt
   in
@@ -98,7 +88,7 @@ let parse_route path handler params =
       | [ "" ] -> MatchWithTrailingSlash f
       | [] -> FullMatch f
       | _ -> NoMatch)
-    | Wildcard -> FullMatch (f { Parts.prefix = List.rev seen; matched = s })
+    | Wildcard -> FullMatch (f (Parts.create ~prefix:(List.rev seen) ~matched:s))
     | Match (x, fmt) ->
       (match s with
       | x' :: xs when x = x' -> match_target fmt f (x' :: seen) xs
@@ -119,7 +109,7 @@ let one_of routes =
   List.fold_left
     (fun routes (Route (path, _, _) as route) ->
       let patterns = route_pattern path in
-      PatternTrie.add patterns route routes)
+      PatternTrie.add ~raise_on_ambiguous:false patterns route routes)
     empty_router
     routes
 ;;
@@ -129,7 +119,7 @@ let union = PatternTrie.union
 let add_route route routes =
   let (Route (path, _, _)) = route in
   let patterns = route_pattern path in
-  PatternTrie.add patterns route routes
+  PatternTrie.add ~raise_on_ambiguous:false patterns route routes
 ;;
 
 let map f (Route (r, h, g)) = Route (r, h, fun x -> f (g x))
@@ -145,7 +135,7 @@ let rec match_routes target = function
 
 let match' router ~target =
   let target = Util.split_path target in
-  let routes = PatternTrie.feed_params router target in
+  let routes, _captures = PatternTrie.feed_params router target in
   match_routes target routes
 ;;
 
