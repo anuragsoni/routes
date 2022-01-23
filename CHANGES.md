@@ -9,6 +9,7 @@
   - Users only need to use `/?` to end routes, and it will cover both routes ending with trailing slashes and without
   - The type used for representing match results has more information about whether it was an exact match, or if it was a match but the input target had a trailing slash at the end.
   - `MatchWithTrailingSlash` informs the user that the current target was considered a match, but that the target has an additional trailing slash
+* Removes format based pretty printers in-favor of `string_of_` functions.
 
 # 1.0.0
 

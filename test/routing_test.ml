@@ -251,14 +251,14 @@ let%expect_test "test route patterns" =
   let r4 = s "baz" /? wildcard in
   let r5 = (s "hello" / s "world" /? nil) @--> "Route" in
   let results =
-    [ "empty", Caml.Format.asprintf "%a" pp_target nil
-    ; "foo_bar", Caml.Format.asprintf "%a" pp_target r1
-    ; "foo_int_bool", Caml.Format.asprintf "%a" pp_target r2
+    [ "empty", string_of_path nil
+    ; "foo_bar", string_of_path r1
+    ; "foo_int_bool", string_of_path r2
     ; "sprintf foo_int_bool", sprintf r2 12 true
-    ; "foo_string_bool", Caml.Format.asprintf "%a" pp_target r3
+    ; "foo_string_bool", string_of_path r3
     ; "sprintf_string_bool", sprintf r3 "hello" false
-    ; "wildcard", Caml.Format.asprintf "%a" pp_target r4
-    ; "pretty_print_route", Caml.Format.asprintf "%a" pp_route r5
+    ; "wildcard", string_of_path r4
+    ; "pretty_print_route", string_of_route r5
     ]
   in
   printf !"%{sexp: (string * string) list}\n" results;
@@ -300,7 +300,7 @@ let%expect_test "test custom pattern" =
       , ensure_string_match' ~target:"/foo/12/shape/Circle" router )
     ; ( "Invalid shape does not match"
       , ensure_string_match' ~target:"/foo/12/shape/rectangle" router )
-    ; "pretty print custom pattern", Some (Caml.Format.asprintf "%a" pp_route (r1 ()))
+    ; "pretty print custom pattern", Some (string_of_route (r1 ()))
     ; "serialize route with custom pattern", Some (sprintf (r2 ()) Square)
     ]
   in
