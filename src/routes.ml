@@ -145,6 +145,7 @@ let pattern to_ from_ label r = Conv (conv to_ from_ label, r)
 let custom ~serialize:to_ ~parse:from_ ~label r = Conv (conv to_ from_ label, r)
 let empty_router = PatternTrie.empty
 let ( @--> ) r handler = Route (r, handler, fun x -> x)
+let route r handler = Route (r, handler, fun x -> x)
 let s w r = Match (w, r)
 let of_conv conv r = Conv (conv, r)
 let int r = of_conv (conv string_of_int int_of_string_opt ":int") r

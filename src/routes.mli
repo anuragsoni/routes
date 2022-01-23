@@ -160,6 +160,12 @@ val ( /? ) : ('a -> ('b, 'c) path) -> 'a -> ('b, 'c) path
     if this pattern is successfully matched.*)
 val ( @--> ) : ('a, 'b) path -> 'a -> 'b route
 
+(** [route r h] is the same as [r @--> h]. It is used to connect a route pattern [r] to a
+    function [h] that gets called if the pattern is a successfully matched.
+
+    @since 2.0.0 *)
+val route : ('a, 'b) path -> 'a -> 'b route
+
 (** [one_of] accepts a list of tuples comprised of route definitions of type ['b route]
     where 'b is the type that a successful route match will return.
 

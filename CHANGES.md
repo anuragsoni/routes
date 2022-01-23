@@ -1,6 +1,7 @@
 # 2.0.0
 
 * use `ppx_expect` for tests
+* add `route` function which is an alias of `@-->` and is used to connect a route pattern to a handler
 
 ## Breaking changes
 

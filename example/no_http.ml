@@ -11,12 +11,12 @@ module R = struct
 
   let routes =
     one_of
-      [ (s "hi" /? nil) @--> "Hello, World"
-      ; (s "hello" / s "from" / s "routes" /? nil) @--> "Hello, Routes"
-      ; (s "sum" / int / int /? nil) @--> sum
-      ; user_and_id @--> id_handler
-      ; user_and_admin @--> admin_handler
-      ; q @--> "Foobar"
+      [ route (s "hi" /? nil) "Hello, World"
+      ; route (s "hello" / s "from" / s "routes" /? nil) "Hello, Routes"
+      ; route (s "sum" / int / int /? nil) sum
+      ; route user_and_id id_handler
+      ; route user_and_admin admin_handler
+      ; route q "Foobar"
       ]
   ;;
 end
