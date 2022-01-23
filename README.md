@@ -34,16 +34,13 @@ val root : unit -> ('a, 'a) Routes.path = <fun>
 val users : unit -> ('a, 'a) Routes.path = <fun>
 ```
 
-We can use these route definitions to pretty-print into "patterns" that can potentially be used
-to show what kind of routes your application can match. An application could potentially use this
-as a response to a route-not-found error and inform the client of what kind of routes it supports.
-We will use `Format.asprintf` to get a string that contains the result of our pretty printer.
-
+We can use these route definitions to get a string "pattern" that can potentially be used
+to show what kind of routes your application can match.
 ```ocaml
-# Format.asprintf "%a" Routes.pp_target (root ());;
+# Routes.string_of_path (root ());;
 - : string = "/"
 
-# Format.asprintf "%a" Routes.pp_target (users ());;
+# Routes.string_of_path (users ());;
 - : string = "/users/get"
 ```
 
@@ -81,10 +78,10 @@ reflect the change in the route type, and if the types change the user will get 
 types. This can be useful in ensuring that we avoid using bad/outdated URLs in our application.
 
 ```ocaml
-# Format.asprintf "%a" Routes.pp_target (sum ());;
+# Routes.string_of_path (sum ());;
 - : string = "/sum/:int/:int"
 
-# Format.asprintf "%a" Routes.pp_target (get_user ());;
+# Routes.string_of_path (get_user ());;
 - : string = "/user/:string/:int64"
 
 # Routes.sprintf (sum ());;
