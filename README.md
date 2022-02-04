@@ -148,8 +148,8 @@ Every route definition can control what behavior it expects when it encounters
 a trailing slash. In the examples above all route definitions ended with
 `/? nil`. This will result in an exact match if the route does not end in a trailing slash.
 If the input target matches every paramter but has an additional trailing slash, the route will
-still be considered a match, but it will inform the user that the matching route was found because of
-disregarding the trailing slash.
+still be considered a match, but it will inform the user that the matching route was found, 
+effectively having disregarded the trailing slash.
 
 ```ocaml
 # let no_trail () = Routes.(s "foo" / s "bar" / str /? nil @--> fun msg -> String.length msg);;
