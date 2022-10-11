@@ -145,7 +145,9 @@ val custom
     followed by parse r. Example: If we want to define a route that matches a string
     followd by a constant "foo" and then an integer, we'd use the [/] operator like below:
 
-    {[ let route () = Routes.(str / s "foo" / int /? nil) ]} *)
+    {[
+      let route () = Routes.(str / s "foo" / int /? nil)
+    ]} *)
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 
 val ( /~ ) : (('a, 'b) path -> ('c, 'd) path) -> ('a, 'b) path -> ('c, 'd) path
@@ -190,6 +192,24 @@ val ksprintf : (string -> 'b) -> ('a, 'b) path -> 'a
 (** [sprintf] takes a route pattern as an input, and returns a string with the result of
     formatting the pattern into a URI path. *)
 val sprintf : ('a, string) path -> 'a
+
+(** [pp_target] can be used to pretty-print a sequence of path params. This can be useful
+    to get a human readable output that indicates the kind of pattern that a route will
+    match. When creating a custom pattern matcher using [pattern], a string label needs to
+    be provided. This label is used by [pp_target] when preparing the pretty-print output.
+    Example:
+
+    {[
+      let r () = Routes.(s "foo" / int / s "add" / bool);;
+      Format.asprintf "%a" Routes.pp_target r;;
+      -: "foo/:int/add/:bool"
+    ]}
+    @since 0.8.0 *)
+val pp_target : Format.formatter -> ('a, 'b) path -> unit
+
+(** [pp_route] is similar to [pp_target], except it takes a route (combination of path
+    sequence and a handler) as input, instead of just a path sequence. *)
+val pp_route : Format.formatter -> 'a route -> unit
 
 (** [string_of_path] converts a sequence of path params to a human readable string that
     indicates the kind of pattern that a route will match. When creating a custom pattern
