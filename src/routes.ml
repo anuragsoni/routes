@@ -5,8 +5,8 @@ module Util = struct
       | "" | "/" -> []
       | _ ->
         (match String.split_on_char '/' target with
-        | "" :: xs -> xs
-        | xs -> xs)
+         | "" :: xs -> xs
+         | xs -> xs)
     in
     match String.index_opt target '?' with
     | None -> split_target target
@@ -45,11 +45,11 @@ module PatternTrie = struct
       | { parsers = rs; wildcard; _ }, _ when wildcard -> rs
       | { children; capture; _ }, x :: xs ->
         (match KeyMap.find_opt x children with
-        | None ->
-          (match capture with
-          | None -> []
-          | Some t' -> aux t' xs)
-        | Some m' -> aux m' xs)
+         | None ->
+           (match capture with
+            | None -> []
+            | Some t' -> aux t' xs)
+         | Some m' -> aux m' xs)
     in
     aux t params
   ;;
@@ -60,23 +60,23 @@ module PatternTrie = struct
       | [], ({ parsers = x; _ } as n) -> { n with parsers = v :: x }
       | x :: r, ({ children; capture; _ } as n) ->
         (match x with
-        | Key.Match w ->
-          let t' =
-            match KeyMap.find_opt w children with
-            | None -> empty
-            | Some v -> v
-          in
-          let t'' = aux r t' in
-          { n with children = KeyMap.add w t'' children }
-        | Key.Capture ->
-          let t' =
-            match capture with
-            | None -> empty
-            | Some v -> v
-          in
-          let t'' = aux r t' in
-          { n with capture = Some t'' }
-        | Key.Wildcard -> { n with parsers = v :: n.parsers; wildcard = true })
+         | Key.Match w ->
+           let t' =
+             match KeyMap.find_opt w children with
+             | None -> empty
+             | Some v -> v
+           in
+           let t'' = aux r t' in
+           { n with children = KeyMap.add w t'' children }
+         | Key.Capture ->
+           let t' =
+             match capture with
+             | None -> empty
+             | Some v -> v
+           in
+           let t'' = aux r t' in
+           { n with capture = Some t'' }
+         | Key.Wildcard -> { n with parsers = v :: n.parsers; wildcard = true })
     in
     aux k t
   ;;
@@ -201,27 +201,27 @@ type 'a match_result =
 
 let parse_route path handler params =
   let rec match_target
-      : type a b. (a, b) path -> a -> string list -> string list -> b match_result
+    : type a b. (a, b) path -> a -> string list -> string list -> b match_result
     =
    fun t f seen s ->
     match t with
     | End ->
       (match s with
-      | [ "" ] -> MatchWithTrailingSlash f
-      | [] -> FullMatch f
-      | _ -> NoMatch)
+       | [ "" ] -> MatchWithTrailingSlash f
+       | [] -> FullMatch f
+       | _ -> NoMatch)
     | Wildcard -> FullMatch (f { Parts.prefix = List.rev seen; matched = s })
     | Match (x, fmt) ->
       (match s with
-      | x' :: xs when x = x' -> match_target fmt f (x' :: seen) xs
-      | _ -> NoMatch)
+       | x' :: xs when x = x' -> match_target fmt f (x' :: seen) xs
+       | _ -> NoMatch)
     | Conv ({ from_; _ }, fmt) ->
       (match s with
-      | [] -> NoMatch
-      | x :: xs ->
-        (match from_ x with
-        | None -> NoMatch
-        | Some x' -> match_target fmt (f x') (x :: seen) xs))
+       | [] -> NoMatch
+       | x :: xs ->
+         (match from_ x with
+          | None -> NoMatch
+          | Some x' -> match_target fmt (f x') (x :: seen) xs))
   in
   match_target path handler [] params
 ;;
@@ -250,9 +250,9 @@ let rec match_routes target = function
   | [] -> NoMatch
   | Route (r, h, f) :: rs ->
     (match parse_route r h target with
-    | NoMatch -> match_routes target rs
-    | FullMatch r -> FullMatch (f r)
-    | MatchWithTrailingSlash r -> MatchWithTrailingSlash (f r))
+     | NoMatch -> match_routes target rs
+     | FullMatch r -> FullMatch (f r)
+     | MatchWithTrailingSlash r -> MatchWithTrailingSlash (f r))
 ;;
 
 let match' router ~target =

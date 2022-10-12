@@ -116,9 +116,9 @@ let%expect_test "test map" =
     Option.map
       ~f:Int.to_string
       (match match' (one_of [ route ]) ~target:"foo/5" with
-      | FullMatch x -> Some x
-      | MatchWithTrailingSlash r -> Some r
-      | NoMatch -> None)
+       | FullMatch x -> Some x
+       | MatchWithTrailingSlash r -> Some r
+       | NoMatch -> None)
   in
   let route_map =
     match match' (one_of [ map Int.to_string route ]) ~target:"foo/5" with
