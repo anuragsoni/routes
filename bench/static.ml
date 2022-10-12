@@ -186,8 +186,8 @@ module Util = struct
       | "" -> []
       | _ ->
         (match String.split_on_char '/' target with
-        | "" :: xs -> xs
-        | xs -> xs)
+         | "" :: xs -> xs
+         | xs -> xs)
     in
     match String.index_opt target '?' with
     | None -> split_target target
