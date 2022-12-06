@@ -220,7 +220,7 @@ val pp_route : Format.formatter -> 'a route -> unit
 
     {[
       let r () = Routes.(s "foo" / int / s "add" / bool);;
-      Routes.path_to_string r;;
+      Routes.string_of_path r;;
       -: "foo/:int/add/:bool"
     ]}
     @since 2.0.0 *)
