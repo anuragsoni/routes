@@ -54,7 +54,7 @@ let%expect_test "test add route" =
       ~f:(fun acc r -> add_route r acc)
       ~init:(one_of [])
       [ ((s "user" / str / int /? nil)
-        @--> fun name age -> Printf.sprintf "%s %d" name age)
+         @--> fun name age -> Printf.sprintf "%s %d" name age)
       ; ((int / int /? nil) @--> fun a b -> Printf.sprintf "%d" (a + b))
       ]
   in
@@ -78,8 +78,8 @@ let%expect_test "test union of routers" =
     printf
       "%s\n"
       (if equal
-      then Printf.sprintf "Union law %d - %b" nb equal
-      else Printf.sprintf "Union law %d - %b" nb equal)
+       then Printf.sprintf "Union law %d - %b" nb equal
+       else Printf.sprintf "Union law %d - %b" nb equal)
   in
   let r1 = (s "foo" / int /? nil) @--> fun i -> Int.to_string i in
   let r2 = (s "bar" / int /? nil) @--> fun i -> Int.to_string i in
@@ -138,10 +138,10 @@ let%expect_test "test extractors" =
     one_of
       [ ((s "foo" / str /? nil) @--> fun a -> a)
       ; ((s "numbers" / int / int64 / int32 /? nil)
-        @--> fun a b c -> Printf.sprintf "%d-%Ld-%ld" a b c)
+         @--> fun a b c -> Printf.sprintf "%d-%Ld-%ld" a b c)
       ; ((s "bar" /? wildcard) @--> fun a -> Routes.Parts.wildcard_match a)
       ; ((s "baz" / int / s "and" /? wildcard)
-        @--> fun a b -> Printf.sprintf "%d-%s" a (Routes.Parts.wildcard_match b))
+         @--> fun a b -> Printf.sprintf "%d-%s" a (Routes.Parts.wildcard_match b))
       ]
   in
   ensure_string_match ~target:"foo/Movie" router;
