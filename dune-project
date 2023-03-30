@@ -1,8 +1,10 @@
-(lang dune 2.9)
+(lang dune 3.8)
 
 (name routes)
 
 (using mdx 0.1)
+
+(using melange 0.1)
 
 (generate_opam_files true)
 
