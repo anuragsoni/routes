@@ -26,6 +26,8 @@
    (>= 4.08.0))
   (base :with-test)
   (stdio :with-test)
+  (core_bench :with-test)
+  (core_unix :with-test)
   (ppx_expect :with-test)
   (ppx_sexp_conv :with-test)
   (ppx_sexp_value :with-test)
