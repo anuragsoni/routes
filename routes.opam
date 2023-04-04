@@ -13,6 +13,7 @@ bug-reports: "https://github.com/anuragsoni/routes/issues"
 depends: [
   "dune" {>= "2.9"}
   "ocaml" {>= "4.08.0"}
+  "melange" {> "0.3.2"}
   "base" {with-test}
   "stdio" {with-test}
   "ppx_expect" {with-test}
