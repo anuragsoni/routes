@@ -1,4 +1,4 @@
-## Routes &nbsp; ![BuildStatus](https://github.com/anuragsoni/routes/workflows/RoutesTest/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/anuragsoni/routes/badge.svg?branch=master)](https://coveralls.io/github/anuragsoni/routes?branch=master)
+# Routes &nbsp; ![BuildStatus](https://github.com/anuragsoni/routes/workflows/RoutesTest/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/anuragsoni/routes/badge.svg?branch=master)](https://coveralls.io/github/anuragsoni/routes?branch=master)
 
 This library will help with adding typed routes to OCaml applications.
 The goal is to have a easy to use portable library with
@@ -9,7 +9,7 @@ on the extracted entities using the combinators provided by
 the library. To perform URL matching one would just need to forward
 the URL's path to the router.
 
-#### Demo
+## Demo
 
 You can follow along with these examples in the OCaml toplevel (repl).
 [down](https://github.com/dbuenzli/down) or [utop](https://github.com/ocaml-community/utop) are recommended to enhance
@@ -36,6 +36,7 @@ val users : unit -> ('a, 'a) Routes.path = <fun>
 
 We can use these route definitions to get a string "pattern" that can potentially be used
 to show what kind of routes your application can match.
+
 ```ocaml
 # Routes.string_of_path (root ());;
 - : string = "/"
@@ -64,11 +65,9 @@ val get_user : unit -> (string -> int64 -> 'a, 'a) Routes.path = <fun>
 We can still pretty print such routes to get a human readable "pattern" that can be used to inform
 someone what kind of routes are defined in an application.
 
-
 Once we start working with routes that extract path parameters, there is another operation that can sometimes
 be useful. Often times there can be a need to generate a URL from a route. It could be for creating
 hyperlinks in HTML pages, creating target URLs that can be forwarded to HTTP clients, etc.
-
 
 Using routes we can create url targets from the same type definition that is used for performing a route match.
 Using this approach for creating url targets has the benefit that whenever a route definition is updated,
@@ -142,13 +141,13 @@ val routes : string Routes.router = <abstr>
 - : string Routes.match_result = Routes.MatchWithTrailingSlash "3"
 ```
 
-#### Dealing with trailing slashes
+## Dealing with trailing slashes
 
 Every route definition can control what behavior it expects when it encounters
 a trailing slash. In the examples above all route definitions ended with
 `/? nil`. This will result in an exact match if the route does not end in a trailing slash.
 If the input target matches every paramter but has an additional trailing slash, the route will
-still be considered a match, but it will inform the user that the matching route was found, 
+still be considered a match, but it will inform the user that the matching route was found,
 effectively having disregarded the trailing slash.
 
 ```ocaml
@@ -162,31 +161,19 @@ val no_trail : unit -> int Routes.route = <fun>
 - : int Routes.match_result = Routes.MatchWithTrailingSlash 5
 ```
 
-To create a route that returns an exact match if there is a trailing slash, the route still needs to
-end with `nil`, but instead of `/?`, `//?` needs to be used. (note the extra slash).
-
-```ocaml
-# let trail () = Routes.(s "foo" / s "bar" / str /? nil @--> fun msg -> String.length msg);;
-val trail : unit -> int Routes.route = <fun>
-
-# Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello");;
-- : int Routes.match_result = Routes.FullMatch 5
-
-# Routes.(match' (one_of [ trail () ]) ~target:"/foo/bar/hello/");;
-- : int Routes.match_result = Routes.MatchWithTrailingSlash 5
-```
-
 More example of library usage can be seen in the [examples](https://github.com/anuragsoni/routes/tree/main/example) folder,
 and as part of the [test](https://github.com/anuragsoni/routes/blob/main/test/routing_test.ml) definition.
 
 ## Installation
 
-###### To use the version published on opam:
-```
+**To use the version published on opam:**
+
+```sh
 opam install routes
 ```
 
-###### For development version:
-```
+**For development version:**
+
+```sh
 opam pin add routes git+https://github.com/anuragsoni/routes.git
 ```
