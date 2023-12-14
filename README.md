@@ -168,12 +168,12 @@ and as part of the [test](https://github.com/anuragsoni/routes/blob/main/test/ro
 
 **To use the version published on opam:**
 
-```sh
+```
 opam install routes
 ```
 
 **For development version:**
 
-```sh
+```
 opam pin add routes git+https://github.com/anuragsoni/routes.git
 ```
