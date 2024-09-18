@@ -182,7 +182,7 @@ let string_of_route r = Format.asprintf "%a" pp_route r
 
 let ksprintf' k path =
   let rec aux : type a b. (string list -> b) -> (a, b) path -> a =
-   fun k -> function
+    fun k -> function
     | End -> k []
     | Wildcard -> fun { Parts.matched; _ } -> k (List.concat [ matched; [] ])
     | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
@@ -203,7 +203,7 @@ let parse_route path handler params =
   let rec match_target
     : type a b. (a, b) path -> a -> string list -> string list -> b match_result
     =
-   fun t f seen s ->
+    fun t f seen s ->
     match t with
     | End ->
       (match s with
