@@ -5,9 +5,6 @@ default: build
 build:
 	dune build
 
-build-bs:
-	bsb -make-world
-
 install:
 	dune install
 
@@ -16,9 +13,6 @@ uninstall:
 
 clean:
 	dune clean
-
-clean-bs:
-	bsb -clean-world
 
 test:
 	dune runtest -f

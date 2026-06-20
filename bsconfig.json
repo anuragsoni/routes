@@ -1,7 +1,0 @@
-{
-  "name": "@anuragsoni/routes",
-  "sources": {
-    "dir" : "src",
-    "subdirs" : true
-  }
-}
