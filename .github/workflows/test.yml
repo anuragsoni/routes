@@ -14,16 +14,15 @@ jobs:
         operating-system:
           - ubuntu-latest
         ocaml-version:
-          - 4.14.x
-          - 4.08.x
+          - "5"
+          - "4"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Setup OCaml ${{ matrix.ocaml-version }}
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
           dune-cache: ${{ matrix.operating-system == 'ubuntu-latest' }}
-          opam-depext-flags: --with-test
       - name: Install dependencies
         run: |
           opam pin add routes.dev -n .
