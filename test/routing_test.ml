@@ -318,7 +318,8 @@ let%expect_test "route matcher discards query params" =
   let routes = one_of [ ((s "foo" / str /? nil) @--> fun x -> x); nil @--> "root" ] in
   ensure_string_match ~target:"/foo/hello?baz=bar" routes;
   ensure_string_match ~target:"?baz=bar" routes;
-  [%expect {|
+  [%expect
+    {|
     Exact match with result = hello
     Exact match with result = root |}]
 ;;

@@ -86,11 +86,11 @@ module PatternTrie = struct
     let children =
       KeyMap.merge
         (fun _ l r ->
-          match l, r with
-          | None, None -> assert false
-          | None, Some r -> Some r
-          | Some l, None -> Some l
-          | Some l, Some r -> Some (union l r))
+           match l, r with
+           | None, None -> assert false
+           | None, Some r -> Some r
+           | Some l, None -> Some l
+           | Some l, Some r -> Some (union l r))
         t1.children
         t2.children
     in
@@ -183,10 +183,10 @@ let string_of_route r = Format.asprintf "%a" pp_route r
 let ksprintf' k path =
   let rec aux : type a b. (string list -> b) -> (a, b) path -> a =
     fun k -> function
-    | End -> k []
-    | Wildcard -> fun { Parts.matched; _ } -> k (List.concat [ matched; [] ])
-    | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
-    | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ (to_ x :: rest)) fmt
+      | End -> k []
+      | Wildcard -> fun { Parts.matched; _ } -> k (List.concat [ matched; [] ])
+      | Match (w, fmt) -> aux (fun s -> k @@ (w :: s)) fmt
+      | Conv ({ to_; _ }, fmt) -> fun x -> aux (fun rest -> k @@ (to_ x :: rest)) fmt
   in
   aux k path
 ;;
@@ -230,8 +230,8 @@ let one_of routes =
   let routes = List.rev routes in
   List.fold_left
     (fun routes (Route (path, _, _) as route) ->
-      let patterns = route_pattern path in
-      PatternTrie.add patterns route routes)
+       let patterns = route_pattern path in
+       PatternTrie.add patterns route routes)
     empty_router
     routes
 ;;

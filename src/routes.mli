@@ -2,7 +2,8 @@
     OCaml applications. The core library will be independent of any particular web
     framework or runtime. *)
 
-(** [path] represents a sequence of path parameter patterns that are expected in a route. *)
+(** [path] represents a sequence of path parameter patterns that are expected in a route.
+*)
 type ('a, 'b) path
 
 (** [route] is a combination of a path sequence, with a function that will be called on a
@@ -17,11 +18,11 @@ type ('a, 'b) path
     Example:
 
     {[
-      let route () =
-        Routes.(
-          (s "foo" / str / int /? nil)
-          @--> fun (a : string) (b : int) -> Printf.sprintf "%s %d" a b)
-      ;;
+    let route () =
+      Routes.(
+        (s "foo" / str / int /? nil)
+        @--> fun (a : string) (b : int) -> Printf.sprintf "%s %d" a b)
+    ;;
     ]} *)
 type 'b route
 
@@ -76,26 +77,26 @@ val nil : ('a, 'a) path
     Example:
 
     {[
-      type shape =
-        | Square
-        | Circle
+    type shape =
+      | Square
+      | Circle
 
-      let shape_of_string = function
-        | "square" -> Some Square
-        | "circle" -> Some Circle
-        | _ -> None
-      ;;
+    let shape_of_string = function
+      | "square" -> Some Square
+      | "circle" -> Some Circle
+      | _ -> None
+    ;;
 
-      let shape_to_string = function
-        | Square -> "square"
-        | Circle -> "circle"
-      ;;
+    let shape_to_string = function
+      | Square -> "square"
+      | Circle -> "circle"
+    ;;
 
-      let shape = Routes.pattern shape_to_string shape_of_string ":shape"
+    let shape = Routes.pattern shape_to_string shape_of_string ":shape"
 
-      (* Now the shape pattern can be used just like any of the built in patterns like
-         int, bool etc *)
-      let route () = s "shape" / shape / s "create" /? nil
+    (* Now the shape pattern can be used just like any of the built in patterns like
+       int, bool etc *)
+    let route () = s "shape" / shape / s "create" /? nil
     ]} *)
 val pattern
   :  ('c -> string)
@@ -109,28 +110,28 @@ val pattern
     Example:
 
     {[
-      module Shape = struct
-        type t =
-          | Square
-          | Circle
+    module Shape = struct
+      type t =
+        | Square
+        | Circle
 
-        let parse = function
-          | "square" -> Some Square
-          | "circle" -> Some Circle
-          | _ -> None
-        ;;
+      let parse = function
+        | "square" -> Some Square
+        | "circle" -> Some Circle
+        | _ -> None
+      ;;
 
-        let serialize = function
-          | Square -> "square"
-          | Circle -> "circle"
-        ;;
+      let serialize = function
+        | Square -> "square"
+        | Circle -> "circle"
+      ;;
 
-        let p r = Routes.custom ~serialize ~parse ~label:":shape" r
-      end
+      let p r = Routes.custom ~serialize ~parse ~label:":shape" r
+    end
 
-      (* Now the shape pattern can be used just like any of the built in patterns like
-         int, bool etc *)
-      let route () = s "shape" / Shape.p / s "create" /? nil
+    (* Now the shape pattern can be used just like any of the built in patterns like
+       int, bool etc *)
+    let route () = s "shape" / Shape.p / s "create" /? nil
     ]}
     @since 0.8.1 *)
 val custom
@@ -145,7 +146,7 @@ val custom
     followd by a constant "foo" and then an integer, we'd use the [/] operator like below:
 
     {[
-      let route () = Routes.(str / s "foo" / int /? nil)
+    let route () = Routes.(str / s "foo" / int /? nil)
     ]} *)
 val ( / ) : (('a, 'b) path -> 'c) -> ('d -> ('a, 'b) path) -> 'd -> 'c
 

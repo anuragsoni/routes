@@ -204,16 +204,16 @@ let router =
   one_of
     (List.map
        (fun u ->
-         let split = Util.split_path u |> List.map (fun q -> s q) in
-         let r =
-           match split with
-           | [] -> nil
-           | [ x ] -> x /? nil
-           | x :: xs ->
-             let t = List.fold_left (fun acc y -> acc / y) x xs in
-             t /? nil
-         in
-         mr r)
+          let split = Util.split_path u |> List.map (fun q -> s q) in
+          let r =
+            match split with
+            | [] -> nil
+            | [ x ] -> x /? nil
+            | x :: xs ->
+              let t = List.fold_left (fun acc y -> acc / y) x xs in
+              t /? nil
+          in
+          mr r)
        urls)
 ;;
 
